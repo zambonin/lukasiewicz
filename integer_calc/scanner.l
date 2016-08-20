@@ -10,15 +10,17 @@ void yyerror(const char* s, ...);
 %option noyywrap nodefault yylineno
 
 SPC     [ \t]
-NUM     [0-9]+
+NUM     -?[0-9]+
 
 %%
 
 {SPC}   ;
-{NUM}   { yylval.value = std::atoi(yytext); return T_INT; }
-"+"     { return T_PLUS; }
-"*"     { return T_TIMES; }
-\n      { return T_NL; }
+{NUM}   { yylval.value = std::atoi(yytext); return INT; }
+"+"     { return PLUS; }
+"-"     { return MINUS; }
+"*"     { return TIMES; }
+"/"     { return DIV; }
+\n      { return NL; }
 .       { yyerror("Unknown token! %c\n", *yytext); }
 
 %%

@@ -16,8 +16,8 @@ extern void yyerror(const char* s, ...);
 
 /* token defines our terminal symbols (tokens).
  */
-%token <value> T_INT
-%token T_PLUS T_TIMES T_NL
+%token <value> INT
+%token PLUS MINUS TIMES DIV NL
 
 /* type defines the type of our nonterminal symbols.
  * Types should match the names used in the union.
@@ -29,6 +29,8 @@ extern void yyerror(const char* s, ...);
  * The latest it is listed, the highest the precedence
  * left, right, nonassoc
  */
+%left PLUS MINUS
+%left TIMES DIV
 
 /* Starting rule
  */
@@ -46,14 +48,16 @@ lines:
     ;
 
 line:
-    T_NL                { $$ = 0; }
-    | expr T_NL         { std::cout << "Res: " << $1 << std::endl; }
+    NL                { $$ = 0; }
+    | expr NL         { std::cout << $1 << std::endl; }
     ;
 
 expr:
-    T_INT               { $$ = $1; }
-    | expr T_PLUS expr  { $$ = $1 + $3; }
-    | expr T_TIMES expr { $$ = $1 * $3; }
+    INT               { $$ = $1; }
+    | expr PLUS expr  { $$ = $1 + $3; }
+    | expr MINUS expr { $$ = $1 - $3; }
+    | expr TIMES expr { $$ = $1 * $3; }
+    | expr DIV expr   { $$ = $1 / $3; }
     ;
 
 %%
