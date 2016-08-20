@@ -10,7 +10,7 @@ void yyerror(const char* s, ...);
 %option noyywrap nodefault yylineno
 
 SPC     [ \t]
-NUM     -?[0-9]+
+NUM     [0-9]+
 
 %%
 
@@ -20,6 +20,9 @@ NUM     -?[0-9]+
 "-"     { return MINUS; }
 "*"     { return TIMES; }
 "/"     { return DIV; }
+"^"     { return EXP; }
+"("     { return LPAR; }
+")"     { return RPAR; }
 \n      { return NL; }
 .       { yyerror("Unknown token! %c\n", *yytext); }
 
