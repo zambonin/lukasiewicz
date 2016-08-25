@@ -37,7 +37,7 @@ lines:
 
 line:
     NL                          { $$ = 0; }
-    | expr NL                   { std::cout << $1 << std::endl; }
+    | expr NL                   { std::cout << "= " << $1 << std::endl; }
     ;
 
 expr:

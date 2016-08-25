@@ -1,0 +1,19 @@
+An integer calculator using infix notation. Features addition, subtraction,
+multiplication, division, exponentiation, and use of parenthesis and unary
+minus. Compile it with
+
+    make
+
+and run the resulting binary:
+
+    $ ./intcalc
+    2^(2 * 5 - 5)
+    = 32
+
+You can also feed it input using here-documents or file redirection:
+    
+    $ ./intcalc <<< "563 + 34"
+    = 597
+    $ echo "35412 + 41563" > sum
+    $ ./intcalc < sum
+    = 76975
