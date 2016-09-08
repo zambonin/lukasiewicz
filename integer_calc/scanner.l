@@ -14,6 +14,7 @@ NUM     [0-9]+
 
 %%
 
+<<EOF>> { std::printf("\r"); yyterminate(); }
 {SPC}   ;
 {NUM}   { yylval.value = std::atoi(yytext); return INT; }
 "+"     { return PLUS; }

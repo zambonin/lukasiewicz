@@ -7,7 +7,7 @@ minus. Compile it with
 and run the resulting binary:
 
     $ ./intcalc
-    2^(2 * 5 - 5)
+    > 2^(2 * 5 - 5)
     = 32
 
 You can also feed it input using here-documents or file redirection:
@@ -17,3 +17,10 @@ You can also feed it input using here-documents or file redirection:
     $ echo "35412 + 41563" > sum
     $ ./intcalc < sum
     = 76975
+
+Every input must be terminated with a newline; hence, the last line of a file
+which does not respect this limitation will fail with a syntax error.
+
+All invalid tokens will be ignored, and if there is any remaining valid input,
+it will be processed (except in the case of external input, where it will
+fail -- not so gracefully).

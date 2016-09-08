@@ -2,6 +2,7 @@
 #include <iostream>
 #include <math.h>
 
+extern void prompt();
 extern int yylex();
 extern void yyerror(const char* s, ...);
 %}
@@ -31,13 +32,13 @@ program:
     ;
 
 lines:
-    line
-    | lines line
+    line { prompt(); }
+    | lines line { prompt(); }
     ;
 
 line:
     NL                          { $$ = 0; }
-    | expr NL                   { std::cout << "= " << $1 << std::endl; }
+    | expr NL                   { std::cout << "\r= " << $1 << std::endl; }
     ;
 
 expr:
