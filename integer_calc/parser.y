@@ -16,7 +16,7 @@ extern void yyerror(const char* s, ...);
 %token <value> INT
 %token PLUS MINUS TIMES DIV EXP LPAR RPAR NL
 
-%type <value> program lines line expr
+%type <value> program line expr
 
 %left PLUS MINUS
 %left TIMES DIV
@@ -28,12 +28,8 @@ extern void yyerror(const char* s, ...);
 %%
 
 program:
-    lines
-    ;
-
-lines:
-    line { prompt(); }
-    | lines line { prompt(); }
+    %empty                      {}
+    | program line              { prompt(); }
     ;
 
 line:
