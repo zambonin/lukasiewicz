@@ -1,0 +1,7 @@
+Łukasiewicz is a procedural, strongly and statically typed language, with
+lexical scope and reserved words, where the operations are input in prefix
+notation.
+
+This compiler generates the syntax tree for given Łukasiewicz code. It
+currently supports basic operations with integers, that optionally can be
+saved in variables.
