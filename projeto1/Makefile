@@ -3,13 +3,15 @@ CFLAGS = -Wall -Wextra -fexceptions -Wno-sign-compare -Wno-unused-function
 
 OUTPUT = lukacompiler
 
-$(OUTPUT): parser.h scanner.cpp main.cpp
+all: flex bison cfiles
+
+cfiles:	*.cpp *.h
 	@$(CC) $(CFLAGS) *.cpp -o $(OUTPUT)
 
-scanner.cpp: scanner.l parser.h
+flex: scanner.l
 	@flex -o scanner.cpp scanner.l
 
-parser.h: parser.y
+bison: parser.y
 	@bison -v --defines=parser.h --output=parser.cpp parser.y
 
 clean:
