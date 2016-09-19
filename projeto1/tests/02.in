@@ -1,0 +1,15 @@
+float f=1.0, g=0., h= .10, i
+bool b = true
+i = -f*g-h/2.1
+b = ! (i > 0.0) | (i < -2.3)
+
+bool ab, cd = true
+ab = cd | ! true & 2 > -2
+
+float abba, ikea
+abba = 12.0
+ikea = 13.21 * 1.7 + 4.2
+
+bool svenska
+svenska = abba <= ikea
+

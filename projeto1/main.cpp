@@ -1,6 +1,6 @@
 #include <iostream>
-#include "ast.h"
-#include "st.h"
+#include "utils/ast.h"
+#include "utils/st.h"
 
 extern AST::BlockNode* root;
 extern int yyparse();

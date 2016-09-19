@@ -1,7 +1,7 @@
 %{
 #include <string>
 #include <cstdarg>
-#include "ast.h"
+#include "utils/ast.h"
 #include "parser.h"
 
 extern int yylineno;

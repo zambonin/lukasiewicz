@@ -1,0 +1,14 @@
+int i = 0, j
+float f = 1.1
+bool b = true
+j = [int] [int] i + f
+i = [int] j
+b = b & [bool] f
+f = ([float] b) + 0.0
+
+int i=0
+float f=0
+
+f = 12 + i - f
+i = [int] ([int] 12.3) / f
+

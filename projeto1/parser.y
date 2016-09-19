@@ -1,6 +1,6 @@
 %{
-#include "ast.h"
-#include "st.h"
+#include "utils/ast.h"
+#include "utils/st.h"
 
 ST::SymbolTable symbolTable;
 AST::BlockNode *root;
