@@ -15,8 +15,7 @@ extern void yyerror(const char *s, ...);
 namespace AST {
 
   // Enumeration of binary operations supported by the AST.
-  enum Operation { add, sub, mul, divs, assign };
-  // uminus / parenthesis as operator?
+  enum Operation { add, sub, mul, divs, assign, uminus };
 
   // Generic node class for the AST.
   class Node {
@@ -33,6 +32,8 @@ namespace AST {
     virtual int computeTree() {
       return 0;
     }
+
+    virtual void printTreePrefix() {}
   };
 
   // Class for nodes that contain an integer.
@@ -48,6 +49,8 @@ namespace AST {
     // Prints contents of the tree whose root
     // is this node.
     void printTree();
+
+    void printTreePrefix();
 
     // Computes the final result of the expression
     // represented by the tree whose root is this node.
@@ -74,6 +77,8 @@ namespace AST {
     // is this node.
     void printTree();
 
+    void printTreePrefix();
+
     // Computes the final result of the expression
     // represented by the tree whose root is this node.
     int computeTree();
@@ -96,6 +101,10 @@ namespace AST {
     // is this node.
     void printTree();
 
+
+    void printTreePrefix();
+
+
     // Computes the final result of the expression
     // represented by the tree whose root is this node.
     int computeTree();
@@ -113,6 +122,8 @@ namespace AST {
     // Prints contents of the tree whose root
     // is this node.
     void printTree();
+
+    void printPrefix();
 
     // Computes the final result of the expression
     // represented by the tree whose root is this node.

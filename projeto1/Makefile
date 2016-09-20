@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS = -Wall -Wextra -fexceptions -Wno-sign-compare -Wno-unused-function
+CFLAGS = -Wall -Wextra -fexceptions -Wno-sign-compare -Wno-unused-function -std=c++11
 
 OUTPUT = lukacompiler
 NUM = 01 #02 03 04 05 06 07 08 10

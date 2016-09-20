@@ -6,7 +6,11 @@ using namespace AST;
 extern ST::SymbolTable symbolTable;
 
 void IntNode::printTree() {
-  std::cout << value;
+  std::cout << value << "\n";
+}
+
+void IntNode::printTreePrefix() {
+   std::cout << value << " ";
 }
 
 void BinaryOpNode::printTree() {
@@ -27,8 +31,36 @@ void BinaryOpNode::printTree() {
     case assign:
       std::cout << " = ";
       break;
+    case uminus:
+      std::cout << " -u ";
+      break;
   }
   right->printTree();
+}
+
+void BinaryOpNode::printTreePrefix() {
+  switch(binOp) {
+    case add:
+      std::cout << "+ ";
+      break;
+    case sub:
+      std::cout << "- ";
+      break;
+    case mul:
+      std::cout << "* ";
+      break;
+    case divs:
+      std::cout << "/ ";
+      break;
+    case assign:
+      std::cout << "= ";
+      break;
+    case uminus:
+      std::cout << "-u ";
+      break;
+  }
+  left->printTreePrefix();
+  right->printTreePrefix();
 }
 
 void VariableNode::printTree() {
@@ -39,9 +71,24 @@ void VariableNode::printTree() {
   std::cout << id;
 }
 
+void VariableNode::printTreePrefix() {
+  if (next != NULL) {
+    next->printTreePrefix();
+    std::cout << ", ";
+  }
+  std::cout << id << " ";
+}
+
 void BlockNode::printTree() {
   for (Node* n : nodeList) {
     n->printTree();
+    std::cout << std::endl;
+  }
+}
+
+void BlockNode::printPrefix() {
+  for (Node *n : nodeList){
+    n->printTreePrefix();
     std::cout << std::endl;
   }
 }
@@ -51,30 +98,7 @@ int IntNode::computeTree() {
 }
 
 int BinaryOpNode::computeTree() {
-  int value, leftValue, rightValue;
-  leftValue = left->computeTree();
-  rightValue = right->computeTree();
-
-  switch(binOp) {
-    case add:
-      value = leftValue + rightValue;
-      break;
-    case sub:
-      value = leftValue - rightValue;
-      break;
-    case mul:
-      value = leftValue * rightValue;
-      break;
-    case divs:
-      value = leftValue / rightValue;
-      break;
-    case assign:
-      VariableNode* leftVar = dynamic_cast<VariableNode*>(left); // ??
-      symbolTable.entryList[leftVar->id].value = rightValue;
-      value = rightValue;
-  }
-
-  return value;
+  return 0;
 }
 
 int VariableNode::computeTree() {

@@ -10,7 +10,7 @@ int main() {
     yyparse();
 
     if (root != NULL) {
-        root->printTree();
+        root->printPrefix();
     }
 
     return 0;
