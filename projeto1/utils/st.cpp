@@ -11,17 +11,16 @@ AST::Node* SymbolTable::newVariable(std::string id, AST::Node* next) {
     Symbol newEntry(integer, variable, 0, false);
     addSymbol(id, newEntry);
   }
-
   return new AST::VariableNode(id, next);
 }
 
-AST::Node* SymbolTable::assignVariable(std::string id) {
+AST::Node* SymbolTable::assignVariable(std::string id, AST::Node* next) {
   if (!varExists(id)) {
     yyerror("semantic error: undeclared variable %s\n", id.c_str());
   }
 
   entryList[id].init = true;
-  return new AST::VariableNode(id, NULL);
+  return new AST::VariableNode(id, next);
 }
 
 AST::Node* SymbolTable::useVariable(std::string id) {

@@ -71,7 +71,7 @@ namespace ST {
     AST::Node* newVariable(std::string id, AST::Node* next);
 
     // Sets a value to some variable.
-    AST::Node* assignVariable(std::string id);
+    AST::Node* assignVariable(std::string id, AST::Node* next);
 
     // Creates a copy of the variable named `id` for
     // references on the code.

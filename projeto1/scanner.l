@@ -35,4 +35,5 @@ void yyerror(const char *s, ...) {
   va_start(ap, s);
   std::fprintf(stderr, "[Line %d] ", yylineno);
   std::vfprintf(stderr, s, ap);
+
 }

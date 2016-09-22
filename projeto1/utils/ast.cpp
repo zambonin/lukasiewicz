@@ -6,13 +6,12 @@ using namespace AST;
 extern ST::SymbolTable symbolTable;
 
 void IntNode::printTree() {
-  std::cout << value << "\n";
+  std::cout << value << "";
 }
 
 void IntNode::printTreePrefix() {
    std::cout << value << " ";
 }
-
 void BinaryOpNode::printTree() {
   left->printTree();
   switch(binOp) {
@@ -63,6 +62,19 @@ void BinaryOpNode::printTreePrefix() {
   right->printTreePrefix();
 }
 
+void AssignmentNode::printTree() {
+  left->printTree();
+  std::cout << " = ";
+  right->printTree();
+}
+
+void AssignmentNode::printTreePrefix() {
+  left->printTree();
+  std::cout << " = ";
+  right->printTree();
+}
+
+
 void VariableNode::printTree() {
   if (next != NULL) {
     next->printTree();
@@ -72,18 +84,11 @@ void VariableNode::printTree() {
 }
 
 void VariableNode::printTreePrefix() {
-  if (next != NULL) {
-    next->printTreePrefix();
-    std::cout << ", ";
-  }
-  std::cout << id << " ";
-}
-
-void BlockNode::printTree() {
-  for (Node* n : nodeList) {
-    n->printTree();
-    std::cout << std::endl;
-  }
+    if (next != NULL) {
+      next->printTree();
+      std::cout << ", ";
+    }
+  std::cout << id;
 }
 
 void BlockNode::printPrefix() {
@@ -93,25 +98,25 @@ void BlockNode::printPrefix() {
   }
 }
 
-int IntNode::computeTree() {
-  return value;
-}
-
-int BinaryOpNode::computeTree() {
-  return 0;
-}
-
-int VariableNode::computeTree() {
-  return symbolTable.entryList[id].value;
-}
-
-int BlockNode::computeTree() {
-  int value;
-
+void BlockNode::printTree() {
   for (Node* n : nodeList) {
-    value = n->computeTree();
-    std::cout << "Computed " << value << std::endl;
+    n->printTree();
+    std::cout << std::endl;
   }
+}
 
-  return 0;
+void BlockAssignmentNode::printTree() {
+  std::cout << "var " << type << ": ";
+  for (Node *n : nodeList){
+    n->printTreePrefix();
+    std::cout << std::endl;
+  }
+}
+
+void BlockAssignmentNode::printPrefix() {
+  std::cout << "var " << type << ": ";
+  for (Node *n : nodeList){
+    n->printTreePrefix();
+    std::cout << std::endl;
+  }
 }

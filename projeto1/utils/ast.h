@@ -22,17 +22,9 @@ namespace AST {
   public:
     // Destructor for the Node class.
     virtual ~Node() {}
-
-    // Prints contents of the tree whose root
-    // is this node.
+  
     virtual void printTree() {}
-
-    // Computes the final result of the expression
-    // represented by the tree whose root is this node.
-    virtual int computeTree() {
-      return 0;
-    }
-
+  
     virtual void printTreePrefix() {}
   };
 
@@ -46,15 +38,10 @@ namespace AST {
     IntNode(int value):
       value(value) {}
 
-    // Prints contents of the tree whose root
-    // is this node.
     void printTree();
-
+  
     void printTreePrefix();
 
-    // Computes the final result of the expression
-    // represented by the tree whose root is this node.
-    int computeTree();
   };
 
   // Class for nodes that are binary operations.
@@ -73,15 +60,32 @@ namespace AST {
     BinaryOpNode(Operation binOp, Node *left, Node *right):
       binOp(binOp), left(left), right(right) {}
 
-    // Prints contents of the tree whose root
-    // is this node.
     void printTree();
-
+    
     void printTreePrefix();
+  
+  };
 
-    // Computes the final result of the expression
-    // represented by the tree whose root is this node.
-    int computeTree();
+    // Class for nodes that are binary operations.
+  class AssignmentNode : public Node {
+  public:
+    // Usual numeric operation.
+    Operation binOp;
+
+    // This node's left child.
+    Node *left;
+
+    // This node's right child.
+    Node *right;
+
+    // Constructor for a binary operation node.
+    AssignmentNode(Node *left, Node *right):
+      binOp(AST::assign), left(left), right(right) {}
+
+    void printTree();
+    
+    void printTreePrefix();
+  
   };
 
   // Class for nodes that are variables.
@@ -96,18 +100,11 @@ namespace AST {
     // Constructor for the Variable node.
     VariableNode(std::string id, Node *next):
       id(id), next(next) {}
-
-    // Prints contents of the tree whose root
-    // is this node.
+    
     void printTree();
-
-
+    
     void printTreePrefix();
 
-
-    // Computes the final result of the expression
-    // represented by the tree whose root is this node.
-    int computeTree();
   };
 
   // Class that represents a line of the program.
@@ -118,16 +115,29 @@ namespace AST {
 
     // Constructor for a block node.
     BlockNode() {}
-
-    // Prints contents of the tree whose root
-    // is this node.
+	  
     void printTree();
-
+    
     void printPrefix();
 
-    // Computes the final result of the expression
-    // represented by the tree whose root is this node.
-    int computeTree();
+  };
+
+    // Class that represents a line of the program.
+  class BlockAssignmentNode : public BlockNode {
+  public:
+    // type of block assignment (e.g. int, float)
+    std::string type;
+    // List of nodes representing the line tree.
+    std::vector<Node*> nodeList;
+
+    // Constructor for a block node.
+    BlockAssignmentNode(std::string type, Node* node):
+      type(type), nodeList(node->nodeList) {}
+    
+    void printTree();
+    
+    void printPrefix();
+
   };
 
 }

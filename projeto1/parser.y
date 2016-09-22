@@ -19,10 +19,10 @@ extern void yyerror(const char* s, ...);
 }
 
 %token <integer> INT
-%token NL COMMA T_INT ASSIGN LPAR RPAR
-%token <name> ID
+%token NL COMMA ASSIGN LPAR RPAR
+%token <name> ID T_INT
 
-%type <node> expr line varlist
+%type <node> expr line assign_list
 %type <block> lines program
 
 %left PLUS MINUS
@@ -48,8 +48,9 @@ lines   :
 line    :
         NL                  { $$ = 0; }
         | expr NL
-        | T_INT varlist NL  { $$ = $2; }
-        | ID ASSIGN expr    { AST::Node* n = symbolTable.assignVariable($1);
+        | T_INT assign_list NL  { std::string str($1);
+                                    $$ = new AST::BlockAssignmentNode(str, $2); }
+        | ID ASSIGN expr    { AST::Node* n = symbolTable.assignVariable($1, NULL);
                               $$ = new AST::BinaryOpNode(AST::assign, n, $3); }
         ;
 
@@ -63,9 +64,15 @@ expr    :
         | LPAR expr RPAR    { $$ = $2; }
         ;
 
-varlist :
+assign_list:
         ID                  { $$ = symbolTable.newVariable($1, NULL); }
-        | varlist COMMA ID  { $$ = symbolTable.newVariable($3, $1); }
+        | ID ASSIGN expr { AST::Node* n = symbolTable.newVariable($1, NULL);
+                            n = symbolTable.assignVariable($1, NULL);
+                            $$ = new AST::AssignmentNode(n, $3); }
+        | assign_list COMMA ID { $$ = symbolTable.newVariable($3, $1); }
+        | assign_list COMMA ID ASSIGN expr { AST::Node* n = symbolTable.newVariable($3, $1);
+                                             n = symbolTable.assignVariable($3, $1);
+                                             $$ = new AST::AssignmentNode(n, $5); }
         ;
 
 %%
