@@ -122,22 +122,4 @@ namespace AST {
 
   };
 
-    // Class that represents a line of the program.
-  class BlockAssignmentNode : public BlockNode {
-  public:
-    // type of block assignment (e.g. int, float)
-    std::string type;
-    // List of nodes representing the line tree.
-    std::vector<Node*> nodeList;
-
-    // Constructor for a block node.
-    BlockAssignmentNode(std::string type, Node* node):
-      type(type), nodeList(node->nodeList) {}
-    
-    void printTree();
-    
-    void printPrefix();
-
-  };
-
 }

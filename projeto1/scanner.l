@@ -26,7 +26,7 @@ nameT [a-zA-Z][a-zA-Z0-9_]*
 \n      { return NL; }
 "int"   { return T_INT; }
 {nameT} { yylval.name = strdup(yytext); return ID; }
-.       { yyerror("lexical error: unknown symbol %c\n", *yytext); }
+[^a-zA-z0-9\+\-\*\/\,\=\(\)]+       { yyerror("lexical error: unknown symbol %s\n", yytext);}
 
 %%
 

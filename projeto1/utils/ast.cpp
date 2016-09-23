@@ -104,19 +104,3 @@ void BlockNode::printTree() {
     std::cout << std::endl;
   }
 }
-
-void BlockAssignmentNode::printTree() {
-  std::cout << "var " << type << ": ";
-  for (Node *n : nodeList){
-    n->printTreePrefix();
-    std::cout << std::endl;
-  }
-}
-
-void BlockAssignmentNode::printPrefix() {
-  std::cout << "var " << type << ": ";
-  for (Node *n : nodeList){
-    n->printTreePrefix();
-    std::cout << std::endl;
-  }
-}

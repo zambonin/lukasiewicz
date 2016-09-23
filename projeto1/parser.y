@@ -47,9 +47,7 @@ lines   :
 
 line    :
         NL                  { $$ = 0; }
-        | expr NL
-        | T_INT assign_list NL  { std::string str($1);
-                                    $$ = new AST::BlockAssignmentNode(str, $2); }
+        | T_INT assign_list NL  { $$ = $2; }
         | ID ASSIGN expr    { AST::Node* n = symbolTable.assignVariable($1, NULL);
                               $$ = new AST::BinaryOpNode(AST::assign, n, $3); }
         ;
