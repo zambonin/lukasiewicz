@@ -11,6 +11,7 @@ void yyerror(const char* s, ...);
 %option noyywrap nodefault yylineno
 
 nameT [a-zA-Z][a-zA-Z0-9_]*
+
 %%
 
 [ \t]   ;
@@ -26,7 +27,9 @@ nameT [a-zA-Z][a-zA-Z0-9_]*
 \n      { return NL; }
 "int"   { return T_INT; }
 {nameT} { yylval.name = strdup(yytext); return ID; }
-[^a-zA-z0-9\+\-\*\/\,\=\(\)]+       { yyerror("lexical error: unknown symbol %s\n", yytext);}
+[^a-zA-Z0-9_\+\-\*\/\,\=\(\) \t\n]+ {
+  yyerror("lexical error: unknown symbol %s\n", yytext); }
+.       ;
 
 %%
 
@@ -35,5 +38,4 @@ void yyerror(const char *s, ...) {
   va_start(ap, s);
   std::fprintf(stderr, "[Line %d] ", yylineno);
   std::vfprintf(stderr, s, ap);
-
 }

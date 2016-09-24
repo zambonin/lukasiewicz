@@ -10,9 +10,9 @@
 #include <map>
 #include "ast.h"
 
-extern void yyerror(const char *s, ...);
+ extern void yyerror(const char *s, ...);
 
-namespace ST {
+ namespace ST {
 
   // Enumeration of variable types.
   enum VarType { integer };
@@ -28,21 +28,17 @@ namespace ST {
     // Kind of symbol.
     VarKind kind;
 
-    // Holds a value if the symbol kind is a variable.
-    int64_t value;
-
     // Status of the symbol initialization if it is a variable.
     bool init;
 
     // Constructor for the Symbol class.
-    Symbol(VarType type, VarKind kind, int64_t value, bool init):
-      type(type), kind(kind), value(value), init(init) {}
+    Symbol(VarType type, VarKind kind, bool init):
+    type(type), kind(kind), init(init) {}
 
     // Initial status for the Symbol object.
     Symbol() {
       type = integer;
       kind = variable;
-      value = 0;
       init = false;
     }
   };
@@ -68,7 +64,7 @@ namespace ST {
     }
 
     // Creates a new variable inside the map.
-    AST::Node* newVariable(std::string id, AST::Node* next);
+    AST::Node* newVariable(std::string id, AST::Node* next, VarType type);
 
     // Sets a value to some variable.
     AST::Node* assignVariable(std::string id, AST::Node* next);

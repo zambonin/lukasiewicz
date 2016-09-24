@@ -6,33 +6,33 @@ using namespace AST;
 extern ST::SymbolTable symbolTable;
 
 void IntNode::printTree() {
-  std::cout << value << "";
+  std::cout << " " << value;
 }
 
 void IntNode::printTreePrefix() {
-   std::cout << value << " ";
+  std::cout << " " << value;
 }
+
 void BinaryOpNode::printTree() {
   left->printTree();
   switch(binOp) {
     case add:
-      std::cout << " + ";
-      break;
+    std::cout << "+ ";
+    break;
     case sub:
-      std::cout << " - ";
-      break;
+    std::cout << "- ";
+    break;
     case mul:
-      std::cout << " * ";
-      break;
-    case divs:
-      std::cout << " / ";
-      break;
+    std::cout << "* ";
+    break;
+    case div:
+    std::cout << "/ ";
+    break;
     case assign:
-      std::cout << " = ";
-      break;
-    case uminus:
-      std::cout << " -u ";
-      break;
+    std::cout << "=";
+    break;
+    default:
+    break;
   }
   right->printTree();
 }
@@ -40,62 +40,75 @@ void BinaryOpNode::printTree() {
 void BinaryOpNode::printTreePrefix() {
   switch(binOp) {
     case add:
-      std::cout << "+ ";
-      break;
+    std::cout << " +";
+    break;
     case sub:
-      std::cout << "- ";
-      break;
+    std::cout << " -";
+    break;
     case mul:
-      std::cout << "* ";
-      break;
-    case divs:
-      std::cout << "/ ";
-      break;
+    std::cout << " *";
+    break;
+    case div:
+    std::cout << " /";
+    break;
     case assign:
-      std::cout << "= ";
-      break;
-    case uminus:
-      std::cout << "-u ";
-      break;
+    std::cout << "=";
+    break;
+    default:
+    break;
   }
   left->printTreePrefix();
   right->printTreePrefix();
 }
 
+void UnaryOpNode::printTree() {
+  switch(op) {
+    case uminus:
+    std::cout << " -u";
+    break;
+    default:
+    break;
+  }
+  node->printTree();
+}
+
+void UnaryOpNode::printTreePrefix() {
+  switch(op) {
+    case uminus:
+    std::cout << " -u";
+    break;
+    default:
+    break;
+  }
+  node->printTreePrefix();
+}
+
 void AssignmentNode::printTree() {
   left->printTree();
-  std::cout << " = ";
+  std::cout << " =";
   right->printTree();
 }
 
 void AssignmentNode::printTreePrefix() {
   left->printTree();
-  std::cout << " = ";
+  std::cout << " =";
   right->printTree();
 }
-
 
 void VariableNode::printTree() {
   if (next != NULL) {
     next->printTree();
-    std::cout << ", ";
+    std::cout << ",";
   }
-  std::cout << id;
+  std::cout << " " << id;
 }
 
 void VariableNode::printTreePrefix() {
-    if (next != NULL) {
-      next->printTree();
-      std::cout << ", ";
-    }
-  std::cout << id;
-}
-
-void BlockNode::printPrefix() {
-  for (Node *n : nodeList){
-    n->printTreePrefix();
-    std::cout << std::endl;
+  if (next != NULL) {
+    next->printTree();
+    std::cout << ",";
   }
+  std::cout << " " << id;
 }
 
 void BlockNode::printTree() {
@@ -103,4 +116,21 @@ void BlockNode::printTree() {
     n->printTree();
     std::cout << std::endl;
   }
+}
+
+void BlockNode::printTreePrefix() {
+  for (Node *n : nodeList){
+    n->printTreePrefix();
+    std::cout << std::endl;
+  }
+}
+
+void MessageNode::printTree() {
+  std::cout << msg << " var:";
+  node->printTree();
+}
+
+void MessageNode::printTreePrefix() {
+  std::cout << msg << " var:";
+  node->printTreePrefix();
 }

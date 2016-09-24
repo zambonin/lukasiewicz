@@ -10,21 +10,21 @@
 #include <iostream>
 #include <vector>
 
-extern void yyerror(const char *s, ...);
+ extern void yyerror(const char *s, ...);
 
-namespace AST {
+ namespace AST {
 
   // Enumeration of binary operations supported by the AST.
-  enum Operation { add, sub, mul, divs, assign, uminus };
+  enum Operation { add, sub, mul, div, assign, uminus };
 
   // Generic node class for the AST.
   class Node {
   public:
     // Destructor for the Node class.
     virtual ~Node() {}
-  
+
     virtual void printTree() {}
-  
+
     virtual void printTreePrefix() {}
   };
 
@@ -36,10 +36,10 @@ namespace AST {
 
     // Constructor for an integer node.
     IntNode(int value):
-      value(value) {}
+    value(value) {}
 
     void printTree();
-  
+
     void printTreePrefix();
 
   };
@@ -58,12 +58,29 @@ namespace AST {
 
     // Constructor for a binary operation node.
     BinaryOpNode(Operation binOp, Node *left, Node *right):
-      binOp(binOp), left(left), right(right) {}
+    binOp(binOp), left(left), right(right) {}
 
     void printTree();
-    
+
     void printTreePrefix();
-  
+
+  };
+
+  class UnaryOpNode : public Node {
+  public:
+    // Usual numeric operation.
+    Operation op;
+
+    Node *node;
+
+    // Constructor for a binary operation node.
+    UnaryOpNode(Operation op, Node *node):
+    op(op), node(node) {}
+
+    void printTree();
+
+    void printTreePrefix();
+
   };
 
     // Class for nodes that are binary operations.
@@ -80,12 +97,12 @@ namespace AST {
 
     // Constructor for a binary operation node.
     AssignmentNode(Node *left, Node *right):
-      binOp(AST::assign), left(left), right(right) {}
+    binOp(AST::assign), left(left), right(right) {}
 
     void printTree();
-    
+
     void printTreePrefix();
-  
+
   };
 
   // Class for nodes that are variables.
@@ -99,10 +116,10 @@ namespace AST {
 
     // Constructor for the Variable node.
     VariableNode(std::string id, Node *next):
-      id(id), next(next) {}
-    
+    id(id), next(next) {}
+
     void printTree();
-    
+
     void printTreePrefix();
 
   };
@@ -115,10 +132,25 @@ namespace AST {
 
     // Constructor for a block node.
     BlockNode() {}
-	  
+
     void printTree();
-    
-    void printPrefix();
+
+    void printTreePrefix();
+
+  };
+
+  class MessageNode : public Node {
+  public:
+
+    Node* node;
+    std::string msg;
+
+    MessageNode(Node* node, std::string msg):
+    node(node), msg(msg) {}
+
+    void printTree();
+
+    void printTreePrefix();
 
   };
 

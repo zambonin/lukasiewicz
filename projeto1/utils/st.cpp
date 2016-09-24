@@ -4,11 +4,12 @@ using namespace ST;
 
 extern SymbolTable symbolTable;
 
-AST::Node* SymbolTable::newVariable(std::string id, AST::Node* next) {
+AST::Node* SymbolTable::newVariable(std::string id, AST::Node* next,
+                                    VarType type) {
   if (varExists(id)) {
     yyerror("semantic error: re-declaration of variable %s\n", id.c_str());
   } else {
-    Symbol newEntry(integer, variable, 0, false);
+    Symbol newEntry(type, variable, false);
     addSymbol(id, newEntry);
   }
   return new AST::VariableNode(id, next);
