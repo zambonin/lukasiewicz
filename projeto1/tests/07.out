@@ -1,0 +1,21 @@
+int fun: f (params: )
+  ret false
+if: f[0 params]
+then:
+  int var: a = 0
+  int fun: f2 (params: int x)
+    int var: a
+    = a + x 1
+    ret a
+  = a f2[1 params] a
+int fun: fibo (params: int x, bool b)
+  int var: ans
+  if: < x 2
+  then:
+    = ans x
+  else:
+    = ans + fibo[2 params] - x 1 b fibo[2 params] - x 2 b
+  ret ans
+int var: a
+= a fibo[2 params] 10 true
+

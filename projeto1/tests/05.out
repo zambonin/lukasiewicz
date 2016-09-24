@@ -1,0 +1,14 @@
+int var: i, j = 0
+for: , < j 10, = j + j 2
+do:
+for: = i 0, < i 10, = i + i 1
+do:
+  int var: temp
+  = temp + j i
+  = j temp
+= j + j 0
+float var: f = 0.0, g = 1.0
+for: , <= f 12.3, 
+do:
+  = f + f * g g
+
