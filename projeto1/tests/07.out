@@ -18,4 +18,3 @@ int fun: fibo (params: int x, bool b)
   ret ans
 int var: a
 = a fibo[2 params] 10 true
-

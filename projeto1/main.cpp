@@ -7,11 +7,10 @@ extern int yyparse();
 extern int yydebug;
 
 int main() {
-    yyparse();
+  yyparse();
+  if (root != NULL) {
+    root->printTreePrefix();
+  }
 
-    if (root != NULL) {
-        root->printTreePrefix();
-    }
-
-    return 0;
+  return 0;
 }

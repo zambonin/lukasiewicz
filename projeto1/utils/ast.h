@@ -8,23 +8,24 @@
 #pragma once
 
 #include <iostream>
+#include <map>
 #include <vector>
 
- extern void yyerror(const char *s, ...);
+ extern void yyerror(const char* s, ...);
 
  namespace AST {
 
-  // Enumeration of binary operations supported by the AST.
-  enum Operation { add, sub, mul, div, assign, uminus };
+  // Enumeration of operations supported by the AST.
+  enum Operation {
+    add, sub, mul, div, assign,
+    eq, neq, gt, lt, geq, leq, _and, _or,
+    uminus, negation
+  };
 
   // Generic node class for the AST.
   class Node {
   public:
-    // Destructor for the Node class.
-    virtual ~Node() {}
-
     virtual void printTree() {}
-
     virtual void printTreePrefix() {}
   };
 
@@ -38,9 +39,38 @@
     IntNode(int value):
     value(value) {}
 
-    void printTree();
+    void printTree() { std::cout << " " << value; }
+    void printTreePrefix() { std::cout << " " << value; }
 
-    void printTreePrefix();
+  };
+
+  class FloatNode : public Node {
+  public:
+    // Value of the node.
+    char* value;
+
+    // Constructor for an integer node.
+    FloatNode(char* value):
+    value(value) {}
+
+    void printTree() { std::cout << " " << value; }
+    void printTreePrefix() { std::cout << " " << value; }
+
+  };
+
+  class BoolNode : public Node {
+  public:
+    // Value of the node.
+    bool value;
+
+    std::string strValue;
+
+    // Constructor for an integer node.
+    BoolNode(bool value):
+    value(value) { strValue = value ? "true" : "false"; }
+
+    void printTree() { std::cout << " " << strValue; }
+    void printTreePrefix() { std::cout << " " << strValue; }
 
   };
 
@@ -50,18 +80,21 @@
     // Usual numeric operation.
     Operation binOp;
 
-    // This node's left child.
-    Node *left;
+    // This node's children.
+    Node* left;
+    Node* right;
 
-    // This node's right child.
-    Node *right;
+    std::map<Operation, std::string> strOp = {
+      {add, "+"}, {sub, "-"}, {mul, "*"}, {div, "/"}, {assign, "="},
+      {eq, "=="}, {neq, "!="}, {gt, ">"}, {lt, "<"},
+      {geq, ">="}, {leq, "<="}, {_and, "&"}, {_or, "|"},
+    };
 
     // Constructor for a binary operation node.
-    BinaryOpNode(Operation binOp, Node *left, Node *right):
+    BinaryOpNode(Operation binOp, Node* left, Node* right):
     binOp(binOp), left(left), right(right) {}
 
     void printTree();
-
     void printTreePrefix();
 
   };
@@ -71,36 +104,36 @@
     // Usual numeric operation.
     Operation op;
 
-    Node *node;
+    Node* node;
+
+    std::map<Operation, std::string> strOp = {
+      {uminus, " -u"}, {negation, " !"},
+    };
 
     // Constructor for a binary operation node.
-    UnaryOpNode(Operation op, Node *node):
+    UnaryOpNode(Operation op, Node* node):
     op(op), node(node) {}
 
     void printTree();
-
     void printTreePrefix();
 
   };
 
-    // Class for nodes that are binary operations.
+  // Class for nodes that are binary operations.
   class AssignmentNode : public Node {
   public:
     // Usual numeric operation.
     Operation binOp;
 
-    // This node's left child.
-    Node *left;
-
-    // This node's right child.
-    Node *right;
+    // This node's children.
+    Node* left;
+    Node* right;
 
     // Constructor for a binary operation node.
-    AssignmentNode(Node *left, Node *right):
+    AssignmentNode(Node* left, Node* right):
     binOp(AST::assign), left(left), right(right) {}
 
     void printTree();
-
     void printTreePrefix();
 
   };
@@ -111,15 +144,14 @@
     // Unique name for the variable.
     std::string id;
 
-    // ??
-    Node *next;
+    // Reference to next node when there are multiple assignments.
+    Node* next;
 
     // Constructor for the Variable node.
-    VariableNode(std::string id, Node *next):
+    VariableNode(std::string id, Node* next):
     id(id), next(next) {}
 
     void printTree();
-
     void printTreePrefix();
 
   };
@@ -130,11 +162,7 @@
     // List of nodes representing the line tree.
     std::vector<Node*> nodeList;
 
-    // Constructor for a block node.
-    BlockNode() {}
-
     void printTree();
-
     void printTreePrefix();
 
   };
@@ -149,9 +177,8 @@
     node(node), msg(msg) {}
 
     void printTree();
-
     void printTreePrefix();
 
   };
 
-}
+ }

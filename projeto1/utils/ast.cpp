@@ -5,81 +5,31 @@ using namespace AST;
 
 extern ST::SymbolTable symbolTable;
 
-void IntNode::printTree() {
-  std::cout << " " << value;
-}
-
-void IntNode::printTreePrefix() {
-  std::cout << " " << value;
-}
-
 void BinaryOpNode::printTree() {
   left->printTree();
-  switch(binOp) {
-    case add:
-    std::cout << "+ ";
-    break;
-    case sub:
-    std::cout << "- ";
-    break;
-    case mul:
-    std::cout << "* ";
-    break;
-    case div:
-    std::cout << "/ ";
-    break;
-    case assign:
-    std::cout << "=";
-    break;
-    default:
-    break;
+  std::cout << strOp[binOp];
+  if (binOp != assign) {
+    std::cout << " ";
   }
   right->printTree();
 }
 
 void BinaryOpNode::printTreePrefix() {
-  switch(binOp) {
-    case add:
-    std::cout << " +";
-    break;
-    case sub:
-    std::cout << " -";
-    break;
-    case mul:
-    std::cout << " *";
-    break;
-    case div:
-    std::cout << " /";
-    break;
-    case assign:
-    std::cout << "=";
-    break;
-    default:
-    break;
+  if (binOp != assign) {
+    std::cout << " ";
   }
+  std::cout << strOp[binOp];
   left->printTreePrefix();
   right->printTreePrefix();
 }
 
 void UnaryOpNode::printTree() {
-  switch(op) {
-    case uminus:
-    std::cout << " -u";
-    break;
-    default:
-    break;
-  }
+  std::cout << strOp[op];
   node->printTree();
 }
 
 void UnaryOpNode::printTreePrefix() {
-  switch(op) {
-    case uminus:
-    std::cout << " -u";
-    break;
-    default:
-    break;
-  }
+  std::cout << strOp[op];
   node->printTreePrefix();
 }
 
@@ -90,9 +40,7 @@ void AssignmentNode::printTree() {
 }
 
 void AssignmentNode::printTreePrefix() {
-  left->printTree();
-  std::cout << " =";
-  right->printTree();
+  this->printTree();
 }
 
 void VariableNode::printTree() {
@@ -104,11 +52,7 @@ void VariableNode::printTree() {
 }
 
 void VariableNode::printTreePrefix() {
-  if (next != NULL) {
-    next->printTree();
-    std::cout << ",";
-  }
-  std::cout << " " << id;
+  this->printTree();
 }
 
 void BlockNode::printTree() {
@@ -119,7 +63,7 @@ void BlockNode::printTree() {
 }
 
 void BlockNode::printTreePrefix() {
-  for (Node *n : nodeList){
+  for (Node* n : nodeList) {
     n->printTreePrefix();
     std::cout << std::endl;
   }
@@ -131,6 +75,5 @@ void MessageNode::printTree() {
 }
 
 void MessageNode::printTreePrefix() {
-  std::cout << msg << " var:";
-  node->printTreePrefix();
+  this->printTree();
 }

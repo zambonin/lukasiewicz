@@ -7,15 +7,14 @@
  */
 #pragma once
 
-#include <map>
 #include "ast.h"
 
- extern void yyerror(const char *s, ...);
+ extern void yyerror(const char* s, ...);
 
  namespace ST {
 
   // Enumeration of variable types.
-  enum VarType { integer };
+  enum VarType { integer, decimal, boolean };
 
   // Enumeration of variable kinds.
   enum VarKind { variable };

@@ -10,12 +10,15 @@ void yyerror(const char* s, ...);
 
 %option noyywrap nodefault yylineno
 
+intgT [0-9]+
+deciT ([0-9]*\.[0-9]+)|([0-9]+\.)
+boolT "true"|"false"
 nameT [a-zA-Z][a-zA-Z0-9_]*
+error [^a-zA-Z0-9_\.\+\-\*\/\,\=\(\)\=\<\>\&\|\! \t\n]+
 
 %%
 
 [ \t]   ;
-[0-9]+  { yylval.integer = std::atoi(yytext); return INT; }
 "+"     { return PLUS; }
 "-"     { return MINUS; }
 "*"     { return TIMES; }
@@ -24,16 +27,29 @@ nameT [a-zA-Z][a-zA-Z0-9_]*
 "="     { return ASSIGN; }
 "("     { return LPAR; }
 ")"     { return RPAR; }
+"=="    { return EQ; }
+"!="    { return NEQ; }
+">"     { return GT; }
+"<"     { return LT; }
+">="    { return GEQ; }
+"<="    { return LEQ; }
+"&"     { return AND; }
+"|"     { return OR; }
+"!"     { return NOT; }
 \n      { return NL; }
 "int"   { return T_INT; }
+"float" { return T_FLOAT; }
+"bool"  { return T_BOOL; }
+{intgT} { yylval.integer = std::atoi(yytext); return INT; }
+{deciT} { yylval.decimal = strdup(yytext); return FLOAT; }
+{boolT} { yylval.boolean = (strcmp(yytext, "true") == 0); return BOOL; }
 {nameT} { yylval.name = strdup(yytext); return ID; }
-[^a-zA-Z0-9_\+\-\*\/\,\=\(\) \t\n]+ {
-  yyerror("lexical error: unknown symbol %s\n", yytext); }
+{error} { yyerror("lexical error: unknown symbol %s\n", yytext); }
 .       ;
 
 %%
 
-void yyerror(const char *s, ...) {
+void yyerror(const char* s, ...) {
   va_list ap;
   va_start(ap, s);
   std::fprintf(stderr, "[Line %d] ", yylineno);

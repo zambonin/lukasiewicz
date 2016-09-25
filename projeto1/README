@@ -1,7 +1,9 @@
 Łukasiewicz is a procedural, strongly and statically typed language, with
-lexical scope and reserved words, where the operations are input in prefix
+lexical scope and reserved words, where the operations are output in prefix
 notation.
 
 This compiler generates the syntax tree for given Łukasiewicz code. It
-currently supports basic operations with integers, that optionally can be
-saved in variables.
+currently supports logic and arithmetic operations with integers, floats and
+booleans, that optionally can be saved in variables.
+
+Valid arguments for `batch_test.sh` match the following regex: (0?[1-9])|10

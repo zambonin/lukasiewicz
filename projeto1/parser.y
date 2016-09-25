@@ -6,28 +6,32 @@ extern int yylex();
 extern void yyerror(const char* s, ...);
 
 ST::SymbolTable symbolTable;
-AST::BlockNode *root;
+AST::BlockNode* root;
 %}
 
 %define parse.trace
 
 %union {
   int integer;
-  AST::Node *node;
-  AST::BlockNode *block;
-  const char *name;
+  char* decimal;
+  bool boolean;
+  AST::Node* node;
+  AST::BlockNode* block;
+  const char* name;
 }
 
 %token NL COMMA ASSIGN LPAR RPAR
 %token <integer> INT
-%token <name> ID T_INT
+%token <decimal> FLOAT
+%token <boolean> BOOL
+%token <name> ID T_INT T_FLOAT T_BOOL
 
 %type <block> lines program
-%type <node> expr line declaration d-int
+%type <node> expr line declaration d-int d-float d-bool
 
-%left PLUS MINUS
-%left TIMES DIV
-%left UMINUS
+%left PLUS MINUS AND OR
+%left TIMES DIV EQ NEQ GT LT GEQ LEQ
+%left UMINUS NOT
 %nonassoc error
 
 %start program
@@ -54,7 +58,9 @@ line
   ;
 
 declaration
-  : T_INT d-int NL  { $$ = new AST::MessageNode($2, "int"); }
+  : T_INT d-int NL      { $$ = new AST::MessageNode($2, "int"); }
+  | T_FLOAT d-float NL  { $$ = new AST::MessageNode($2, "float"); }
+  | T_BOOL d-bool NL    { $$ = new AST::MessageNode($2, "bool"); }
   ;
 
 d-int
@@ -72,15 +78,56 @@ d-int
       $$ = new AST::AssignmentNode(n, $5); }
   ;
 
+d-float
+  : ID
+    { $$ = symbolTable.newVariable($1, NULL, ST::decimal); }
+  | ID ASSIGN expr
+    { AST::Node* n = symbolTable.newVariable($1, NULL, ST::decimal);
+      n = symbolTable.assignVariable($1, NULL);
+      $$ = new AST::AssignmentNode(n, $3); }
+  | d-int COMMA ID
+    { $$ = symbolTable.newVariable($3, $1, ST::decimal); }
+  | d-int COMMA ID ASSIGN expr
+    { AST::Node* n = symbolTable.newVariable($3, $1, ST::decimal);
+      n = symbolTable.assignVariable($3, $1);
+      $$ = new AST::AssignmentNode(n, $5); }
+  ;
+
+d-bool
+  : ID
+    { $$ = symbolTable.newVariable($1, NULL, ST::boolean); }
+  | ID ASSIGN expr
+    { AST::Node* n = symbolTable.newVariable($1, NULL, ST::boolean);
+      n = symbolTable.assignVariable($1, NULL);
+      $$ = new AST::AssignmentNode(n, $3); }
+  | d-int COMMA ID
+    { $$ = symbolTable.newVariable($3, $1, ST::boolean); }
+  | d-int COMMA ID ASSIGN expr
+    { AST::Node* n = symbolTable.newVariable($3, $1, ST::boolean);
+      n = symbolTable.assignVariable($3, $1);
+      $$ = new AST::AssignmentNode(n, $5); }
+  ;
+
 expr
   : INT                     { $$ = new AST::IntNode($1); }
+  | FLOAT                   { $$ = new AST::FloatNode($1); }
+  | BOOL                    { $$ = new AST::BoolNode($1); }
   | ID                      { $$ = symbolTable.useVariable($1); }
   | expr PLUS expr          { $$ = new AST::BinaryOpNode(AST::add, $1, $3); }
   | expr MINUS expr         { $$ = new AST::BinaryOpNode(AST::sub, $1, $3); }
   | expr TIMES expr         { $$ = new AST::BinaryOpNode(AST::mul, $1, $3); }
   | expr DIV expr           { $$ = new AST::BinaryOpNode(AST::div, $1, $3); }
-  | LPAR expr RPAR          { $$ = $2; }
+  | expr EQ expr            { $$ = new AST::BinaryOpNode(AST::eq, $1, $3); }
+  | expr NEQ expr           { $$ = new AST::BinaryOpNode(AST::neq, $1, $3); }
+  | expr GT expr            { $$ = new AST::BinaryOpNode(AST::gt, $1, $3); }
+  | expr LT expr            { $$ = new AST::BinaryOpNode(AST::lt, $1, $3); }
+  | expr GEQ expr           { $$ = new AST::BinaryOpNode(AST::geq, $1, $3); }
+  | expr LEQ expr           { $$ = new AST::BinaryOpNode(AST::leq, $1, $3); }
+  | expr AND expr           { $$ = new AST::BinaryOpNode(AST::_and, $1, $3); }
+  | expr OR expr            { $$ = new AST::BinaryOpNode(AST::_or, $1, $3); }
   | MINUS expr %prec UMINUS { $$ = new AST::UnaryOpNode(AST::uminus, $2); }
+  | NOT expr                { $$ = new AST::UnaryOpNode(AST::negation, $2); }
+  | LPAR expr RPAR          { $$ = $2; }
   ;
 
 %%
