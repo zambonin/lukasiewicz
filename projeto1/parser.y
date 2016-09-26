@@ -85,9 +85,9 @@ d-float
     { AST::Node* n = symbolTable.newVariable($1, NULL, ST::decimal);
       n = symbolTable.assignVariable($1, NULL);
       $$ = new AST::AssignmentNode(n, $3); }
-  | d-int COMMA ID
+  | d-float COMMA ID
     { $$ = symbolTable.newVariable($3, $1, ST::decimal); }
-  | d-int COMMA ID ASSIGN expr
+  | d-float COMMA ID ASSIGN expr
     { AST::Node* n = symbolTable.newVariable($3, $1, ST::decimal);
       n = symbolTable.assignVariable($3, $1);
       $$ = new AST::AssignmentNode(n, $5); }
@@ -100,9 +100,9 @@ d-bool
     { AST::Node* n = symbolTable.newVariable($1, NULL, ST::boolean);
       n = symbolTable.assignVariable($1, NULL);
       $$ = new AST::AssignmentNode(n, $3); }
-  | d-int COMMA ID
+  | d-bool COMMA ID
     { $$ = symbolTable.newVariable($3, $1, ST::boolean); }
-  | d-int COMMA ID ASSIGN expr
+  | d-bool COMMA ID ASSIGN expr
     { AST::Node* n = symbolTable.newVariable($3, $1, ST::boolean);
       n = symbolTable.assignVariable($3, $1);
       $$ = new AST::AssignmentNode(n, $5); }

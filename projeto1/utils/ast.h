@@ -22,11 +22,17 @@
     uminus, negation
   };
 
+  enum NodeType {
+    BASIC, INT, FLOAT, BOOL, BINARY, UNARY, ASSIGN, VAR, BLOCK, MESSAGE,
+  };
+
   // Generic node class for the AST.
   class Node {
   public:
     virtual void printTree() {}
     virtual void printTreePrefix() {}
+    virtual NodeType _type() { return BASIC; }
+
   };
 
   // Class for nodes that contain an integer.
@@ -41,6 +47,7 @@
 
     void printTree() { std::cout << " " << value; }
     void printTreePrefix() { std::cout << " " << value; }
+    NodeType _type() { return INT; }
 
   };
 
@@ -55,6 +62,7 @@
 
     void printTree() { std::cout << " " << value; }
     void printTreePrefix() { std::cout << " " << value; }
+    NodeType _type() { return FLOAT; }
 
   };
 
@@ -71,6 +79,7 @@
 
     void printTree() { std::cout << " " << strValue; }
     void printTreePrefix() { std::cout << " " << strValue; }
+    NodeType _type() { return BOOL; }
 
   };
 
@@ -90,12 +99,21 @@
       {geq, ">="}, {leq, "<="}, {_and, "&"}, {_or, "|"},
     };
 
+    std::map<Operation, std::string> errorMsg = {
+      {add, "addition"}, {sub, "subtraction"}, {mul, "multiplication"},
+      {div, "division"}, {assign, "attribution"}, {eq, "equal"},
+      {neq, "different"}, {gt, "greater than"}, {lt, "less than"},
+      {geq, "greater or equal than"}, {leq, "less or equal than"},
+      {_and, "and"}, {_or, "or"},
+    };
+
     // Constructor for a binary operation node.
     BinaryOpNode(Operation binOp, Node* left, Node* right):
     binOp(binOp), left(left), right(right) {}
 
     void printTree();
     void printTreePrefix();
+    NodeType _type() { return BINARY; }
 
   };
 
@@ -110,12 +128,17 @@
       {uminus, " -u"}, {negation, " !"},
     };
 
+    std::map<Operation, std::string> errorMsg = {
+      {uminus, "unary minus"}, {negation, "negation"},
+    };
+
     // Constructor for a binary operation node.
     UnaryOpNode(Operation op, Node* node):
     op(op), node(node) {}
 
     void printTree();
     void printTreePrefix();
+    NodeType _type() { return UNARY; }
 
   };
 
@@ -135,6 +158,7 @@
 
     void printTree();
     void printTreePrefix();
+    NodeType _type() { return ASSIGN; }
 
   };
 
@@ -153,6 +177,7 @@
 
     void printTree();
     void printTreePrefix();
+    NodeType _type() { return VAR; }
 
   };
 
@@ -164,6 +189,7 @@
 
     void printTree();
     void printTreePrefix();
+    NodeType _type() { return BLOCK; }
 
   };
 
@@ -178,6 +204,7 @@
 
     void printTree();
     void printTreePrefix();
+    NodeType _type() { return MESSAGE; }
 
   };
 
