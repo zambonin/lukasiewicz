@@ -5,6 +5,33 @@ using namespace AST;
 
 extern ST::SymbolTable symbolTable;
 
+BinaryOpNode::BinaryOpNode(Operation binOp, Node* left, Node* right):
+binOp(binOp), left(left), right(right) {
+  if (left->_type() != right->_type()) {
+    errorMessage(binOp, left, right);
+  }
+}
+
+NodeType BinaryOpNode::_type() {
+  if (binOp == add || binOp == sub || binOp == mul || binOp == div) {
+    return left->_type();
+  } else {
+    return BOOL;
+  }
+}
+
+AssignmentNode::AssignmentNode(Node* left, Node* right):
+binOp(assign), left(left), right(right) {
+  if (left->_type() != right->_type()) {
+    errorMessage(binOp, left, right);
+  }
+}
+
+NodeType VariableNode::_type() {
+  std::string s = symbolTable.getSymbolType(this->id);
+  return nodeTypeString[s];
+}
+
 void BinaryOpNode::printTree() {
   left->printTree();
   std::cout << strOp[binOp];

@@ -48,6 +48,10 @@
     // name and its related Symbol object.
     std::map<std::string, Symbol> entryList;
 
+    std::map<VarType, std::string> typeString {
+      {integer, "integer"}, {decimal, "float"}, {boolean, "boolean"},
+    };
+
     // Constructor for the SymbolTable class.
     SymbolTable() {}
 
@@ -60,6 +64,10 @@
     // Adds an entry to the symbol table map.
     void addSymbol(std::string key, Symbol symbol) {
       entryList[key] = symbol;
+    }
+
+    std::string getSymbolType(std::string key) {
+      return typeString[entryList[key].type];
     }
 
     // Creates a new variable inside the map.

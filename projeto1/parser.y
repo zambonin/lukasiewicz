@@ -130,7 +130,7 @@ expr
   | expr AND expr           { $$ = new AST::BinaryOpNode(AST::_and, $1, $3); }
   | expr OR expr            { $$ = new AST::BinaryOpNode(AST::_or, $1, $3); }
   | MINUS expr %prec UMINUS { $$ = new AST::UnaryOpNode(AST::uminus, $2); }
-  | NOT expr                { $$ = new AST::UnaryOpNode(AST::negation, $2); }
+  | NOT expr                { $$ = new AST::UnaryOpNode(AST::_not, $2); }
   | LPAR expr RPAR          { $$ = $2; }
   ;
 

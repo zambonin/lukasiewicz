@@ -19,19 +19,42 @@
   enum Operation {
     add, sub, mul, div, assign,
     eq, neq, gt, lt, geq, leq, _and, _or,
-    uminus, negation
+    uminus, _not,
   };
 
   enum NodeType {
-    BASIC, INT, FLOAT, BOOL, BINARY, UNARY, ASSIGN, VAR, BLOCK, MESSAGE,
+    INT, FLOAT, BOOL
   };
 
   // Generic node class for the AST.
   class Node {
   public:
+    std::map<Operation, std::string> errorMsg = {
+      {add, "addition"}, {sub, "subtraction"}, {mul, "multiplication"},
+      {div, "division"}, {assign, "attribution"}, {eq, "equal"},
+      {neq, "different"}, {gt, "greater than"}, {lt, "less than"},
+      {geq, "greater or equal than"}, {leq, "less or equal than"},
+      {_and, "and"}, {_or, "or"}, {uminus, "unary minus"},
+      {_not, "negation"},
+    };
+
+    std::map<std::string, NodeType> nodeTypeString = {
+        {"integer", INT}, {"float", FLOAT}, {"boolean", BOOL}
+    };
+
+    std::map<NodeType, std::string> nodeName = {
+      {INT, "integer"}, {FLOAT, "float"}, {BOOL, "boolean"},
+    };
+
     virtual void printTree() {}
     virtual void printTreePrefix() {}
-    virtual NodeType _type() { return BASIC; }
+    virtual NodeType _type() { return INT; }
+
+    void errorMessage(Operation op, Node* n1, Node* n2) {
+      yyerror("semantic error: %s operation expected %s but received %s\n",
+              errorMsg[op].c_str(), nodeName[n1->_type()].c_str(),
+              nodeName[n2->_type()].c_str());
+    }
 
   };
 
@@ -99,21 +122,12 @@
       {geq, ">="}, {leq, "<="}, {_and, "&"}, {_or, "|"},
     };
 
-    std::map<Operation, std::string> errorMsg = {
-      {add, "addition"}, {sub, "subtraction"}, {mul, "multiplication"},
-      {div, "division"}, {assign, "attribution"}, {eq, "equal"},
-      {neq, "different"}, {gt, "greater than"}, {lt, "less than"},
-      {geq, "greater or equal than"}, {leq, "less or equal than"},
-      {_and, "and"}, {_or, "or"},
-    };
-
     // Constructor for a binary operation node.
-    BinaryOpNode(Operation binOp, Node* left, Node* right):
-    binOp(binOp), left(left), right(right) {}
+    BinaryOpNode(Operation binOp, Node* left, Node* right);
 
     void printTree();
     void printTreePrefix();
-    NodeType _type() { return BINARY; }
+    NodeType _type();
 
   };
 
@@ -125,11 +139,10 @@
     Node* node;
 
     std::map<Operation, std::string> strOp = {
-      {uminus, " -u"}, {negation, " !"},
+      {uminus, " -u"}, {_not, " !"},
     };
 
     std::map<Operation, std::string> errorMsg = {
-      {uminus, "unary minus"}, {negation, "negation"},
     };
 
     // Constructor for a binary operation node.
@@ -138,7 +151,7 @@
 
     void printTree();
     void printTreePrefix();
-    NodeType _type() { return UNARY; }
+    NodeType _type() { return node->_type(); }
 
   };
 
@@ -153,12 +166,11 @@
     Node* right;
 
     // Constructor for a binary operation node.
-    AssignmentNode(Node* left, Node* right):
-    binOp(AST::assign), left(left), right(right) {}
+    AssignmentNode(Node* left, Node* right);
 
     void printTree();
     void printTreePrefix();
-    NodeType _type() { return ASSIGN; }
+    NodeType _type() { return left->_type(); }
 
   };
 
@@ -177,7 +189,7 @@
 
     void printTree();
     void printTreePrefix();
-    NodeType _type() { return VAR; }
+    NodeType _type();
 
   };
 
@@ -189,7 +201,7 @@
 
     void printTree();
     void printTreePrefix();
-    NodeType _type() { return BLOCK; }
+    NodeType _type() { return INT; }
 
   };
 
@@ -204,7 +216,7 @@
 
     void printTree();
     void printTreePrefix();
-    NodeType _type() { return MESSAGE; }
+    NodeType _type() { return node->_type(); }
 
   };
 
