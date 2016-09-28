@@ -29,6 +29,7 @@ AST::BlockNode* root;
 %type <block> lines program
 %type <node> expr line declaration d-int d-float d-bool decl-assign
 
+%left C_INT C_FLOAT C_BOOL
 %left PLUS MINUS AND OR
 %left TIMES DIV EQ NEQ GT LT GEQ LEQ
 %left UMINUS NOT
@@ -131,6 +132,9 @@ expr
   | expr OR expr            { $$ = new AST::BinaryOpNode(AST::_or, $1, $3); }
   | MINUS expr %prec UMINUS { $$ = new AST::UnaryOpNode(AST::uminus, $2); }
   | NOT expr                { $$ = new AST::UnaryOpNode(AST::_not, $2); }
+  | C_INT expr              { $$ = new AST::UnaryOpNode(AST::cast_int, $2); }
+  | C_FLOAT expr            { $$ = new AST::UnaryOpNode(AST::cast_float, $2); }
+  | C_BOOL expr             { $$ = new AST::UnaryOpNode(AST::cast_bool, $2); }
   | LPAR expr RPAR          { $$ = $2; }
   ;
 

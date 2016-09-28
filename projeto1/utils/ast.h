@@ -19,7 +19,7 @@
   enum Operation {
     add, sub, mul, div, assign,
     eq, neq, gt, lt, geq, leq, _and, _or,
-    uminus, _not,
+    uminus, _not, cast_int, cast_float, cast_bool
   };
 
   enum NodeType {
@@ -29,6 +29,8 @@
   // Generic node class for the AST.
   class Node {
   public:
+    NodeType _nodeType;
+
     std::map<Operation, std::string> errorMsg = {
       {add, "addition"}, {sub, "subtraction"}, {mul, "multiplication"},
       {div, "division"}, {assign, "attribution"}, {eq, "equal"},
@@ -48,7 +50,8 @@
 
     virtual void printTree() {}
     virtual void printTreePrefix() {}
-    virtual NodeType _type() { return INT; }
+
+    virtual NodeType _type() = 0;
 
     void errorMessage(Operation op, Node* n1, Node* n2) {
       yyerror("semantic error: %s operation expected %s but received %s\n",
@@ -66,11 +69,13 @@
 
     // Constructor for an integer node.
     IntNode(int value):
-    value(value) {}
+    value(value) {
+      this->_nodeType = INT;
+    }
 
     void printTree() { std::cout << " " << value; }
     void printTreePrefix() { std::cout << " " << value; }
-    NodeType _type() { return INT; }
+    NodeType _type() { return this->_nodeType; }
 
   };
 
@@ -81,11 +86,13 @@
 
     // Constructor for an integer node.
     FloatNode(char* value):
-    value(value) {}
+    value(value) {
+      this->_nodeType = FLOAT;
+    }
 
     void printTree() { std::cout << " " << value; }
     void printTreePrefix() { std::cout << " " << value; }
-    NodeType _type() { return FLOAT; }
+    NodeType _type() { return this->_nodeType; }
 
   };
 
@@ -98,11 +105,14 @@
 
     // Constructor for an integer node.
     BoolNode(bool value):
-    value(value) { strValue = value ? "true" : "false"; }
+    value(value) {
+      strValue = value ? "true" : "false";
+      this->_nodeType = BOOL;
+    }
 
     void printTree() { std::cout << " " << strValue; }
     void printTreePrefix() { std::cout << " " << strValue; }
-    NodeType _type() { return BOOL; }
+    NodeType _type() { return this->_nodeType; }
 
   };
 
@@ -140,18 +150,14 @@
 
     std::map<Operation, std::string> strOp = {
       {uminus, " -u"}, {_not, " !"},
+      {cast_int, " [int]"}, {cast_float, " [float]"}, {cast_bool, " [bool]"},
     };
 
-    std::map<Operation, std::string> errorMsg = {
-    };
-
-    // Constructor for a binary operation node.
-    UnaryOpNode(Operation op, Node* node):
-    op(op), node(node) {}
+    UnaryOpNode(Operation op, Node* node);
 
     void printTree();
     void printTreePrefix();
-    NodeType _type() { return node->_type(); }
+    NodeType _type() { return this->_nodeType; }
 
   };
 

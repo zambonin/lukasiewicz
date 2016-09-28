@@ -6,9 +6,9 @@ i = [int] j
 b = b & [bool] f
 f = ([float] b) + 0.0
 
-int i=0
-float f=0
+int l=0
+float k=0
 
-f = 12 + i - f
-i = [int] ([int] 12.3) / f
+k = 12 + l - k
+l = [int] ([int] 12.3) / k
 

@@ -14,7 +14,10 @@ intgT [0-9]+
 deciT ([0-9]*\.[0-9]+)|([0-9]+\.)
 boolT "true"|"false"
 nameT [a-zA-Z][a-zA-Z0-9_]*
-error [^a-zA-Z0-9_\.\+\-\*\/\,\=\(\)\=\<\>\&\|\! \t\n]+
+error [^a-zA-Z0-9_\.\+\-\*\/\,\=\(\)\=\<\>\&\|\!\[\] \t\n]+
+intgC "[int]"
+deciC "[float]"
+boolC "[bool]"
 
 %%
 
@@ -43,6 +46,9 @@ error [^a-zA-Z0-9_\.\+\-\*\/\,\=\(\)\=\<\>\&\|\! \t\n]+
 {intgT} { yylval.integer = std::atoi(yytext); return INT; }
 {deciT} { yylval.decimal = strdup(yytext); return FLOAT; }
 {boolT} { yylval.boolean = (strcmp(yytext, "true") == 0); return BOOL; }
+{intgC} { return C_INT; }
+{deciC} { return C_FLOAT; }
+{boolC} { return C_BOOL; }
 {nameT} { yylval.name = strdup(yytext); return ID; }
 {error} { yyerror("lexical error: unknown symbol %s\n", yytext); }
 .       ;

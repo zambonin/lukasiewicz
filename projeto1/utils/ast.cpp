@@ -8,7 +8,15 @@ extern ST::SymbolTable symbolTable;
 BinaryOpNode::BinaryOpNode(Operation binOp, Node* left, Node* right):
 binOp(binOp), left(left), right(right) {
   if (left->_type() != right->_type()) {
-    errorMessage(binOp, left, right);
+    if (left->_type() == INT && right->_type() == FLOAT) {
+      Node* leftCoercion = new UnaryOpNode(cast_float, left);
+      this->left = leftCoercion;
+    } else if (left->_type() == FLOAT && right->_type() == INT) {
+      Node* rightCoercion = new UnaryOpNode(cast_float, right);
+      this->right = rightCoercion;
+    } else {
+      errorMessage(binOp, left, right);
+    }
   }
 }
 
@@ -20,10 +28,31 @@ NodeType BinaryOpNode::_type() {
   }
 }
 
+UnaryOpNode::UnaryOpNode(Operation op, Node* node):
+op(op), node(node) {
+  if (op == cast_int) {
+    this->_nodeType = INT;
+  } else if (op == cast_float) {
+    this->_nodeType = FLOAT;
+  } else if (op == cast_bool || op == _not) {
+    this->_nodeType = BOOL;
+  } else if (op == uminus) {
+    this->_nodeType = node->_type();
+  }
+}
+
 AssignmentNode::AssignmentNode(Node* left, Node* right):
 binOp(assign), left(left), right(right) {
   if (left->_type() != right->_type()) {
-    errorMessage(binOp, left, right);
+    if (left->_type() == INT && right->_type() == FLOAT) {
+      Node* leftCoercion = new UnaryOpNode(cast_float, left);
+      this->left = leftCoercion;
+    } else if (left->_type() == FLOAT && right->_type() == INT) {
+      Node* rightCoercion = new UnaryOpNode(cast_float, right);
+      this->right = rightCoercion;
+    } else {
+      errorMessage(binOp, left, right);
+    }
   }
 }
 
