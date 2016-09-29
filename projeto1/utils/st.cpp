@@ -8,6 +8,7 @@ AST::Node* SymbolTable::newVariable(std::string id, AST::Node* next,
                                     VarType type) {
   if (varExists(id)) {
     yyerror("semantic error: re-declaration of variable %s\n", id.c_str());
+    return next;
   } else {
     Symbol newEntry(type, variable, false);
     addSymbol(id, newEntry);

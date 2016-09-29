@@ -48,7 +48,7 @@ lines
   : line            { $$ = new AST::BlockNode();
                       if ($1 != NULL) $$->nodeList.push_back($1); }
   | lines line      { if ($2 != NULL) $1->nodeList.push_back($2); }
-  | lines error NL  { yyerrok; }
+  | lines error NL  { yyerrok; std::cout << "\n"; }
   ;
 
 line

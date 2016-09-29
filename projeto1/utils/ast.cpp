@@ -8,7 +8,7 @@ extern ST::SymbolTable symbolTable;
 BinaryOpNode::BinaryOpNode(Operation binOp, Node* left, Node* right):
 binOp(binOp), left(left), right(right) {
   if (left->_type() != right->_type()) {
-    if (left->_type() == INT && right->_type() == FLOAT) {
+    if (left->_type() == INT && right->_type() == FLOAT && binOp != assign) {
       Node* leftCoercion = new UnaryOpNode(cast_float, left);
       this->left = leftCoercion;
     } else if (left->_type() == FLOAT && right->_type() == INT) {
@@ -44,10 +44,7 @@ op(op), node(node) {
 AssignmentNode::AssignmentNode(Node* left, Node* right):
 binOp(assign), left(left), right(right) {
   if (left->_type() != right->_type()) {
-    if (left->_type() == INT && right->_type() == FLOAT) {
-      Node* leftCoercion = new UnaryOpNode(cast_float, left);
-      this->left = leftCoercion;
-    } else if (left->_type() == FLOAT && right->_type() == INT) {
+     if (left->_type() == FLOAT && right->_type() == INT) {
       Node* rightCoercion = new UnaryOpNode(cast_float, right);
       this->right = rightCoercion;
     } else {
