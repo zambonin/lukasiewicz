@@ -39,10 +39,15 @@ boolC "[bool]"
 "&"     { return AND; }
 "|"     { return OR; }
 "!"     { return NOT; }
+"{"     { return LCURLY; }
+"}"     { return RCURLY; }
 \n      { return NL; }
 "int"   { return T_INT; }
 "float" { return T_FLOAT; }
 "bool"  { return T_BOOL; }
+"if"    { return IF; }
+"then"  { return THEN; }
+"else"  { return ELSE; }
 {intgT} { yylval.integer = std::atoi(yytext); return INT; }
 {deciT} { yylval.decimal = strdup(yytext); return FLOAT; }
 {boolT} { yylval.boolean = (strcmp(yytext, "true") == 0); return BOOL; }

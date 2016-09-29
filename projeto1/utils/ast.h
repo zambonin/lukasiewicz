@@ -19,11 +19,11 @@
   enum Operation {
     add, sub, mul, div, assign,
     eq, neq, gt, lt, geq, leq, _and, _or,
-    uminus, _not, cast_int, cast_float, cast_bool
+    uminus, _not, cast_int, cast_float, cast_bool, _if
   };
 
   enum NodeType {
-    INT, FLOAT, BOOL
+    BASIC, INT, FLOAT, BOOL
   };
 
   // Generic node class for the AST.
@@ -37,7 +37,7 @@
       {neq, "different"}, {gt, "greater than"}, {lt, "less than"},
       {geq, "greater or equal than"}, {leq, "less or equal than"},
       {_and, "and"}, {_or, "or"}, {uminus, "unary minus"},
-      {_not, "negation"},
+      {_not, "negation"}, {_if, "test"},
     };
 
     std::map<std::string, NodeType> nodeTypeString = {
@@ -48,10 +48,12 @@
       {INT, "integer"}, {FLOAT, "float"}, {BOOL, "boolean"},
     };
 
+    Node() {}
+
     virtual void printTree() {}
     virtual void printTreePrefix() {}
 
-    virtual NodeType _type() = 0;
+    virtual NodeType _type() { return BASIC; }
 
     void errorMessage(Operation op, Node* n1, Node* n2) {
       yyerror("semantic error: %s operation expected %s but received %s\n",
@@ -223,6 +225,56 @@
     void printTree();
     void printTreePrefix();
     NodeType _type() { return node->_type(); }
+
+  };
+
+  class IfNode : public Node {
+  public:
+
+    Node* condition;
+    Node* _then;
+    Node* _else;
+
+    IfNode(Node* condition, Node* _then, Node* _else):
+    condition(condition), _then(_then), _else(_else) {}
+
+    void printTree();
+    void printTreePrefix();
+
+  };
+
+  class CondNode : public Node {
+  public:
+    Node* boolExpr;
+
+    CondNode(Node* boolExpr);
+
+    void printTree();
+    void printTreePrefix();
+
+  };
+
+  class ThenNode : public Node {
+  public:
+    Node* lines;
+
+    ThenNode(Node* lines):
+    lines(lines) {}
+
+    void printTree();
+    void printTreePrefix();
+
+  };
+
+  class ElseNode : public Node {
+  public:
+    Node* lines;
+
+    ElseNode(Node* lines):
+    lines(lines) {}
+
+    void printTree();
+    void printTreePrefix();
 
   };
 

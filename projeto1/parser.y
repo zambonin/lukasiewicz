@@ -20,18 +20,20 @@ AST::BlockNode* root;
   const char* name;
 }
 
-%token NL COMMA ASSIGN LPAR RPAR
+%token NL COMMA ASSIGN LPAR RPAR LCURLY RCURLY IF THEN ELSE
 %token <integer> INT
 %token <decimal> FLOAT
 %token <boolean> BOOL
 %token <name> ID T_INT T_FLOAT T_BOOL
 
 %type <block> lines program
-%type <node> expr line declaration d-int d-float d-bool decl-assign
+%type <node> expr line declaration d-int d-float d-bool decl-assign else end-block
 
 %left C_INT C_FLOAT C_BOOL
-%left PLUS MINUS AND OR
-%left TIMES DIV EQ NEQ GT LT GEQ LEQ
+%left AND OR
+%left EQ NEQ GT LT GEQ LEQ
+%left PLUS MINUS
+%left TIMES DIV
 %left UMINUS NOT
 %nonassoc error
 
@@ -54,8 +56,23 @@ lines
 line
   : NL              { $$ = 0; }
   | declaration     { $$ = $1; }
-  | ID ASSIGN expr  { AST::Node* n = symbolTable.assignVariable($1, NULL);
-                      $$ = new AST::BinaryOpNode(AST::assign, n, $3); }
+  | ID ASSIGN expr
+    { AST::Node* n = symbolTable.assignVariable($1, NULL);
+      $$ = new AST::BinaryOpNode(AST::assign, n, $3); }
+  | IF expr NL THEN LCURLY NL end-block else
+    { AST::Node* condition = new AST::CondNode($2);
+      AST::Node* thenLines = new AST::ThenNode($7);
+      $$ = new AST::IfNode(condition, thenLines, $8); }
+  ;
+
+else
+  : %empty                    { $$ = new AST::Node(); }
+  | ELSE LCURLY NL end-block  { $$ = new AST::ElseNode($4); }
+  ;
+
+end-block
+  : lines RCURLY  { $$ = $1; }
+  | RCURLY        { $$ = new AST::Node(); }
   ;
 
 declaration

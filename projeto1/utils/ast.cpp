@@ -5,6 +5,13 @@ using namespace AST;
 
 extern ST::SymbolTable symbolTable;
 
+CondNode::CondNode(Node* boolExpr):
+boolExpr(boolExpr) {
+  if (boolExpr->_type() != BOOL) {
+    errorMessage(_if, new AST::BoolNode(NULL), boolExpr);
+  }
+}
+
 BinaryOpNode::BinaryOpNode(Operation binOp, Node* left, Node* right):
 binOp(binOp), left(left), right(right) {
   if (left->_type() != right->_type()) {
@@ -111,14 +118,18 @@ void VariableNode::printTreePrefix() {
 void BlockNode::printTree() {
   for (Node* n : nodeList) {
     n->printTree();
-    std::cout << std::endl;
+    if (n->_type() != BASIC) {
+      std::cout << std::endl;
+    }
   }
 }
 
 void BlockNode::printTreePrefix() {
   for (Node* n : nodeList) {
     n->printTreePrefix();
-    std::cout << std::endl;
+    if (n->_type() != BASIC) {
+      std::cout << std::endl;
+    }
   }
 }
 
@@ -128,5 +139,45 @@ void MessageNode::printTree() {
 }
 
 void MessageNode::printTreePrefix() {
+  this->printTree();
+}
+
+void IfNode::printTree() {
+  std::cout << "if:";
+  condition->printTree();
+  _then->printTree();
+  if (_else != NULL) {
+    _else->printTree();
+  }
+}
+
+void IfNode::printTreePrefix() {
+  this->printTree();
+}
+
+void CondNode::printTree() {
+  boolExpr->printTreePrefix();
+}
+
+void CondNode::printTreePrefix() {
+  this->printTree();
+}
+
+void ThenNode::printTree() {
+  std::cout << std::endl;
+  std::cout << "then:" << std::endl;
+  lines->printTreePrefix();
+}
+
+void ThenNode::printTreePrefix() {
+  this->printTree();
+}
+
+void ElseNode::printTree() {
+  std::cout << "else:" << std::endl;
+  lines->printTreePrefix();
+}
+
+void ElseNode::printTreePrefix() {
   this->printTree();
 }
