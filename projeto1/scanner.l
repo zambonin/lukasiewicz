@@ -14,7 +14,7 @@ intgT [0-9]+
 deciT ([0-9]*\.[0-9]+)|([0-9]+\.)
 boolT "true"|"false"
 nameT [a-zA-Z][a-zA-Z0-9_]*
-error [^a-zA-Z0-9_\.\+\-\*\/\,\=\(\)\=\<\>\&\|\! \t\n]+
+error [^a-zA-Z0-9_\.\+\-\*\/\,\=\(\)\=\<\>\&\|\!\{\} \t\n]+
 intgC "[int]"
 deciC "[float]"
 boolC "[bool]"
