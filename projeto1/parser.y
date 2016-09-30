@@ -20,14 +20,15 @@ AST::BlockNode* root;
   const char* name;
 }
 
-%token NL COMMA ASSIGN LPAR RPAR LCURLY RCURLY IF THEN ELSE
+%token NL COMMA ASSIGN LPAR RPAR LCURLY RCURLY IF THEN ELSE FOR
 %token <integer> INT
 %token <decimal> FLOAT
 %token <boolean> BOOL
 %token <name> ID T_INT T_FLOAT T_BOOL
 
 %type <block> lines program
-%type <node> expr line declaration d-int d-float d-bool decl-assign else end-block
+%type <node> expr line declaration d-int d-float d-bool decl-assign
+%type <node> else end-block simple-assign logical-test iteration
 
 %left C_INT C_FLOAT C_BOOL
 %left AND OR
@@ -63,6 +64,10 @@ line
     { AST::Node* condition = new AST::CondNode($2);
       AST::Node* thenLines = new AST::ThenNode($7);
       $$ = new AST::IfNode(condition, thenLines, $8); }
+  | FOR simple-assign COMMA logical-test COMMA iteration LCURLY NL end-block
+    { AST::Node* assignNode = $2; AST::Node* testNode = $4;
+      AST::Node* itNode = $6; AST::Node* doNode = $9;
+      $$ = new AST::ForNode(assignNode, testNode, itNode, doNode); }
   ;
 
 else
@@ -73,6 +78,18 @@ else
 end-block
   : lines RCURLY  { $$ = $1; }
   | RCURLY        { $$ = new AST::Node(); }
+  ;
+
+simple-assign
+  : %empty                  { $$ = new AST::Node();}
+  | ID ASSIGN decl-assign   { AST::Node* n = symbolTable.assignVariable($1, NULL);
+                              $$ = new AST::BinaryOpNode(AST::assign, n, $3); }
+  ;
+
+iteration
+  : %empty          {$$ = new AST::Node();}
+  | ID ASSIGN expr  { AST::Node* n = symbolTable.assignVariable($1, NULL);
+                      $$ = new AST::BinaryOpNode(AST::assign, n, $3); }
   ;
 
 declaration
@@ -132,19 +149,23 @@ decl-assign
   | BOOL                    { $$ = new AST::BoolNode($1); }
   ;
 
-expr
-  : decl-assign             { $$ = $1; }
-  | ID                      { $$ = symbolTable.useVariable($1); }
-  | expr PLUS expr          { $$ = new AST::BinaryOpNode(AST::add, $1, $3); }
-  | expr MINUS expr         { $$ = new AST::BinaryOpNode(AST::sub, $1, $3); }
-  | expr TIMES expr         { $$ = new AST::BinaryOpNode(AST::mul, $1, $3); }
-  | expr DIV expr           { $$ = new AST::BinaryOpNode(AST::div, $1, $3); }
-  | expr EQ expr            { $$ = new AST::BinaryOpNode(AST::eq, $1, $3); }
+logical-test
+  : expr EQ expr            { $$ = new AST::BinaryOpNode(AST::eq, $1, $3); }
   | expr NEQ expr           { $$ = new AST::BinaryOpNode(AST::neq, $1, $3); }
   | expr GT expr            { $$ = new AST::BinaryOpNode(AST::gt, $1, $3); }
   | expr LT expr            { $$ = new AST::BinaryOpNode(AST::lt, $1, $3); }
   | expr GEQ expr           { $$ = new AST::BinaryOpNode(AST::geq, $1, $3); }
   | expr LEQ expr           { $$ = new AST::BinaryOpNode(AST::leq, $1, $3); }
+  ;
+
+expr
+  : decl-assign             { $$ = $1; }
+  | logical-test            { $$ = $1; }
+  | ID                      { $$ = symbolTable.useVariable($1); }
+  | expr PLUS expr          { $$ = new AST::BinaryOpNode(AST::add, $1, $3); }
+  | expr MINUS expr         { $$ = new AST::BinaryOpNode(AST::sub, $1, $3); }
+  | expr TIMES expr         { $$ = new AST::BinaryOpNode(AST::mul, $1, $3); }
+  | expr DIV expr           { $$ = new AST::BinaryOpNode(AST::div, $1, $3); }
   | expr AND expr           { $$ = new AST::BinaryOpNode(AST::_and, $1, $3); }
   | expr OR expr            { $$ = new AST::BinaryOpNode(AST::_or, $1, $3); }
   | MINUS expr %prec UMINUS { $$ = new AST::UnaryOpNode(AST::uminus, $2); }

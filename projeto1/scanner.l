@@ -48,6 +48,7 @@ boolC "[bool]"
 "if"    { return IF; }
 "then"  { return THEN; }
 "else"  { return ELSE; }
+"for"   { return FOR; }
 {intgT} { yylval.integer = std::atoi(yytext); return INT; }
 {deciT} { yylval.decimal = strdup(yytext); return FLOAT; }
 {boolT} { yylval.boolean = (strcmp(yytext, "true") == 0); return BOOL; }

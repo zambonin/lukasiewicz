@@ -181,3 +181,24 @@ void ElseNode::printTree() {
 void ElseNode::printTreePrefix() {
   this->printTree();
 }
+
+void ForNode::printTree() {
+  this->printTreePrefix();
+}
+
+void ForNode::printTreePrefix() {
+  std::cout << "for: ";
+  this->assignNode->printTreePrefix();
+
+  std::cout << ",";
+  this->testNode->printTreePrefix();
+
+  std::cout << ",";
+  if (itNode->_type() != BASIC) {
+    std::cout << " ";
+  }
+  this->itNode->printTreePrefix();
+
+  std::cout << std::endl << "do:" << std::endl;
+  this->doNode->printTreePrefix();
+}

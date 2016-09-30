@@ -278,4 +278,19 @@
 
   };
 
+  class ForNode : public Node {
+  public:
+    Node* assignNode;
+    Node* testNode;
+    Node* itNode;
+    Node* doNode;
+
+    ForNode(Node* assignNode, Node* testNode, Node* itNode, Node* doNode):
+    assignNode(assignNode), testNode(testNode), itNode(itNode), doNode(doNode) {}
+
+    void printTree();
+    void printTreePrefix();
+
+  };
+
  }
