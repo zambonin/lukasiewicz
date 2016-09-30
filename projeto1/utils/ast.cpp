@@ -4,7 +4,7 @@
 using namespace AST;
 
 extern void yyerror(const char* s, ...);
-extern ST::SymbolTable symbolTable;
+extern ST::SymbolTable* current;
 
 int spaces;
 
@@ -130,7 +130,7 @@ void VariableNode::print(bool prefix) {
 }
 
 NodeType VariableNode::_type() {
-  std::string s = symbolTable.getSymbolType(this->id);
+  std::string s = current->getSymbolType(this->id);
   return nodeTypeString[s];
 }
 

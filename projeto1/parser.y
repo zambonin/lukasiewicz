@@ -5,7 +5,8 @@
 extern int yylex();
 extern void yyerror(const char* s, ...);
 
-ST::SymbolTable symbolTable;
+
+ST::SymbolTable* current;
 AST::BlockNode* root;
 %}
 
@@ -26,7 +27,7 @@ AST::BlockNode* root;
 %token <boolean> BOOL
 %token <name> ID T_INT T_FLOAT T_BOOL
 
-%type <block> lines program else body
+%type <block> lines program else body scoped
 %type <node> expr line declaration d-int d-float d-bool
 %type <node> decl-assign iteration logical-test
 
@@ -41,11 +42,17 @@ AST::BlockNode* root;
 %start program
 
 %%
-
 program
   : %empty          {}
-  | lines           { root = $1; }
+  | scoped          { root = $1; }
   | error NL        { yyerrok; std::cout << std::endl; }
+  ;
+
+scoped
+  :     { current = new ST::SymbolTable(current); }
+  lines { if (current->external != NULL)
+          current = current->external;
+          $$ = $2; }
   ;
 
 lines
@@ -59,7 +66,7 @@ line
   : NL              { $$ = 0; }
   | declaration     { $$ = $1; }
   | ID ASSIGN expr
-    { AST::Node* n = symbolTable.assignVariable($1, NULL);
+    { AST::Node* n = current->assignVariable($1, NULL);
       $$ = new AST::BinaryOpNode(AST::assign, n, $3); }
   | IF expr NL THEN LCURLY NL body else
     { $$ = new AST::IfNode($2, $7, $8); }
@@ -73,13 +80,13 @@ else
   ;
 
 body
-  : lines RCURLY  { $$ = $1; }
-  | RCURLY        { $$ = new AST::BlockNode(); }
+  : scoped RCURLY   { $$ = $1; }
+  | RCURLY          { $$ = new AST::BlockNode(); }
   ;
 
 iteration
   : %empty          { $$ = new AST::Node(); }
-  | ID ASSIGN expr  { AST::Node* n = symbolTable.assignVariable($1, NULL);
+  | ID ASSIGN expr  { AST::Node* n = current->assignVariable($1, NULL);
                       $$ = new AST::BinaryOpNode(AST::assign, n, $3); }
   ;
 
@@ -91,46 +98,46 @@ declaration
 
 d-int
   : ID
-    { $$ = symbolTable.newVariable($1, NULL, ST::integer); }
+    { $$ = current->newVariable($1, NULL, ST::integer); }
   | ID ASSIGN decl-assign
-    { AST::Node* n = symbolTable.newVariable($1, NULL, ST::integer);
-      n = symbolTable.assignVariable($1, NULL);
+    { AST::Node* n = current->newVariable($1, NULL, ST::integer);
+      n = current->assignVariable($1, NULL);
       $$ = new AST::BinaryOpNode(AST::assign, n, $3); }
   | d-int COMMA ID
-    { $$ = symbolTable.newVariable($3, $1, ST::integer); }
+    { $$ = current->newVariable($3, $1, ST::integer); }
   | d-int COMMA ID ASSIGN decl-assign
-    { AST::Node* n = symbolTable.newVariable($3, $1, ST::integer);
-      n = symbolTable.assignVariable($3, $1);
+    { AST::Node* n = current->newVariable($3, $1, ST::integer);
+      n = current->assignVariable($3, $1);
       $$ = new AST::BinaryOpNode(AST::assign, n, $5); }
   ;
 
 d-float
   : ID
-    { $$ = symbolTable.newVariable($1, NULL, ST::decimal); }
+    { $$ = current->newVariable($1, NULL, ST::decimal); }
   | ID ASSIGN decl-assign
-    { AST::Node* n = symbolTable.newVariable($1, NULL, ST::decimal);
-      n = symbolTable.assignVariable($1, NULL);
+    { AST::Node* n = current->newVariable($1, NULL, ST::decimal);
+      n = current->assignVariable($1, NULL);
       $$ = new AST::BinaryOpNode(AST::assign, n, $3); }
   | d-float COMMA ID
-    { $$ = symbolTable.newVariable($3, $1, ST::decimal); }
+    { $$ = current->newVariable($3, $1, ST::decimal); }
   | d-float COMMA ID ASSIGN decl-assign
-    { AST::Node* n = symbolTable.newVariable($3, $1, ST::decimal);
-      n = symbolTable.assignVariable($3, $1);
+    { AST::Node* n = current->newVariable($3, $1, ST::decimal);
+      n = current->assignVariable($3, $1);
       $$ = new AST::BinaryOpNode(AST::assign, n, $5); }
   ;
 
 d-bool
   : ID
-    { $$ = symbolTable.newVariable($1, NULL, ST::boolean); }
+    { $$ = current->newVariable($1, NULL, ST::boolean); }
   | ID ASSIGN decl-assign
-    { AST::Node* n = symbolTable.newVariable($1, NULL, ST::boolean);
-      n = symbolTable.assignVariable($1, NULL);
+    { AST::Node* n = current->newVariable($1, NULL, ST::boolean);
+      n = current->assignVariable($1, NULL);
       $$ = new AST::BinaryOpNode(AST::assign, n, $3); }
   | d-bool COMMA ID
-    { $$ = symbolTable.newVariable($3, $1, ST::boolean); }
+    { $$ = current->newVariable($3, $1, ST::boolean); }
   | d-bool COMMA ID ASSIGN decl-assign
-    { AST::Node* n = symbolTable.newVariable($3, $1, ST::boolean);
-      n = symbolTable.assignVariable($3, $1);
+    { AST::Node* n = current->newVariable($3, $1, ST::boolean);
+      n = current->assignVariable($3, $1);
       $$ = new AST::BinaryOpNode(AST::assign, n, $5); }
   ;
 
@@ -152,7 +159,7 @@ logical-test
 expr
   : decl-assign             { $$ = $1; }
   | logical-test            { $$ = $1; }
-  | ID                      { $$ = symbolTable.useVariable($1); }
+  | ID                      { $$ = current->useVariable($1); }
   | expr PLUS expr          { $$ = new AST::BinaryOpNode(AST::add, $1, $3); }
   | expr MINUS expr         { $$ = new AST::BinaryOpNode(AST::sub, $1, $3); }
   | expr TIMES expr         { $$ = new AST::BinaryOpNode(AST::mul, $1, $3); }

@@ -52,12 +52,29 @@
       {integer, "integer"}, {decimal, "float"}, {boolean, "boolean"},
     };
 
+    SymbolTable* external;
+
     // Constructor for the SymbolTable class.
     SymbolTable() {}
+
+    SymbolTable(SymbolTable* external):
+    external(external) {}
 
     // Searches for a given key, representing a variable, on the symbol
     // table. Since all keys are unique, it may only return 0 or 1.
     bool varExists(std::string key) {
+      if ((bool) entryList.count(key)) {
+        return true;
+      } else {
+        if (external == NULL) {
+          return false;
+        } else {
+          return external->varExists(key);
+        }
+      }
+    }
+
+    bool varExistsHere(std::string key) {
       return (bool) entryList.count(key);
     }
 

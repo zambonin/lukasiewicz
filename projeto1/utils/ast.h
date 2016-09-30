@@ -168,9 +168,9 @@ namespace AST {
     Node* assignNode;
     Node* testNode;
     Node* itNode;
-    Node* doNode;
+    BlockNode* doNode;
 
-    ForNode(Node* assignNode, Node* testNode, Node* itNode, Node* doNode):
+    ForNode(Node* assignNode, Node* testNode, Node* itNode, BlockNode* doNode):
     assignNode(assignNode), testNode(testNode), itNode(itNode), doNode(doNode) {}
 
     void print(bool prefix);
