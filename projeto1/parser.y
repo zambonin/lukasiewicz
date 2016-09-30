@@ -26,7 +26,7 @@ AST::BlockNode* root;
 %token <boolean> BOOL
 %token <name> ID T_INT T_FLOAT T_BOOL
 
-%type <block> lines program else end-block
+%type <block> lines program else body
 %type <node> expr line declaration d-int d-float d-bool decl-assign iteration logical-test
 
 %left C_INT C_FLOAT C_BOOL
@@ -59,18 +59,18 @@ line
   | ID ASSIGN expr
     { AST::Node* n = symbolTable.assignVariable($1, NULL);
       $$ = new AST::BinaryOpNode(AST::assign, n, $3); }
-  | IF expr NL THEN LCURLY NL end-block else
+  | IF expr NL THEN LCURLY NL body else
     { $$ = new AST::IfNode($2, $7, $8); }
-  | FOR iteration COMMA logical-test COMMA iteration LCURLY NL end-block
+  | FOR iteration COMMA logical-test COMMA iteration LCURLY NL body
     { $$ = new AST::ForNode($2, $4, $6, $9); }
   ;
 
 else
   : %empty                    { $$ = new AST::BlockNode(); }
-  | ELSE LCURLY NL end-block  { $$ = $4; }
+  | ELSE LCURLY NL body  { $$ = $4; }
   ;
 
-end-block
+body
   : lines RCURLY  { $$ = $1; }
   | RCURLY        { $$ = new AST::BlockNode(); }
   ;

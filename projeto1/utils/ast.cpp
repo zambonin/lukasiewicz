@@ -144,16 +144,18 @@ void BlockNode::print(bool prefix) {
 }
 
 void MessageNode::print(bool prefix) {
-  std::string t;
-  if (this->_type() == INT) {
-    t = "int";
-  } else if (this->_type() == FLOAT) {
-    t = "float";
-  } else if (this->_type() == BOOL) {
-    t = "bool";
+  if (node->_type() != BASIC) {
+    std::string t;
+    if (this->_type() == INT) {
+      t = "int";
+    } else if (this->_type() == FLOAT) {
+      t = "float";
+    } else if (this->_type() == BOOL) {
+      t = "bool";
+    }
+    text(t + " var:", spaces);
+    node->print(false);
   }
-  text(t + " var:", spaces);
-  node->print(false);
 }
 
 NodeType MessageNode::_type() {
