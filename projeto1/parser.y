@@ -27,7 +27,8 @@ AST::BlockNode* root;
 %token <name> ID T_INT T_FLOAT T_BOOL
 
 %type <block> lines program else body
-%type <node> expr line declaration d-int d-float d-bool decl-assign iteration logical-test
+%type <node> expr line declaration d-int d-float d-bool
+%type <node> decl-assign iteration logical-test
 
 %left C_INT C_FLOAT C_BOOL
 %left AND OR
@@ -44,13 +45,14 @@ AST::BlockNode* root;
 program
   : %empty          {}
   | lines           { root = $1; }
+  | error NL        { yyerrok; std::cout << std::endl; }
   ;
 
 lines
   : line            { $$ = new AST::BlockNode();
                       if ($1 != NULL) $$->nodeList.push_back($1); }
   | lines line      { if ($2 != NULL) $1->nodeList.push_back($2); }
-  | lines error NL  { yyerrok; std::cout << "\n"; }
+  | lines error NL  { yyerrok; std::cout << std::endl; }
   ;
 
 line
@@ -66,8 +68,8 @@ line
   ;
 
 else
-  : %empty                    { $$ = new AST::BlockNode(); }
-  | ELSE LCURLY NL body  { $$ = $4; }
+  : %empty                { $$ = new AST::BlockNode(); }
+  | ELSE LCURLY NL body   { $$ = $4; }
   ;
 
 body
