@@ -26,9 +26,8 @@ AST::BlockNode* root;
 %token <boolean> BOOL
 %token <name> ID T_INT T_FLOAT T_BOOL
 
-%type <block> lines program
-%type <node> expr line declaration d-int d-float d-bool decl-assign
-%type <node> else end-block simple-assign logical-test iteration
+%type <block> lines program else end-block
+%type <node> expr line declaration d-int d-float d-bool decl-assign simple-assign iteration logical-test
 
 %left C_INT C_FLOAT C_BOOL
 %left AND OR
@@ -61,41 +60,37 @@ line
     { AST::Node* n = symbolTable.assignVariable($1, NULL);
       $$ = new AST::BinaryOpNode(AST::assign, n, $3); }
   | IF expr NL THEN LCURLY NL end-block else
-    { AST::Node* condition = new AST::CondNode($2);
-      AST::Node* thenLines = new AST::ThenNode($7);
-      $$ = new AST::IfNode(condition, thenLines, $8); }
+    { $$ = new AST::IfNode($2, $7, $8); }
   | FOR simple-assign COMMA logical-test COMMA iteration LCURLY NL end-block
-    { AST::Node* assignNode = $2; AST::Node* testNode = $4;
-      AST::Node* itNode = $6; AST::Node* doNode = $9;
-      $$ = new AST::ForNode(assignNode, testNode, itNode, doNode); }
+    { $$ = new AST::ForNode($2, $4, $6, $9); }
   ;
 
 else
-  : %empty                    { $$ = new AST::Node(); }
-  | ELSE LCURLY NL end-block  { $$ = new AST::ElseNode($4); }
+  : %empty                    { $$ = new AST::BlockNode(); }
+  | ELSE LCURLY NL end-block  { $$ = $4; }
   ;
 
 end-block
   : lines RCURLY  { $$ = $1; }
-  | RCURLY        { $$ = new AST::Node(); }
+  | RCURLY        { $$ = new AST::BlockNode(); }
   ;
 
 simple-assign
-  : %empty                  { $$ = new AST::Node();}
+  : %empty                  { $$ = new AST::Node(); }
   | ID ASSIGN decl-assign   { AST::Node* n = symbolTable.assignVariable($1, NULL);
                               $$ = new AST::BinaryOpNode(AST::assign, n, $3); }
   ;
 
 iteration
-  : %empty          {$$ = new AST::Node();}
+  : %empty          { $$ = new AST::Node(); }
   | ID ASSIGN expr  { AST::Node* n = symbolTable.assignVariable($1, NULL);
                       $$ = new AST::BinaryOpNode(AST::assign, n, $3); }
   ;
 
 declaration
-  : T_INT d-int NL      { $$ = new AST::MessageNode($2, "int"); }
-  | T_FLOAT d-float NL  { $$ = new AST::MessageNode($2, "float"); }
-  | T_BOOL d-bool NL    { $$ = new AST::MessageNode($2, "bool"); }
+  : T_INT d-int NL      { $$ = new AST::MessageNode($2); }
+  | T_FLOAT d-float NL  { $$ = new AST::MessageNode($2); }
+  | T_BOOL d-bool NL    { $$ = new AST::MessageNode($2); }
   ;
 
 d-int
@@ -104,13 +99,13 @@ d-int
   | ID ASSIGN decl-assign
     { AST::Node* n = symbolTable.newVariable($1, NULL, ST::integer);
       n = symbolTable.assignVariable($1, NULL);
-      $$ = new AST::AssignmentNode(n, $3); }
+      $$ = new AST::BinaryOpNode(AST::assign, n, $3); }
   | d-int COMMA ID
     { $$ = symbolTable.newVariable($3, $1, ST::integer); }
   | d-int COMMA ID ASSIGN decl-assign
     { AST::Node* n = symbolTable.newVariable($3, $1, ST::integer);
       n = symbolTable.assignVariable($3, $1);
-      $$ = new AST::AssignmentNode(n, $5); }
+      $$ = new AST::BinaryOpNode(AST::assign, n, $5); }
   ;
 
 d-float
@@ -119,13 +114,13 @@ d-float
   | ID ASSIGN decl-assign
     { AST::Node* n = symbolTable.newVariable($1, NULL, ST::decimal);
       n = symbolTable.assignVariable($1, NULL);
-      $$ = new AST::AssignmentNode(n, $3); }
+      $$ = new AST::BinaryOpNode(AST::assign, n, $3); }
   | d-float COMMA ID
     { $$ = symbolTable.newVariable($3, $1, ST::decimal); }
   | d-float COMMA ID ASSIGN decl-assign
     { AST::Node* n = symbolTable.newVariable($3, $1, ST::decimal);
       n = symbolTable.assignVariable($3, $1);
-      $$ = new AST::AssignmentNode(n, $5); }
+      $$ = new AST::BinaryOpNode(AST::assign, n, $5); }
   ;
 
 d-bool
@@ -134,13 +129,13 @@ d-bool
   | ID ASSIGN decl-assign
     { AST::Node* n = symbolTable.newVariable($1, NULL, ST::boolean);
       n = symbolTable.assignVariable($1, NULL);
-      $$ = new AST::AssignmentNode(n, $3); }
+      $$ = new AST::BinaryOpNode(AST::assign, n, $3); }
   | d-bool COMMA ID
     { $$ = symbolTable.newVariable($3, $1, ST::boolean); }
   | d-bool COMMA ID ASSIGN decl-assign
     { AST::Node* n = symbolTable.newVariable($3, $1, ST::boolean);
       n = symbolTable.assignVariable($3, $1);
-      $$ = new AST::AssignmentNode(n, $5); }
+      $$ = new AST::BinaryOpNode(AST::assign, n, $5); }
   ;
 
 decl-assign

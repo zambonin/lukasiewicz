@@ -1,5 +1,3 @@
-#include <iostream>
-#include "utils/ast.h"
 #include "utils/st.h"
 
 extern AST::BlockNode* root;
@@ -9,7 +7,7 @@ extern int yydebug;
 int main() {
   yyparse();
   if (root != NULL) {
-    root->printTreePrefix();
+    root->print(true);
   }
 
   return 0;

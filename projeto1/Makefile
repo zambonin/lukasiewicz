@@ -1,5 +1,6 @@
 CC = g++
-CFLAGS = -Wall -Wextra -fexceptions -Wno-sign-compare -Wno-unused-function -std=c++11
+CFLAGS = -Wall -Wextra -fexceptions -Wno-sign-compare -Wno-unused-function \
+		 -Wno-unused-parameter -std=c++11
 
 OUTPUT = lukacompiler
 

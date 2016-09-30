@@ -3,32 +3,96 @@
 
 using namespace AST;
 
+extern void yyerror(const char* s, ...);
 extern ST::SymbolTable symbolTable;
 
-CondNode::CondNode(Node* boolExpr):
-boolExpr(boolExpr) {
-  if (boolExpr->_type() != BOOL) {
-    errorMessage(_if, new AST::BoolNode(NULL), boolExpr);
-  }
+int spaces;
+
+template<typename T>
+void text(const T& text, int n) {
+  std::string blank(n, ' ');
+  std::cout << blank << text;
+}
+
+void Node::errorMessage(Operation op, Node* n1, Node* n2) {
+  yyerror("semantic error: %s operation expected %s but received %s\n",
+          errorMsg[op].c_str(), nodeName[n1->_type()].c_str(),
+          nodeName[n2->_type()].c_str());
+}
+
+IntNode::IntNode(int value):
+value(value) {
+  this->type = INT;
+}
+
+void IntNode::print(bool prefix) {
+  text(value, 1);
+}
+
+NodeType IntNode::_type() {
+  return this->type;
+}
+
+FloatNode::FloatNode(char* value):
+value(value) {
+  this->type = FLOAT;
+}
+
+void FloatNode::print(bool prefix) {
+  text(value, 1);
+}
+
+NodeType FloatNode::_type() {
+  return this->type;
+}
+
+BoolNode::BoolNode(bool value):
+value(value) {
+  this->type = BOOL;
+}
+
+void BoolNode::print(bool prefix) {
+  text(value ? "true" : "false", 1);
+}
+
+NodeType BoolNode::_type() {
+  return this->type;
 }
 
 BinaryOpNode::BinaryOpNode(Operation binOp, Node* left, Node* right):
 binOp(binOp), left(left), right(right) {
   if (left->_type() != right->_type()) {
     if (left->_type() == INT && right->_type() == FLOAT && binOp != assign) {
-      Node* leftCoercion = new UnaryOpNode(cast_float, left);
-      this->left = leftCoercion;
+      this->left = new UnaryOpNode(cast_float, left);
     } else if (left->_type() == FLOAT && right->_type() == INT) {
-      Node* rightCoercion = new UnaryOpNode(cast_float, right);
-      this->right = rightCoercion;
+      this->right = new UnaryOpNode(cast_float, right);
     } else {
       errorMessage(binOp, left, right);
     }
   }
 }
 
+void BinaryOpNode::print(bool prefix) {
+  if (prefix) {
+    text("", binOp != assign);
+    text(strOp[binOp], spaces);
+    int tmp = spaces;
+    spaces = 0;
+    left->print(prefix);
+    right->print(prefix);
+    spaces = tmp;
+  } else {
+    left->print(!prefix);
+    text("", binOp == assign);
+    text(strOp[binOp], spaces);
+    text("", binOp != assign);
+    right->print(!prefix);
+  }
+}
+
 NodeType BinaryOpNode::_type() {
-  if (binOp == add || binOp == sub || binOp == mul || binOp == div) {
+  if (binOp == add || binOp == sub || binOp == mul
+      || binOp == div || binOp == assign) {
     return left->_type();
   } else {
     return BOOL;
@@ -38,26 +102,31 @@ NodeType BinaryOpNode::_type() {
 UnaryOpNode::UnaryOpNode(Operation op, Node* node):
 op(op), node(node) {
   if (op == cast_int) {
-    this->_nodeType = INT;
+    this->type = INT;
   } else if (op == cast_float) {
-    this->_nodeType = FLOAT;
+    this->type = FLOAT;
   } else if (op == cast_bool || op == _not) {
-    this->_nodeType = BOOL;
+    this->type = BOOL;
   } else if (op == uminus) {
-    this->_nodeType = node->_type();
+    this->type = node->_type();
   }
 }
 
-AssignmentNode::AssignmentNode(Node* left, Node* right):
-binOp(assign), left(left), right(right) {
-  if (left->_type() != right->_type()) {
-     if (left->_type() == FLOAT && right->_type() == INT) {
-      Node* rightCoercion = new UnaryOpNode(cast_float, right);
-      this->right = rightCoercion;
-    } else {
-      errorMessage(binOp, left, right);
-    }
+void UnaryOpNode::print(bool prefix) {
+  text(strOp[op], 0);
+  node->print(prefix);
+}
+
+NodeType UnaryOpNode::_type() {
+  return this->type;
+}
+
+void VariableNode::print(bool prefix) {
+  if (next != NULL) {
+    next->print(false);
+    text(",", 0);
   }
+  text(id, 1);
 }
 
 NodeType VariableNode::_type() {
@@ -65,140 +134,79 @@ NodeType VariableNode::_type() {
   return nodeTypeString[s];
 }
 
-void BinaryOpNode::printTree() {
-  left->printTree();
-  std::cout << strOp[binOp];
-  if (binOp != assign) {
-    std::cout << " ";
-  }
-  right->printTree();
-}
-
-void BinaryOpNode::printTreePrefix() {
-  if (binOp != assign) {
-    std::cout << " ";
-  }
-  std::cout << strOp[binOp];
-  left->printTreePrefix();
-  right->printTreePrefix();
-}
-
-void UnaryOpNode::printTree() {
-  std::cout << strOp[op];
-  node->printTree();
-}
-
-void UnaryOpNode::printTreePrefix() {
-  std::cout << strOp[op];
-  node->printTreePrefix();
-}
-
-void AssignmentNode::printTree() {
-  left->printTree();
-  std::cout << " =";
-  right->printTree();
-}
-
-void AssignmentNode::printTreePrefix() {
-  this->printTree();
-}
-
-void VariableNode::printTree() {
-  if (next != NULL) {
-    next->printTree();
-    std::cout << ",";
-  }
-  std::cout << " " << id;
-}
-
-void VariableNode::printTreePrefix() {
-  this->printTree();
-}
-
-void BlockNode::printTree() {
+void BlockNode::print(bool prefix) {
   for (Node* n : nodeList) {
-    n->printTree();
+    n->print(prefix);
     if (n->_type() != BASIC) {
-      std::cout << std::endl;
+      text("\n", 0);
     }
   }
 }
 
-void BlockNode::printTreePrefix() {
-  for (Node* n : nodeList) {
-    n->printTreePrefix();
-    if (n->_type() != BASIC) {
-      std::cout << std::endl;
-    }
+void MessageNode::print(bool prefix) {
+  std::string t;
+  if (this->_type() == INT) {
+    t = "int";
+  } else if (this->_type() == FLOAT) {
+    t = "float";
+  } else if (this->_type() == BOOL) {
+    t = "bool";
+  }
+  text(t + " var:", spaces);
+  node->print(false);
+}
+
+NodeType MessageNode::_type() {
+  return node->_type();
+}
+
+IfNode::IfNode(Node* condition, BlockNode* _then, BlockNode* _else):
+condition(condition), _then(_then), _else(_else) {
+  if (condition->_type() != BOOL) {
+    errorMessage(_if, new AST::BoolNode(NULL), condition);
   }
 }
 
-void MessageNode::printTree() {
-  std::cout << msg << " var:";
-  node->printTree();
-}
-
-void MessageNode::printTreePrefix() {
-  this->printTree();
-}
-
-void IfNode::printTree() {
-  std::cout << "if:";
-  condition->printTree();
-  _then->printTree();
-  if (_else != NULL) {
-    _else->printTree();
+void IfNode::print(bool prefix) {
+  text("if:", spaces);
+  int tmp_tab = spaces;
+  spaces = 0;
+  condition->print(true);
+  spaces = tmp_tab;
+  text("\n", 0);
+  text("then:\n", spaces);
+  spaces += 2;
+  _then->print(true);
+  spaces -= 2;
+  if (!_else->nodeList.empty()) {
+    text("else:\n", spaces);
+    spaces += 2;
+    _else->print(true);
+    spaces -= 2;
   }
 }
 
-void IfNode::printTreePrefix() {
-  this->printTree();
-}
+void ForNode::print(bool prefix) {
+  text("for: ", spaces);
+  int tmp_tab = spaces;
+  spaces = 0;
+  this->assignNode->print(true);
 
-void CondNode::printTree() {
-  boolExpr->printTreePrefix();
-}
+  text(",", 0);
+  this->testNode->print(true);
 
-void CondNode::printTreePrefix() {
-  this->printTree();
-}
-
-void ThenNode::printTree() {
-  std::cout << std::endl;
-  std::cout << "then:" << std::endl;
-  lines->printTreePrefix();
-}
-
-void ThenNode::printTreePrefix() {
-  this->printTree();
-}
-
-void ElseNode::printTree() {
-  std::cout << "else:" << std::endl;
-  lines->printTreePrefix();
-}
-
-void ElseNode::printTreePrefix() {
-  this->printTree();
-}
-
-void ForNode::printTree() {
-  this->printTreePrefix();
-}
-
-void ForNode::printTreePrefix() {
-  std::cout << "for: ";
-  this->assignNode->printTreePrefix();
-
-  std::cout << ",";
-  this->testNode->printTreePrefix();
-
-  std::cout << ",";
+  text(",", 0);
   if (itNode->_type() != BASIC) {
-    std::cout << " ";
+    text("", 1);
   }
-  this->itNode->printTreePrefix();
 
-  std::cout << std::endl << "do:" << std::endl;
-  this->doNode->printTreePrefix();
+  this->itNode->print(true);
+  spaces = tmp_tab;
+
+  text("\n", 0);
+  text("do:\n", spaces);
+  spaces += 2;
+  this->doNode->print(true);
+  spaces -= 2;
+
 }
