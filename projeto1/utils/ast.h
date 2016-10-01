@@ -13,6 +13,7 @@
 
 namespace AST {
 
+
   enum Operation {
     add, sub, mul, div, assign,
     eq, neq, gt, lt, geq, leq, _and, _or,
@@ -20,8 +21,9 @@ namespace AST {
   };
 
   enum NodeType {
-    BASIC, INT, FLOAT, BOOL
+    BASIC, INT, FLOAT, BOOL, ND
   };
+
 
   class Node {
   public:
@@ -122,9 +124,15 @@ namespace AST {
   public:
     std::string id;
     Node* next;
+    NodeType type;
+
+    VariableNode(std::string id, Node* next, NodeType type):
+    id(id), next(next), type(type){}
 
     VariableNode(std::string id, Node* next):
-    id(id), next(next) {}
+    id(id), next(next) {
+      this->type = ND;
+    }
 
     void print(bool prefix);
     NodeType _type();
@@ -136,7 +144,6 @@ namespace AST {
     std::vector<Node*> nodeList;
 
     void print(bool prefix);
-
   };
 
   class MessageNode : public Node {

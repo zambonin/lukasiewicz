@@ -6,6 +6,7 @@ using namespace AST;
 extern void yyerror(const char* s, ...);
 extern ST::SymbolTable* current;
 
+
 int spaces;
 
 template<typename T>
@@ -67,7 +68,9 @@ binOp(binOp), left(left), right(right) {
     } else if (left->_type() == FLOAT && right->_type() == INT) {
       this->right = new UnaryOpNode(cast_float, right);
     } else {
-      errorMessage(binOp, left, right);
+      if(left->_type() != ND) {
+        errorMessage(binOp, left, right);
+      }
     }
   }
 }
@@ -82,11 +85,14 @@ void BinaryOpNode::print(bool prefix) {
     right->print(prefix);
     spaces = tmp;
   } else {
+    int tmp = spaces;
+    spaces = 0;
     left->print(!prefix);
     text("", binOp == assign);
     text(strOp[binOp], spaces);
     text("", binOp != assign);
     right->print(!prefix);
+    spaces = tmp;
   }
 }
 
@@ -130,8 +136,7 @@ void VariableNode::print(bool prefix) {
 }
 
 NodeType VariableNode::_type() {
-  std::string s = current->getSymbolType(this->id);
-  return nodeTypeString[s];
+  return type;
 }
 
 void BlockNode::print(bool prefix) {
@@ -144,18 +149,16 @@ void BlockNode::print(bool prefix) {
 }
 
 void MessageNode::print(bool prefix) {
-  if (node->_type() != BASIC) {
-    std::string t;
-    if (this->_type() == INT) {
-      t = "int";
-    } else if (this->_type() == FLOAT) {
-      t = "float";
-    } else if (this->_type() == BOOL) {
-      t = "bool";
-    }
-    text(t + " var:", spaces);
-    node->print(false);
+  std::string t;
+  if (this->_type() == INT) {
+    t = "int";
+  } else if (this->_type() == FLOAT) {
+    t = "float";
+  } else if (this->_type() == BOOL) {
+    t = "bool";
   }
+  text(t + " var:", spaces);
+  node->print(false);
 }
 
 NodeType MessageNode::_type() {

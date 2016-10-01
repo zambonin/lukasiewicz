@@ -36,7 +36,6 @@
 
     // Initial status for the Symbol object.
     Symbol() {
-      type = integer;
       kind = variable;
       init = false;
     }
@@ -47,6 +46,10 @@
     // Map that holds pairs consisting of a variable
     // name and its related Symbol object.
     std::map<std::string, Symbol> entryList;
+
+    std::map<VarType, AST::NodeType> mapTypes = {
+      {integer, AST::INT}, {decimal, AST::FLOAT}, {boolean, AST::BOOL},
+    };
 
     std::map<VarType, std::string> typeString {
       {integer, "integer"}, {decimal, "float"}, {boolean, "boolean"},
@@ -63,7 +66,7 @@
     // Searches for a given key, representing a variable, on the symbol
     // table. Since all keys are unique, it may only return 0 or 1.
     bool varExists(std::string key) {
-      if ((bool) entryList.count(key)) {
+      if (varExistsHere(key)) {
         return true;
       } else {
         if (external == NULL) {
@@ -84,7 +87,33 @@
     }
 
     std::string getSymbolType(std::string key) {
-      return typeString[entryList[key].type];
+      if(varExistsHere(key)) {
+        return typeString[entryList[key].type];
+      } else {
+          if(external == NULL && !varExistsHere(key)) {
+            return "non";
+          } else {
+            return external->getSymbolType(key);
+          }
+      }
+    }
+
+    void initVariable(std::string key) {
+      if (varExistsHere(key)) {
+        entryList[key].init = true;
+      } else {
+        if (external != NULL) {
+          external->initVariable(key);
+        }
+      }
+    }
+
+    bool isInit(std::string key) {
+      if (varExistsHere(key)) {
+        return entryList[key].init;
+      } else {
+        return external->isInit(key);
+      }
     }
 
     // Creates a new variable inside the map.

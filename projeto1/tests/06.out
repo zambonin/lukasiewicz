@@ -6,12 +6,12 @@ for: = i 0, < i 2, = i + i 2
 do:
   int var: a
 bool var: a = true
-int var: i, j
+int var: ii, j
 if: true
 then:
-  int var: i
+  int var: ii
   if: true
   then:
-    for: = i 0, < i 10, = i + i 3
+    for: = ii 0, < ii 10, = ii + ii 3
     do:
       int var: j

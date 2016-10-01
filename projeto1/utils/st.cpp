@@ -2,7 +2,7 @@
 
 using namespace ST;
 
-extern SymbolTable symbolTable;
+extern SymbolTable* current;
 
 AST::Node* SymbolTable::newVariable(std::string id, AST::Node* next,
                                     VarType type) {
@@ -16,7 +16,7 @@ AST::Node* SymbolTable::newVariable(std::string id, AST::Node* next,
     Symbol newEntry(type, variable, false);
     addSymbol(id, newEntry);
   }
-  return new AST::VariableNode(id, next);
+  return new AST::VariableNode(id, next, mapTypes[type]);
 }
 
 AST::Node* SymbolTable::assignVariable(std::string id, AST::Node* next) {
@@ -24,8 +24,14 @@ AST::Node* SymbolTable::assignVariable(std::string id, AST::Node* next) {
     yyerror("semantic error: undeclared variable %s\n", id.c_str());
   }
 
-  entryList[id].init = true;
-  return new AST::VariableNode(id, next);
+  current->initVariable(id);
+  std::string s = current->getSymbolType(id);
+  AST::Node* node = new AST::Node();
+  if(s == "non"){
+    return new AST::VariableNode(id, next);
+  } else {
+    return new AST::VariableNode(id, next, node->nodeTypeString[s]);
+  }
 }
 
 AST::Node* SymbolTable::useVariable(std::string id) {
@@ -33,9 +39,11 @@ AST::Node* SymbolTable::useVariable(std::string id) {
     yyerror("semantic error: undeclared variable %s\n", id.c_str());
   }
 
-  if (!entryList[id].init) {
+  if (!isInit(id)){
     yyerror("error: variable %s not initialized\n", id.c_str());
   }
+  std::string s = current->getSymbolType(id);
+  AST::Node* node = new AST::Node();
 
-  return new AST::VariableNode(id, NULL);
+  return new AST::VariableNode(id, NULL, node->nodeTypeString[s]);
 }

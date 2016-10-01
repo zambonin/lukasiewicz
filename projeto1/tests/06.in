@@ -7,13 +7,13 @@ for i = 0, i < 2, i = i + 2 {
   int a
 }
 bool a = true
-int i, j
+int ii, j
 if true
 then {
- int i
+ int ii
   if true
   then {
-    for i = 0, i < 10, i = i+3 {
+    for ii = 0, ii < 10, ii = ii+3 {
 	int j
     }
   }
