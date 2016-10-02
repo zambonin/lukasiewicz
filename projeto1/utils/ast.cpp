@@ -1,11 +1,13 @@
 #include "ast.h"
 #include "st.h"
 
+#define _tab(X)     spaces += 2; (X); spaces -= 2
+#define _notab(...) int tmp = spaces; spaces = 0; (__VA_ARGS__); spaces = tmp;
+
 using namespace AST;
 
 extern void yyerror(const char* s, ...);
 extern ST::SymbolTable* current;
-
 
 int spaces;
 
@@ -17,8 +19,7 @@ void text(const T& text, int n) {
 
 void Node::errorMessage(Operation op, Node* n1, Node* n2) {
   yyerror("semantic error: %s operation expected %s but received %s\n",
-          errorMsg[op].c_str(), nodeName[n1->_type()].c_str(),
-          nodeName[n2->_type()].c_str());
+    _opt[op].c_str(), _usr[n1->_type()].c_str(), _usr[n2->_type()].c_str());
 }
 
 IntNode::IntNode(int value):
@@ -67,10 +68,8 @@ binOp(binOp), left(left), right(right) {
       this->left = new UnaryOpNode(cast_float, left);
     } else if (left->_type() == FLOAT && right->_type() == INT) {
       this->right = new UnaryOpNode(cast_float, right);
-    } else {
-      if(left->_type() != ND) {
-        errorMessage(binOp, left, right);
-      }
+    } else if (left->_type() != ND) {
+      errorMessage(binOp, left, right);
     }
   }
 }
@@ -78,21 +77,18 @@ binOp(binOp), left(left), right(right) {
 void BinaryOpNode::print(bool prefix) {
   if (prefix) {
     text("", binOp != assign);
-    text(strOp[binOp], spaces);
-    int tmp = spaces;
-    spaces = 0;
-    left->print(prefix);
-    right->print(prefix);
+    text(_bin[binOp], spaces);
+    _notab(
+      left->print(prefix),
+      right->print(prefix));
     spaces = tmp;
   } else {
-    int tmp = spaces;
-    spaces = 0;
-    left->print(!prefix);
-    text("", binOp == assign);
-    text(strOp[binOp], spaces);
-    text("", binOp != assign);
-    right->print(!prefix);
-    spaces = tmp;
+    _notab(
+      left->print(!prefix),
+      text("", binOp == assign),
+      text(_bin[binOp], spaces),
+      text("", binOp != assign),
+      right->print(!prefix));
   }
 }
 
@@ -119,7 +115,7 @@ op(op), node(node) {
 }
 
 void UnaryOpNode::print(bool prefix) {
-  text(strOp[op], 0);
+  text(_bin[op], 0);
   node->print(prefix);
 }
 
@@ -136,29 +132,23 @@ void VariableNode::print(bool prefix) {
 }
 
 NodeType VariableNode::_type() {
-  return type;
+  return this->type;
 }
 
 void BlockNode::print(bool prefix) {
   for (Node* n : nodeList) {
     n->print(prefix);
-    if (n->_type() != BASIC) {
+    if (n->_type() != ND) {
       text("\n", 0);
     }
   }
 }
 
 void MessageNode::print(bool prefix) {
-  std::string t;
-  if (this->_type() == INT) {
-    t = "int";
-  } else if (this->_type() == FLOAT) {
-    t = "float";
-  } else if (this->_type() == BOOL) {
-    t = "bool";
+  if (node->_type() != ND) {
+    text(_var[this->_type()] + " var:", spaces);
+    node->print(false);
   }
-  text(t + " var:", spaces);
-  node->print(false);
 }
 
 NodeType MessageNode::_type() {
@@ -168,50 +158,32 @@ NodeType MessageNode::_type() {
 IfNode::IfNode(Node* condition, BlockNode* _then, BlockNode* _else):
 condition(condition), _then(_then), _else(_else) {
   if (condition->_type() != BOOL) {
-    errorMessage(_if, new AST::BoolNode(NULL), condition);
+    errorMessage(if_test, new AST::BoolNode(NULL), condition);
   }
 }
 
 void IfNode::print(bool prefix) {
   text("if:", spaces);
-  int tmp_tab = spaces;
-  spaces = 0;
-  condition->print(true);
-  spaces = tmp_tab;
+  _notab(condition->print(true));
   text("\n", 0);
   text("then:\n", spaces);
-  spaces += 2;
-  _then->print(true);
-  spaces -= 2;
+  _tab(_then->print(true));
   if (!_else->nodeList.empty()) {
     text("else:\n", spaces);
-    spaces += 2;
-    _else->print(true);
-    spaces -= 2;
+    _tab(_else->print(true));
   }
 }
 
 void ForNode::print(bool prefix) {
   text("for: ", spaces);
-  int tmp_tab = spaces;
-  spaces = 0;
-  this->assignNode->print(true);
-
-  text(",", 0);
-  this->testNode->print(true);
-
-  text(",", 0);
-  if (itNode->_type() != BASIC) {
-    text("", 1);
-  }
-
-  this->itNode->print(true);
-  spaces = tmp_tab;
-
+  _notab(
+    assign->print(true),
+    text(",", 0),
+    test->print(true),
+    text(",", 0),
+    text("", iteration->_type() != ND),
+    iteration->print(true));
   text("\n", 0);
   text("do:\n", spaces);
-  spaces += 2;
-  this->doNode->print(true);
-  spaces -= 2;
-
+  _tab(body->print(true));
 }

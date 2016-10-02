@@ -5,7 +5,7 @@
 extern int yylex();
 extern void yyerror(const char* s, ...);
 
-
+ST::VarType temp;
 ST::SymbolTable* current;
 AST::BlockNode* root;
 %}
@@ -27,9 +27,8 @@ AST::BlockNode* root;
 %token <boolean> BOOL
 %token <name> ID T_INT T_FLOAT T_BOOL
 
-%type <block> lines program else body scoped
-%type <node> expr line declaration d-int d-float d-bool
-%type <node> decl-assign iteration logical-test
+%type <block> lines program else body scope
+%type <node> expr line declaration d-type basic-type iteration logical-test
 
 %left C_INT C_FLOAT C_BOOL
 %left AND OR
@@ -44,14 +43,13 @@ AST::BlockNode* root;
 %%
 program
   : %empty          {}
-  | scoped          { root = $1; }
+  | scope           { root = $1; }
   | error NL        { yyerrok; std::cout << std::endl; }
   ;
 
-scoped
+scope
   :     { current = new ST::SymbolTable(current); }
-  lines { if (current->external != NULL)
-          current = current->external;
+  lines { if (current->external != NULL) current = current->external;
           $$ = $2; }
   ;
 
@@ -63,8 +61,8 @@ lines
   ;
 
 line
-  : NL              { $$ = 0; }
-  | declaration     { $$ = $1; }
+  : NL                      { $$ = 0; }
+  | d-type declaration NL   { $$ = new AST::MessageNode($2); }
   | ID ASSIGN expr
     { AST::Node* n = current->assignVariable($1, NULL);
       $$ = new AST::BinaryOpNode(AST::assign, n, $3); }
@@ -74,14 +72,14 @@ line
     { $$ = new AST::ForNode($2, $4, $6, $9); }
   ;
 
+body
+  : RCURLY          { $$ = new AST::BlockNode(); }
+  | scope RCURLY    { $$ = $1; }
+  ;
+
 else
   : %empty                { $$ = new AST::BlockNode(); }
   | ELSE LCURLY NL body   { $$ = $4; }
-  ;
-
-body
-  : scoped RCURLY   { $$ = $1; }
-  | RCURLY          { $$ = new AST::BlockNode(); }
   ;
 
 iteration
@@ -90,58 +88,28 @@ iteration
                       $$ = new AST::BinaryOpNode(AST::assign, n, $3); }
   ;
 
+d-type
+  : T_INT   { temp = ST::integer; }
+  | T_FLOAT { temp = ST::decimal; }
+  | T_BOOL  { temp = ST::boolean; }
+  ;
+
 declaration
-  : T_INT d-int NL      { $$ = new AST::MessageNode($2); }
-  | T_FLOAT d-float NL  { $$ = new AST::MessageNode($2); }
-  | T_BOOL d-bool NL    { $$ = new AST::MessageNode($2); }
-  ;
-
-d-int
   : ID
-    { $$ = current->newVariable($1, NULL, ST::integer); }
-  | ID ASSIGN decl-assign
-    { AST::Node* n = current->newVariable($1, NULL, ST::integer);
+    { $$ = current->newVariable($1, NULL, temp); }
+  | ID ASSIGN basic-type
+    { AST::Node* n = current->newVariable($1, NULL, temp);
       n = current->assignVariable($1, NULL);
       $$ = new AST::BinaryOpNode(AST::assign, n, $3); }
-  | d-int COMMA ID
-    { $$ = current->newVariable($3, $1, ST::integer); }
-  | d-int COMMA ID ASSIGN decl-assign
-    { AST::Node* n = current->newVariable($3, $1, ST::integer);
+  | declaration COMMA ID
+    { $$ = current->newVariable($3, $1, temp); }
+  | declaration COMMA ID ASSIGN basic-type
+    { AST::Node* n = current->newVariable($3, $1, temp);
       n = current->assignVariable($3, $1);
       $$ = new AST::BinaryOpNode(AST::assign, n, $5); }
   ;
 
-d-float
-  : ID
-    { $$ = current->newVariable($1, NULL, ST::decimal); }
-  | ID ASSIGN decl-assign
-    { AST::Node* n = current->newVariable($1, NULL, ST::decimal);
-      n = current->assignVariable($1, NULL);
-      $$ = new AST::BinaryOpNode(AST::assign, n, $3); }
-  | d-float COMMA ID
-    { $$ = current->newVariable($3, $1, ST::decimal); }
-  | d-float COMMA ID ASSIGN decl-assign
-    { AST::Node* n = current->newVariable($3, $1, ST::decimal);
-      n = current->assignVariable($3, $1);
-      $$ = new AST::BinaryOpNode(AST::assign, n, $5); }
-  ;
-
-d-bool
-  : ID
-    { $$ = current->newVariable($1, NULL, ST::boolean); }
-  | ID ASSIGN decl-assign
-    { AST::Node* n = current->newVariable($1, NULL, ST::boolean);
-      n = current->assignVariable($1, NULL);
-      $$ = new AST::BinaryOpNode(AST::assign, n, $3); }
-  | d-bool COMMA ID
-    { $$ = current->newVariable($3, $1, ST::boolean); }
-  | d-bool COMMA ID ASSIGN decl-assign
-    { AST::Node* n = current->newVariable($3, $1, ST::boolean);
-      n = current->assignVariable($3, $1);
-      $$ = new AST::BinaryOpNode(AST::assign, n, $5); }
-  ;
-
-decl-assign
+basic-type
   : INT                     { $$ = new AST::IntNode($1); }
   | FLOAT                   { $$ = new AST::FloatNode($1); }
   | BOOL                    { $$ = new AST::BoolNode($1); }
@@ -157,7 +125,7 @@ logical-test
   ;
 
 expr
-  : decl-assign             { $$ = $1; }
+  : basic-type              { $$ = $1; }
   | logical-test            { $$ = $1; }
   | ID                      { $$ = current->useVariable($1); }
   | expr PLUS expr          { $$ = new AST::BinaryOpNode(AST::add, $1, $3); }
