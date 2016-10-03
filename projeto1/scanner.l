@@ -1,12 +1,29 @@
+/*
+ * Flex scanner file for a language called
+ * Łukasiewicz, based on prefix notation.
+ *
+ * Authors: Douglas Martins, Gustavo Zambonin,
+ *          Marcello Klingelfus
+ */
 %{
-#include <string>
-#include <cstdarg>
-#include "utils/ast.h"
-#include "parser.h"
+  #include <string>
+  #include <cstdarg>
+  #include "utils/ast.h"
+  #include "parser.h"
 
-extern int yylineno;
-void yyerror(const char* s, ...);
+  extern int yylineno;
+  void yyerror(const char* s, ...);
 %}
+
+/*
+ * Definitions section.
+ *
+ * `noyywrap` assumes that there are no more files to scan;
+ * `nodefault` aborts the program if there is input that
+ * does not match any rule;
+ * `yylineno` generates a scanner that maintains the number
+ *  of the current line being read.
+ */
 
 %option noyywrap nodefault yylineno
 
@@ -14,12 +31,14 @@ intgT [0-9]+
 deciT ([0-9]*\.[0-9]+)|([0-9]+\.)
 boolT "true"|"false"
 nameT [a-zA-Z][a-zA-Z0-9_]*
-error [^a-zA-Z0-9_\.\+\-\*\/\,\=\(\)\=\<\>\&\|\!\{\} \t\n]+
 intgC "[int]"
 deciC "[float]"
 boolC "[bool]"
+error [^a-zA-Z0-9_\.\+\-\*\/\,\=\(\)\=\<\>\&\|\!\{\} \t\n]+
 
 %%
+
+ /* Rules section. */
 
 [ \t]   ;
 "+"     { return PLUS; }
@@ -60,6 +79,8 @@ boolC "[bool]"
 .       ;
 
 %%
+
+/* User code section. */
 
 void yyerror(const char* s, ...) {
   va_list ap;

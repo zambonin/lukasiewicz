@@ -1,16 +1,31 @@
 #include "ast.h"
 #include "st.h"
 
+/* Macros that reduce the visual pollution when indentation is needed. */
+
+/*
+ * _tab
+ *
+ * Takes a single line of code and indents it with two spaces.
+ */
 #define _tab(X)     spaces += 2; (X); spaces -= 2
+
+/*
+ * _notab
+ *
+ * Variadic macro that prevents indentation for any number of lines.
+ */
 #define _notab(...) int tmp = spaces; spaces = 0; (__VA_ARGS__); spaces = tmp;
 
 using namespace AST;
 
+/* Bison standard error output function. */
 extern void yyerror(const char* s, ...);
-extern ST::SymbolTable* current;
 
+/* Saves the current indentation status. */
 int spaces;
 
+/* Prints an object with `cout`, prepended by `n` spaces. */
 template<typename T>
 void text(const T& text, int n) {
   std::string blank(n, ' ');
@@ -64,8 +79,10 @@ NodeType BoolNode::_type() {
 BinaryOpNode::BinaryOpNode(Operation binOp, Node* left, Node* right):
 binOp(binOp), left(left), right(right) {
   if (binOp == index && right->_type() == INT) {
+    // only valid index operation
     return;
   } else if (left->_type() % 4 != right->_type() % 4) {
+    // first two ifs ensure coercion
     if (left->_type() == INT && right->_type() == FLOAT && binOp != assign) {
       this->left = new UnaryOpNode(cast_float, left);
     } else if (left->_type() == FLOAT && right->_type() == INT) {
@@ -85,7 +102,6 @@ void BinaryOpNode::print(bool prefix) {
     _notab(
       left->print(prefix),
       right->print(prefix));
-    spaces = tmp;
   } else {
     _notab(
       left->print(!prefix),
