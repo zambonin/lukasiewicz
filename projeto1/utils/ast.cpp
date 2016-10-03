@@ -63,11 +63,15 @@ NodeType BoolNode::_type() {
 
 BinaryOpNode::BinaryOpNode(Operation binOp, Node* left, Node* right):
 binOp(binOp), left(left), right(right) {
-  if (left->_type() != right->_type()) {
+  if (binOp == index && right->_type() == INT) {
+    return;
+  } else if (left->_type() % 4 != right->_type() % 4) {
     if (left->_type() == INT && right->_type() == FLOAT && binOp != assign) {
       this->left = new UnaryOpNode(cast_float, left);
     } else if (left->_type() == FLOAT && right->_type() == INT) {
       this->right = new UnaryOpNode(cast_float, right);
+    } else if (binOp == index) {
+      errorMessage(binOp, new IntNode(0), right);
     } else if (left->_type() != ND) {
       errorMessage(binOp, left, right);
     }
@@ -93,12 +97,7 @@ void BinaryOpNode::print(bool prefix) {
 }
 
 NodeType BinaryOpNode::_type() {
-  if (binOp == add || binOp == sub || binOp == mul
-      || binOp == div || binOp == assign) {
-    return left->_type();
-  } else {
-    return BOOL;
-  }
+  return static_cast<int>(binOp) < 6 ? left->_type() : BOOL;
 }
 
 UnaryOpNode::UnaryOpNode(Operation op, Node* node):
@@ -128,7 +127,9 @@ void VariableNode::print(bool prefix) {
     next->print(false);
     text(",", 0);
   }
-  text(id, 1);
+  std::string s;
+  s = this->size ? " (size: " + std::to_string(this->size) + ")" : "";
+  text(id + s, 1);
 }
 
 NodeType VariableNode::_type() {
@@ -146,7 +147,7 @@ void BlockNode::print(bool prefix) {
 
 void MessageNode::print(bool prefix) {
   if (node->_type() != ND) {
-    text(_var[this->_type()] + " var:", spaces);
+    text(_var[this->_type() % 4] + this->msg, spaces);
     node->print(false);
   }
 }

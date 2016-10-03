@@ -28,7 +28,7 @@ AST::BlockNode* root;
 %token <name> ID T_INT T_FLOAT T_BOOL
 
 %type <block> lines program else body scope
-%type <node> expr line declaration d-type basic-type iteration logical-test
+%type <node> expr line declaration d-type basic-type iteration logical-test decl-array
 
 %left C_INT C_FLOAT C_BOOL
 %left AND OR
@@ -62,10 +62,15 @@ lines
 
 line
   : NL                      { $$ = 0; }
-  | d-type declaration NL   { $$ = new AST::MessageNode($2); }
+  | d-type declaration NL   { $$ = new AST::MessageNode($2, " var:"); }
+  | d-type decl-array NL    { $$ = new AST::MessageNode($2, " array:"); }
   | ID ASSIGN expr
     { AST::Node* n = current->assignVariable($1, NULL);
       $$ = new AST::BinaryOpNode(AST::assign, n, $3); }
+  | ID LPAR expr RPAR ASSIGN expr
+    { AST::Node* n = current->assignVariable($1, NULL);
+      AST::Node* left = new AST::BinaryOpNode(AST::index, n, $3);
+      $$ = new AST::BinaryOpNode(AST::assign, left, $6); }
   | IF expr NL THEN LCURLY NL body else
     { $$ = new AST::IfNode($2, $7, $8); }
   | FOR iteration COMMA logical-test COMMA iteration LCURLY NL body
@@ -96,17 +101,26 @@ d-type
 
 declaration
   : ID
-    { $$ = current->newVariable($1, NULL, temp); }
+    { $$ = current->newVariable($1, NULL, temp, 0); }
   | ID ASSIGN basic-type
-    { AST::Node* n = current->newVariable($1, NULL, temp);
+    { AST::Node* n = current->newVariable($1, NULL, temp, 0);
       n = current->assignVariable($1, NULL);
       $$ = new AST::BinaryOpNode(AST::assign, n, $3); }
   | declaration COMMA ID
-    { $$ = current->newVariable($3, $1, temp); }
+    { $$ = current->newVariable($3, $1, temp, 0); }
   | declaration COMMA ID ASSIGN basic-type
-    { AST::Node* n = current->newVariable($3, $1, temp);
+    { AST::Node* n = current->newVariable($3, $1, temp, 0);
       n = current->assignVariable($3, $1);
       $$ = new AST::BinaryOpNode(AST::assign, n, $5); }
+  ;
+
+decl-array
+  : ID LPAR INT RPAR
+    { ST::VarType t = static_cast<ST::VarType>(static_cast<int>(temp) + 3);
+      $$ = current->newVariable($1, NULL, t, $3); }
+  | decl-array COMMA ID LPAR INT RPAR
+    { ST::VarType t = static_cast<ST::VarType>(static_cast<int>(temp) + 3);
+      $$ = current->newVariable($3, $1, t, $5); }
   ;
 
 basic-type
@@ -140,6 +154,8 @@ expr
   | C_FLOAT expr            { $$ = new AST::UnaryOpNode(AST::cast_float, $2); }
   | C_BOOL expr             { $$ = new AST::UnaryOpNode(AST::cast_bool, $2); }
   | LPAR expr RPAR          { $$ = $2; }
+  | ID LPAR expr RPAR       { AST::Node* n = current->useVariable($1);
+                              $$ = new AST::BinaryOpNode(AST::index, n, $3); }
   ;
 
 %%

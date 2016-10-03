@@ -13,18 +13,19 @@
 namespace AST {
 
   enum Operation {
-    add, sub, mul, div, assign,
+    add, sub, mul, div, assign, index,
     eq, neq, gt, lt, geq, leq, _and, _or,
     uminus, _not, cast_int, cast_float, cast_bool,
     if_test
   };
 
   enum NodeType {
-    INT, FLOAT, BOOL, ND
+    INT, FLOAT, BOOL, ND,
+    A_INT, A_FLOAT, A_BOOL,
   };
 
   static const std::string _bin[] = {
-    "+", "-", "*", "/", "=",
+    "+", "-", "*", "/", "=", "[index]",
     "==", "!=", ">", "<", ">=", "<=", "&", "|",
     " -u", " !",
     " [int]", " [float]", " [bool]"
@@ -32,12 +33,14 @@ namespace AST {
 
   static const std::string _opt[] = {
     "addition", "subtraction", "multiplication", "division", "attribution",
-    "equal",  "different", "greater than", "less than",
+    "index", "equal",  "different", "greater than", "less than",
     "greater or equal than", "less or equal than", "and", "or",
     "unary minus", "negation", "test"
   };
 
-  static const std::string _usr[] = { "integer", "float", "boolean" };
+  static const std::string _usr[] = {
+    "integer", "float", "boolean", "", "integer", "float", "boolean" };
+
   static const std::string _var[] = { "int", "float", "bool" };
 
   class Node {
@@ -115,9 +118,10 @@ namespace AST {
     std::string id;
     Node* next;
     NodeType type;
+    int size;
 
-    VariableNode(std::string id, Node* next, NodeType type):
-    id(id), next(next), type(type) {}
+    VariableNode(std::string id, Node* next, NodeType type, int size):
+    id(id), next(next), type(type), size(size) {}
 
     void print(bool prefix);
     NodeType _type();
@@ -134,9 +138,10 @@ namespace AST {
   class MessageNode : public Node {
   public:
     Node* node;
+    std::string msg;
 
-    MessageNode(Node* node):
-    node(node) {}
+    MessageNode(Node* node, std::string msg):
+    node(node), msg(msg) {}
 
     void print(bool prefix);
     NodeType _type();

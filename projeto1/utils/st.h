@@ -14,7 +14,10 @@ extern void yyerror(const char* s, ...);
 
 namespace ST {
 
-  enum VarType { integer, decimal, boolean };
+  enum VarType {
+    integer, decimal, boolean,
+    arr_int, arr_dec, arr_bool,
+  };
 
   enum VarKind { variable };
 
@@ -38,10 +41,12 @@ namespace ST {
 
     std::map<VarType, std::string> mapVarStr {
       {integer, "integer"}, {decimal, "float"}, {boolean, "boolean"},
+      {arr_int, "a_int"}, {arr_dec, "a_float"}, {arr_bool, "a_bool"},
     };
 
     std::map<std::string, AST::NodeType> mapStrNode = {
       {"integer", AST::INT}, {"float", AST::FLOAT}, {"boolean", AST::BOOL},
+      {"a_int", AST::A_INT}, {"a_float", AST::A_FLOAT}, {"a_bool", AST::A_BOOL},
     };
 
     SymbolTable(SymbolTable* external):
@@ -53,7 +58,8 @@ namespace ST {
     bool varExistsHere(std::string key);
     bool varExists(std::string key);
     std::string getSymbolType(std::string key);
-    AST::Node* newVariable(std::string id, AST::Node* next, VarType type);
+    AST::Node* newVariable(std::string id, AST::Node* next,
+                           VarType type, int size);
     AST::Node* assignVariable(std::string id, AST::Node* next);
     AST::Node* useVariable(std::string id);
 
