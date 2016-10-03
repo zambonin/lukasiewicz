@@ -1,0 +1,8 @@
+
+int i = 0, j
+float f = 1.1
+bool b = true
+
+j = [bool] i + f
+i = [float] j
+b = b & [int] f

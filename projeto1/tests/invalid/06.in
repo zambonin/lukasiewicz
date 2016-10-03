@@ -1,0 +1,21 @@
+
+int i
+
+if true
+then {
+  int a
+  for i = 0, i < 2, i = i + 2 {
+      bool a
+
+      if false
+      then {
+        float a
+        a = 4.3
+        }
+
+      int a
+      a = 3
+      }
+  float a
+  a = false
+}

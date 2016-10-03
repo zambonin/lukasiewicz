@@ -1,0 +1,11 @@
+int a(10)
+bool parity(10)
+int i
+float f(23)
+
+a(3) = 4.2
+parity(i) = 3
+f(2) = 4
+f(2) = true
+a(4.3) = 1
+parity(true) = false

@@ -1,0 +1,35 @@
+
+int a = 0, b = 1, c, d
+bool teste_falso = false
+
+if a > b then { if (a > 0) then { c = 10 } }
+
+if false
+then {
+d = 0
+
+} else {
+d = 20
+
+if true
+then
+} else {
+}
+
+float f
+if true
+then {
+	if 2.3 <= 4
+	then {
+		if 2 + 3 >= 5
+		then {
+			f = 2.0
+		}
+	} else {
+		f = 1.0
+	}
+}}
+
+if a
+then {
+}

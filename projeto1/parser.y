@@ -28,7 +28,7 @@ AST::BlockNode* root;
 %token <name> ID T_INT T_FLOAT T_BOOL
 
 %type <block> lines program else body scope
-%type <node> expr line declaration d-type basic-type iteration logical-test decl-array
+%type <node> expr line declaration d-type basic-type iteration decl-array
 
 %left C_INT C_FLOAT C_BOOL
 %left AND OR
@@ -44,13 +44,16 @@ AST::BlockNode* root;
 program
   : %empty          {}
   | scope           { root = $1; }
-  | error NL        { yyerrok; std::cout << std::endl; }
+  | error NL scope  { yyerrok; std::cout << std::endl; root = $3; }
   ;
 
 scope
-  :     { current = new ST::SymbolTable(current); }
-  lines { if (current->external != NULL) current = current->external;
-          $$ = $2; }
+  :                 { current = new ST::SymbolTable(current); }
+  lines             { if (current->external != NULL) current = current->external;
+                      $$ = $2; }
+  | scope lines     { if (current->external != NULL) current = current->external;
+                      $$ = $2; }
+  | scope error NL  { yyerrok; std::cout << std::endl; }
   ;
 
 lines
@@ -73,13 +76,15 @@ line
       $$ = new AST::BinaryOpNode(AST::assign, left, $6); }
   | IF expr NL THEN LCURLY NL body else
     { $$ = new AST::IfNode($2, $7, $8); }
-  | FOR iteration COMMA logical-test COMMA iteration LCURLY NL body
+  | FOR iteration COMMA expr COMMA iteration LCURLY NL body
     { $$ = new AST::ForNode($2, $4, $6, $9); }
+  | line error NL           { yyerrok; std::cout << std::endl; }
   ;
 
 body
   : RCURLY          { $$ = new AST::BlockNode(); }
   | scope RCURLY    { $$ = $1; }
+  | error NL body   { yyerrok; std::cout << std::endl; $$ = $3; }
   ;
 
 else
@@ -129,18 +134,8 @@ basic-type
   | BOOL                    { $$ = new AST::BoolNode($1); }
   ;
 
-logical-test
-  : expr EQ expr            { $$ = new AST::BinaryOpNode(AST::eq, $1, $3); }
-  | expr NEQ expr           { $$ = new AST::BinaryOpNode(AST::neq, $1, $3); }
-  | expr GT expr            { $$ = new AST::BinaryOpNode(AST::gt, $1, $3); }
-  | expr LT expr            { $$ = new AST::BinaryOpNode(AST::lt, $1, $3); }
-  | expr GEQ expr           { $$ = new AST::BinaryOpNode(AST::geq, $1, $3); }
-  | expr LEQ expr           { $$ = new AST::BinaryOpNode(AST::leq, $1, $3); }
-  ;
-
 expr
   : basic-type              { $$ = $1; }
-  | logical-test            { $$ = $1; }
   | ID                      { $$ = current->useVariable($1); }
   | expr PLUS expr          { $$ = new AST::BinaryOpNode(AST::add, $1, $3); }
   | expr MINUS expr         { $$ = new AST::BinaryOpNode(AST::sub, $1, $3); }
@@ -148,6 +143,12 @@ expr
   | expr DIV expr           { $$ = new AST::BinaryOpNode(AST::div, $1, $3); }
   | expr AND expr           { $$ = new AST::BinaryOpNode(AST::_and, $1, $3); }
   | expr OR expr            { $$ = new AST::BinaryOpNode(AST::_or, $1, $3); }
+  | expr EQ expr            { $$ = new AST::BinaryOpNode(AST::eq, $1, $3); }
+  | expr NEQ expr           { $$ = new AST::BinaryOpNode(AST::neq, $1, $3); }
+  | expr GT expr            { $$ = new AST::BinaryOpNode(AST::gt, $1, $3); }
+  | expr LT expr            { $$ = new AST::BinaryOpNode(AST::lt, $1, $3); }
+  | expr GEQ expr           { $$ = new AST::BinaryOpNode(AST::geq, $1, $3); }
+  | expr LEQ expr           { $$ = new AST::BinaryOpNode(AST::leq, $1, $3); }
   | MINUS expr %prec UMINUS { $$ = new AST::UnaryOpNode(AST::uminus, $2); }
   | NOT expr                { $$ = new AST::UnaryOpNode(AST::_not, $2); }
   | C_INT expr              { $$ = new AST::UnaryOpNode(AST::cast_int, $2); }

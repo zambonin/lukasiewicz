@@ -1,0 +1,26 @@
+
+int i, j = 0
+for , j < 10 , j = j + 2 {
+}
+for i = 0, i + 10   , i = i + 1 {
+int temp
+temp = j + i
+j = temp
+}
+j = j + 0
+
+float f = 0.0, 	g = 1.0
+for	, f <= 12.3 ,{
+	f = f + g * g
+}
+for	, f <= 12.3 ,{
+	f = f + g * g
+
+
+for	, f <= 12.3 ,
+	f = f + g * g
+}
+
+for	, f <= 12.3 , j < f | j & g{
+	f = f + g * g
+}

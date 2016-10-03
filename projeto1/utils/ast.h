@@ -15,8 +15,8 @@ namespace AST {
   enum Operation {
     add, sub, mul, div, assign, index,
     eq, neq, gt, lt, geq, leq, _and, _or,
-    uminus, _not, cast_int, cast_float, cast_bool,
-    if_test
+    uminus, _not, if_test, cast_int,
+    cast_float, cast_bool
   };
 
   enum NodeType {
@@ -27,7 +27,7 @@ namespace AST {
   static const std::string _bin[] = {
     "+", "-", "*", "/", "=", "[index]",
     "==", "!=", ">", "<", ">=", "<=", "&", "|",
-    " -u", " !",
+    " -u", " !", "",
     " [int]", " [float]", " [bool]"
   };
 
@@ -167,8 +167,7 @@ namespace AST {
     Node* iteration;
     BlockNode* body;
 
-    ForNode(Node* assign, Node* test, Node* iteration, BlockNode* body):
-    assign(assign), test(test), iteration(iteration), body(body) {}
+    ForNode(Node* assign, Node* test, Node* iteration, BlockNode* body);
 
     void print(bool prefix);
 

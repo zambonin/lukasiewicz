@@ -16,15 +16,6 @@ void SymbolTable::initVariable(std::string key) {
   }
 }
 
-bool SymbolTable::isInit(std::string key) {
-  if (varExistsHere(key)) {
-    return entryList[key].init;
-  } else if (external == NULL) {
-    return false;
-  }
-  return external->isInit(key);
-}
-
 bool SymbolTable::varExistsHere(std::string key) {
   return (bool) entryList.count(key);
 }
@@ -75,10 +66,6 @@ AST::Node* SymbolTable::assignVariable(std::string id, AST::Node* next) {
 AST::Node* SymbolTable::useVariable(std::string id) {
   if (!varExists(id)) {
     yyerror("semantic error: undeclared variable %s\n", id.c_str());
-  }
-
-  if (!isInit(id)){
-    yyerror("error: variable %s not initialized\n", id.c_str());
   }
 
   std::string s = current->getSymbolType(id);

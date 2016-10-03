@@ -175,6 +175,13 @@ void IfNode::print(bool prefix) {
   }
 }
 
+ForNode::ForNode(Node* assign, Node* test, Node* iteration, BlockNode* body):
+assign(assign), test(test), iteration(iteration), body(body) {
+  if (test->_type() != BOOL) {
+    errorMessage(if_test, new AST::BoolNode(NULL), test);
+  }
+}
+
 void ForNode::print(bool prefix) {
   text("for: ", spaces);
   _notab(

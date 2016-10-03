@@ -1,0 +1,12 @@
+
+int a
+
+float f=1.0, g=0. , i
+bool b = true
+
+a = f
+a = b
+b = a
+
+i = true < f
+b = i + g

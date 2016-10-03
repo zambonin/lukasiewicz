@@ -54,7 +54,6 @@ namespace ST {
 
     void addSymbol(std::string key, Symbol symbol);
     void initVariable(std::string key);
-    bool isInit(std::string key);
     bool varExistsHere(std::string key);
     bool varExists(std::string key);
     std::string getSymbolType(std::string key);
