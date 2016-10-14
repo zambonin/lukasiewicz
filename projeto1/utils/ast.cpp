@@ -204,8 +204,7 @@ void ForNode::print(bool prefix) {
     assign->print(true),
     text(",", 0),
     test->print(true),
-    text(",", 0),
-    text("", iteration->_type() != ND),
+    text(", ", 0),
     iteration->print(true));
   text("\n", 0);
   text("do:\n", spaces);
