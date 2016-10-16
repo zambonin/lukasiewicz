@@ -33,7 +33,7 @@ void text(const T& text, int n) {
 }
 
 void Node::errorMessage(Operation op, Node* n1, Node* n2) {
-  yyerror("semantic error: %s operation expected %s but received %s\n",
+  yyerror("semantic error: %s operation expected %s but received %s",
     _opt[op].c_str(), _usr[n1->_type()].c_str(), _usr[n2->_type()].c_str());
 }
 
@@ -82,8 +82,10 @@ binOp(binOp), left(left), right(right) {
     // only valid index operation
     return;
   } else if (left->_type() % 4 != right->_type() % 4) {
-    // first two ifs ensure coercion
+    // the modulo operator ignores the array types, considering them as
+    // their primitive types
     if (left->_type() == INT && right->_type() == FLOAT && binOp != assign) {
+      // first two ifs ensure coercion
       this->left = new UnaryOpNode(cast_float, left);
     } else if (left->_type() == FLOAT && right->_type() == INT) {
       this->right = new UnaryOpNode(cast_float, right);
@@ -144,6 +146,7 @@ void VariableNode::print(bool prefix) {
     text(",", 0);
   }
   std::string s;
+  // prints the size of the array if the `size` attribute is not zero
   s = this->size ? " (size: " + std::to_string(this->size) + ")" : "";
   text(id + s, 1);
 }
@@ -155,7 +158,8 @@ NodeType VariableNode::_type() {
 void BlockNode::print(bool prefix) {
   for (Node* n : nodeList) {
     n->print(prefix);
-    if (n->_type() != ND) {
+    if (n->_type() != ND || dynamic_cast<BinaryOpNode*>(n)) {
+      // prints new line on assignment to undeclared variable
       text("\n", 0);
     }
   }
@@ -163,6 +167,7 @@ void BlockNode::print(bool prefix) {
 
 void MessageNode::print(bool prefix) {
   if (node->_type() != ND) {
+    // prints only the primitive type and its type (variable or array)
     text(_var[this->_type() % 4] + this->msg, spaces);
     node->print(false);
   }
@@ -174,6 +179,7 @@ NodeType MessageNode::_type() {
 
 IfNode::IfNode(Node* condition, BlockNode* _then, BlockNode* _else):
 condition(condition), _then(_then), _else(_else) {
+  // ensures semantic error if condition is not a boolean test
   if (condition->_type() != BOOL) {
     errorMessage(if_test, new AST::BoolNode(NULL), condition);
   }

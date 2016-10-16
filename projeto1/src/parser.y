@@ -22,6 +22,8 @@
   ST::VarType temp;
 %}
 
+%define parse.trace
+
 /* Enable more specific syntax errors. */
 %define parse.error verbose
 
@@ -44,7 +46,7 @@
 
 /* Nonterminal symbols and their types. */
 %type <block> lines program else body scope
-%type <node> expr line declaration d-type basic-type iteration decl-array
+%type <node> expr line declaration d-type basic-type iteration decl-array start-scope
 
 /* Operator precedence. */
 %left C_INT C_FLOAT C_BOOL
@@ -69,27 +71,22 @@
  * to the beginning of the global scope.
  */
 program
-  : %empty          {}
-  | scope           { root = $1; }
-  | error NL scope  { yyerrok; std::cout << std::endl; root = $3; }
+  : %empty              {}
+  | start-scope scope   { root = $2; }
   ;
 
 /*
- * scope
+ * start-scope
  *
  * Initializes a new scope whenever a for or if is derived.
- * On the first rule, a mid-rule [1] is declared so the
- * current scope can be updated accordingly.
- *
- * [1] gnu.org/software/bison/manual/html_node/Mid_002dRule-Actions.html
  */
+start-scope
+  : %empty  { current = new ST::SymbolTable(current); }
+  ;
+
 scope
-  :                 { current = new ST::SymbolTable(current); }
-  lines             { if (current->external != NULL) current = current->external;
-                      $$ = $2; }
-  | scope lines     { if (current->external != NULL) current = current->external;
-                      $$ = $2; }
-  | scope error NL  { yyerrok; std::cout << std::endl; }
+  : lines   { if (current->external != NULL) current = current->external;
+              $$ = $1; }
   ;
 
 /*
@@ -101,7 +98,6 @@ lines
   : line            { $$ = new AST::BlockNode();
                       if ($1 != NULL) $$->nodeList.push_back($1); }
   | lines line      { if ($2 != NULL) $1->nodeList.push_back($2); }
-  | lines error NL  { yyerrok; std::cout << std::endl; }
   ;
 
 /*
@@ -116,8 +112,8 @@ lines
  */
 line
   : NL                      { $$ = 0; }
-  | d-type declaration NL   { $$ = new AST::MessageNode($2, " var:"); }
-  | d-type decl-array NL    { $$ = new AST::MessageNode($2, " array:"); }
+  | d-type declaration      { $$ = new AST::MessageNode($2, " var:"); }
+  | d-type decl-array       { $$ = new AST::MessageNode($2, " array:"); }
   | ID ASSIGN expr
     { AST::Node* n = current->assignVariable($1, NULL);
       $$ = new AST::BinaryOpNode(AST::assign, n, $3); }
@@ -129,7 +125,7 @@ line
     { $$ = new AST::IfNode($2, $7, $8); }
   | FOR iteration COMMA expr COMMA iteration LCURLY NL body
     { $$ = new AST::ForNode($2, $4, $6, $9); }
-  | line error NL           { yyerrok; std::cout << std::endl; }
+  | error NL line           { yyerrok; $$ = $3; }
   ;
 
 /*
@@ -138,9 +134,8 @@ line
  * Represents the lines inside `if` or `for` operations.
  */
 body
-  : RCURLY          { $$ = new AST::BlockNode(); }
-  | scope RCURLY    { $$ = $1; }
-  | error NL body   { yyerrok; std::cout << std::endl; $$ = $3; }
+  : RCURLY                      { $$ = new AST::BlockNode(); }
+  | start-scope scope RCURLY    { $$ = $2; }
   ;
 
 /*

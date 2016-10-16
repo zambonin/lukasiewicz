@@ -75,7 +75,7 @@ error [^a-zA-Z0-9_\.\+\-\*\/\,\=\(\)\=\<\>\&\|\!\{\} \t\n]+
 {deciC} { return C_FLOAT; }
 {boolC} { return C_BOOL; }
 {nameT} { yylval.name = strdup(yytext); return ID; }
-{error} { yyerror("lexical error: unknown symbol %s\n", yytext); }
+{error} { yyerror("lexical error: unknown symbol %s", yytext); }
 .       ;
 
 %%
@@ -87,4 +87,5 @@ void yyerror(const char* s, ...) {
   va_start(ap, s);
   std::fprintf(stderr, "[Line %d] ", yylineno);
   std::vfprintf(stderr, s, ap);
+  std::fprintf(stderr, "\n");
 }

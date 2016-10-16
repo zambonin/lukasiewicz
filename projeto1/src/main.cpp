@@ -5,10 +5,13 @@ extern int yyparse();
 extern int yydebug;
 
 int main() {
+
+  yydebug = 1;
   yyparse();
   if (root != NULL) {
     root->print(true);
   }
 
   return 0;
+
 }

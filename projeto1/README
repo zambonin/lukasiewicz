@@ -7,17 +7,14 @@ currently supports logic and arithmetic operations with integers, floats and
 booleans, that optionally can be saved in variables and arrays, as well as
 if, else and for constructs.
 
-Valid arguments for `batch_test.sh` match the following regex: 0?[1-8]
-
 Known issues:
-  * all input files must end with a new line
-  * on the first line of a scope, if two consecutive syntax errors are
-    input, new syntax error messages must be enabled again with a new line
-    or a valid input
-  * inputs with syntax errors may print extra newlines on the output
+  * if two consecutive syntax errors are input, new syntax error
+    messages must be enabled again with a new line or a valid input
+  * declarations of the form `type id, id = value` and
+    `type id = value newline type id = value` are incorrect
 
 Outputs consisting of error messages may be generated with:
 
-  for i in tests/invalid/*.in ; do \
+  for i in test/invalid/*.in ; do \
     ./lukacompiler < "$i" 1>/dev/null 2> "${i/.in/.out}" ; \
   done
