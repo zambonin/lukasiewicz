@@ -141,7 +141,7 @@ NodeType UnaryOpNode::_type() {
 }
 
 void VariableNode::print(bool prefix) {
-  if (next != NULL) {
+  if (next != nullptr) {
     next->print(false);
     text(",", 0);
   }
@@ -181,7 +181,7 @@ IfNode::IfNode(Node* condition, BlockNode* _then, BlockNode* _else):
 condition(condition), _then(_then), _else(_else) {
   // ensures semantic error if condition is not a boolean test
   if (condition->_type() != BOOL) {
-    errorMessage(if_test, new AST::BoolNode(NULL), condition);
+    errorMessage(if_test, new AST::BoolNode(0), condition);
   }
 }
 
@@ -200,7 +200,7 @@ void IfNode::print(bool prefix) {
 ForNode::ForNode(Node* assign, Node* test, Node* iteration, BlockNode* body):
 assign(assign), test(test), iteration(iteration), body(body) {
   if (test->_type() != BOOL) {
-    errorMessage(if_test, new AST::BoolNode(NULL), test);
+    errorMessage(if_test, new AST::BoolNode(0), test);
   }
 }
 

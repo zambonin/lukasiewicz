@@ -22,10 +22,24 @@
   ST::VarType temp;
 %}
 
-%define parse.trace
+/* Bison declaration summary. */
 
 /* Enable more specific syntax errors. */
 %define parse.error verbose
+
+/* Instrument the parser for traces. */
+%define parse.trace
+
+/* Write a parser header file containing macro definitions for the token
+   type names defined in the grammar. */
+%defines "include/parser.h"
+
+/* Generate the parser implementation on that file. */
+%output "src/parser.cpp"
+
+/* Write an output file containing descriptions of the states and what is
+   done for each type of lookahead token in that state. */
+%verbose
 
 /* Possible C types for semantic values. */
 %union {
@@ -45,8 +59,8 @@
 %token <name> ID T_INT T_FLOAT T_BOOL
 
 /* Nonterminal symbols and their types. */
-%type <block> lines program else body scope
-%type <node> expr line declaration d-type basic-type iteration decl-array start-scope
+%type <block> lines program else body start-scope scope
+%type <node> expr line declaration d-type basic-type iteration decl-array
 
 /* Operator precedence. */
 %left C_INT C_FLOAT C_BOOL
@@ -78,14 +92,20 @@ program
 /*
  * start-scope
  *
- * Initializes a new scope whenever a for or if is derived.
+ * Initializes a new scope whenever a for or if is derived, or if it is the
+ * first line of the program (global scope).
  */
 start-scope
   : %empty  { current = new ST::SymbolTable(current); }
   ;
 
+/*
+ * scope
+ *
+ * Configures the correct symbol table according to the scope.
+ */
 scope
-  : lines   { if (current->external != NULL) current = current->external;
+  : lines   { if (current->external != nullptr) current = current->external;
               $$ = $1; }
   ;
 
@@ -96,8 +116,8 @@ scope
  */
 lines
   : line            { $$ = new AST::BlockNode();
-                      if ($1 != NULL) $$->nodeList.push_back($1); }
-  | lines line      { if ($2 != NULL) $1->nodeList.push_back($2); }
+                      if ($1 != nullptr) $$->nodeList.push_back($1); }
+  | lines line      { if ($2 != nullptr) $1->nodeList.push_back($2); }
   ;
 
 /*
@@ -115,17 +135,20 @@ line
   | d-type declaration      { $$ = new AST::MessageNode($2, " var:"); }
   | d-type decl-array       { $$ = new AST::MessageNode($2, " array:"); }
   | ID ASSIGN expr
-    { AST::Node* n = current->assignVariable($1, NULL);
-      $$ = new AST::BinaryOpNode(AST::assign, n, $3); }
+    { $$ = new AST::BinaryOpNode(AST::assign, current->useVariable($1), $3); }
   | ID LPAR expr RPAR ASSIGN expr
-    { AST::Node* n = current->assignVariable($1, NULL);
+    { AST::Node* n = current->useVariable($1);
       AST::Node* left = new AST::BinaryOpNode(AST::index, n, $3);
       $$ = new AST::BinaryOpNode(AST::assign, left, $6); }
   | IF expr NL THEN LCURLY NL body else
     { $$ = new AST::IfNode($2, $7, $8); }
   | FOR iteration COMMA expr COMMA iteration LCURLY NL body
     { $$ = new AST::ForNode($2, $4, $6, $9); }
-  | error NL line           { yyerrok; $$ = $3; }
+  | prod-error line         { $$ = $2; }
+  ;
+
+prod-error
+  : error NL               { yyerrok; }
   ;
 
 /*
@@ -155,7 +178,7 @@ else
  */
 iteration
   : %empty          { $$ = new AST::Node(); }
-  | ID ASSIGN expr  { AST::Node* n = current->assignVariable($1, NULL);
+  | ID ASSIGN expr  { AST::Node* n = current->useVariable($1);
                       $$ = new AST::BinaryOpNode(AST::assign, n, $3); }
   ;
 
@@ -179,17 +202,15 @@ d-type
  */
 declaration
   : ID
-    { $$ = current->newVariable($1, NULL, temp, 0); }
+    { $$ = current->newVariable($1, nullptr, temp, 0); }
   | ID ASSIGN basic-type
-    { AST::Node* n = current->newVariable($1, NULL, temp, 0);
-      n = current->assignVariable($1, NULL);
+    { AST::Node* n = current->newVariable($1, nullptr, temp, 0);
       $$ = new AST::BinaryOpNode(AST::assign, n, $3); }
   | declaration COMMA ID
     { $$ = current->newVariable($3, $1, temp, 0); }
   | declaration COMMA ID ASSIGN basic-type
     { AST::Node* n = current->newVariable($3, $1, temp, 0);
-      n = current->assignVariable($3, $1);
-      $$ = new AST::BinaryOpNode(AST::assign, n, $5); }
+      if (n != $1) $$ = new AST::BinaryOpNode(AST::assign, n, $5); }
   ;
 
 /*
@@ -200,7 +221,7 @@ declaration
 decl-array
   : ID LPAR INT RPAR
     { ST::VarType t = static_cast<ST::VarType>(static_cast<int>(temp) + 3);
-      $$ = current->newVariable($1, NULL, t, $3); }
+      $$ = current->newVariable($1, nullptr, t, $3); }
   | decl-array COMMA ID LPAR INT RPAR
     { ST::VarType t = static_cast<ST::VarType>(static_cast<int>(temp) + 3);
       $$ = current->newVariable($3, $1, t, $5); }

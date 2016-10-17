@@ -33,16 +33,12 @@ namespace ST {
     //! Kind of symbol or function.
     VarKind kind;
 
-    //! Initialization status of the symbol, used to check if a
-    //! variable has a value or a function has been defined.
-    bool init;
-
     //! Empty constructor left to be used by `map`.
     Symbol() {}
 
     //! Basic constructor.
-    Symbol(VarType type, VarKind kind, bool init):
-    type(type), kind(kind), init(init) {}
+    Symbol(VarType type, VarKind kind):
+    type(type), kind(kind) {}
 
   };
 
@@ -69,6 +65,7 @@ namespace ST {
     std::map<std::string, AST::NodeType> mapStrNode = {
       {"integer", AST::INT}, {"float", AST::FLOAT}, {"boolean", AST::BOOL},
       {"a_int", AST::A_INT}, {"a_float", AST::A_FLOAT}, {"a_bool", AST::A_BOOL},
+      {"non", AST::ND},
     };
 
     //! Basic constructor.
@@ -81,13 +78,6 @@ namespace ST {
      *  \param symbol   Symbol object.
      */
     void addSymbol(std::string key, Symbol symbol);
-
-    //! Initializes a variable anywhere on the program, if it exists,
-    //! navigating through the scopes.
-    /*!
-     *  \param key  string identifier of the symbol.
-     */
-    void initVariable(std::string key);
 
     //! Checks if an identifier is present on this table.
     /*!
@@ -122,14 +112,6 @@ namespace ST {
     //! Used to connect the nodes when multiple ones are declared.
     /*!
      *  \param id     string identifier of the symbol.
-     *  \param next   pointer to the next node in the case of multiple
-     *                assignments.
-     */
-    AST::Node* assignVariable(std::string id, AST::Node* next);
-
-    //! Returns a new node with information similar to the original.
-    /*!
-     *  \param id   string identifier of the symbol.
      */
     AST::Node* useVariable(std::string id);
 

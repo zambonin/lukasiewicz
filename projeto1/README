@@ -7,11 +7,10 @@ currently supports logic and arithmetic operations with integers, floats and
 booleans, that optionally can be saved in variables and arrays, as well as
 if, else and for constructs.
 
+The debug tracer for the parser can be enabled with the `--debug` flag.
+
 Known issues:
-  * if two consecutive syntax errors are input, new syntax error
-    messages must be enabled again with a new line or a valid input
-  * declarations of the form `type id, id = value` and
-    `type id = value newline type id = value` are incorrect
+  * a program must not end with a syntax error
 
 Outputs consisting of error messages may be generated with:
 

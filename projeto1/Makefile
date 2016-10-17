@@ -4,16 +4,12 @@ CFLAGS = -Wall -Wextra -fexceptions -Wno-sign-compare -Wno-unused-function \
 
 OUTPUT = lukacompiler
 
-all: flex bison cfiles
-
-flex:
-	@flex -o src/scanner.cpp src/scanner.l
-
-bison:
-	@bison -v --defines=include/parser.h --output=src/parser.cpp src/parser.y
-
-cfiles:
+default: grammar
 	@$(CC) $(CFLAGS) $(wildcard **/*.cpp) -o $(OUTPUT)
+
+grammar:
+	@flex -o src/scanner.cpp src/scanner.l
+	@bison src/parser.y
 
 clean:
 	@rm src/parser.{cpp,output} include/parser.h src/scanner.cpp $(OUTPUT)
