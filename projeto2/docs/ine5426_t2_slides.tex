@@ -1,0 +1,129 @@
+\documentclass{beamer}
+
+\usepackage[brazil]{babel}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+
+\usetheme{CambridgeUS}
+\usecolortheme{seagull}
+\setbeamertemplate{headline}{}
+\setbeamertemplate{itemize items}[triangle]
+\setbeamertemplate{footline}[frame number]{}
+\setbeamertemplate{navigation symbols}{}
+
+\title{
+    Novas funcionalidades para Łukasiewicz
+}
+\author{
+    Douglas Martins\thanks{arquiteto de sistema}
+    \and Gustavo Zambonin\thanks{gerente de projeto, projetista de linguagem}
+    \and Marcello Klingelfus\thanks{testador}
+}
+\institute{
+    Universidade Federal de Santa Catarina \\
+    Departamento de Informática e Estatística \\
+    INE5426 - Construção de Compiladores
+}
+\date{}
+
+\begin{document}
+
+\begin{frame}
+    \titlepage
+\end{frame}
+
+\begin{frame}
+    \frametitle{Primeira extensão: o paradigma funcional}
+
+    \begin{itemize}
+        \item Decomposição de um problema como um conjunto de funções
+        \item Função anônima simples -- 
+            {\footnotesize \texttt{lambda type arg:\;expr}}
+        \item Função de alta ordem de mapeamento --
+            {\footnotesize \texttt{map(function, list)}}
+        \begin{itemize}
+            \item aplica função em todos os elementos de um iterável
+        \end{itemize}
+        \item Função de alta ordem de redução --
+            {\footnotesize \texttt{fold(function, list)}}
+        \begin{itemize}
+            \item reduz elementos de um iterável recursivamente para um
+                tipo primitivo de acordo com uma função
+        \end{itemize}
+        \item Função de alta ordem de seleção --
+            {\footnotesize \texttt{filter(function, list)}}
+        \begin{itemize}
+            \item remove elementos de um iterável que não respeitam uma
+                função booleana
+        \end{itemize}
+    \end{itemize}
+
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{Segunda extensão: os tipos \texttt{char} e \texttt{str}}
+
+    \begin{itemize}
+        \item \texttt{char} tem aspas simples, \texttt{str} tem aspas duplas
+        \item operador de concatenação \texttt{+}
+        \begin{itemize}
+            \item \texttt{char + str}, \texttt{char + char} produz coerção 
+        \end{itemize}
+        \item \texttt{str} é similar a \texttt{char array},
+            então suporta operação de índice
+        \item adiciona também fácil suporte a comentários de uma linha com \#
+    \end{itemize}
+
+    \begin{verbatim}
+        char letter = 'a'
+        str word = "luka", sum
+        # this is a comment discarded by the parser
+        sum = letter + word(1)
+
+        char var: letter = 'a'
+        str var: word = "luka", sum
+        = sum + [str] letter [index] word 1
+    \end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{Integração com LLVM}
+
+    \begin{itemize}
+        \item Exemplo de geração de código intermediário:
+
+        \begin{verbatim}
+  int fun math() {        | define i64 @math() {
+    int z = 0, y = 2      | entry:
+    int x = z             |   %z = alloca i64
+    x = y * 10 + x - 15   |   store i64 0, i64* %z
+    z = x                 |   %x = load i64, i64* %z
+    ret x                 |   %tmp2 = sub i64 %x, 15
+  }                       |   %tmp = add i64 20, %tmp2
+                          |   %x1 = add i64 %tmp, %x
+                          |   store i64 %x1, i64* %z
+                          |   ret i64 %x1
+                          | }
+        \end{verbatim}
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{\emph{Transpiling} para Python}
+
+    \begin{itemize}
+        \item Exemplo de tradução entre linguagens:
+
+        \begin{verbatim}
+  int fun math() {        | def math():
+    int z = 0, y = 2      |     z = 0, y = 2
+    int x = z             |     x = z
+    x = y * 10 + x - 15   |     x = y * 10 + x - 15
+    z = x                 |     z = x
+    ret x                 |     return x
+  }                       |
+        \end{verbatim}
+    \end{itemize}
+\end{frame}
+
+\end{document}

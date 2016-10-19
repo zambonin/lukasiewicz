@@ -1,0 +1,217 @@
+\documentclass{article}
+
+\usepackage[brazil]{babel}
+\usepackage[T1]{fontenc}
+\usepackage[a4paper, margin=1.5cm]{geometry}
+\usepackage[colorlinks, urlcolor=blue, citecolor=red]{hyperref}
+\usepackage[utf8]{inputenc}
+\usepackage{enumitem}
+
+\newenvironment{smallitem}{
+    \vspace{-1mm}
+    \begin{itemize}
+    \setlength{\parskip}{0pt}
+    \setlength{\itemsep}{2pt}
+}{
+    \vspace{-2mm}
+    \end{itemize}
+}
+
+\newenvironment{smallenum}{
+    \vspace{-1mm}
+    \begin{enumerate}[label=\roman*.]
+    \setlength{\parskip}{0pt}
+    \setlength{\itemsep}{2pt}
+}{
+    \vspace{-2mm}
+    \end{enumerate}
+}
+
+\title{\textbf{Proposta de extensão para a linguagem Łukasiewicz}}
+\author{
+    Douglas Martins \\
+    {\small arquiteto de sistema}
+    \and Gustavo Zambonin \\
+    {\small gerente de projeto, projetista de sistema} \vspace{2mm}\\
+    {\small Construção de Compiladores (UFSC -- INE5426)}
+    \footnote{\texttt{
+        \{marcelino.douglas,gustavo.zambonin,marcello.klingelfus\}@grad.ufsc.br
+        \hfill \href{https://github.com/zambonin/ufsc-ine5426}{src/}
+    }}
+    \and Marcello Klingelfus \\
+    {\small testador}
+}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\section{Funções anônimas e de alta ordem}
+
+\subsection{Definições}
+
+Adiciona-se à linguagem suporte a funções anônimas\footnote{função que não
+depende de um identificador para ser chamada} e funções de alta
+ordem\footnote{\emph{higher-order functions} -- função que toma uma ou mais
+funções como parâmetro} denominadas \texttt{map}, \texttt{fold} e
+\texttt{filter}. \medskip
+
+Funções anônimas respeitam as seguintes restrições:
+\begin{smallitem}
+    \item \texttt{lambda} torna-se palavra reservada da linguagem;
+    \item são utilizadas apenas como argumentos para funções de alta ordem;
+    \item devem conter no mínimo um argumento;
+    \item sua mensagem de saída é embutida nas funções de alta ordem, similar
+        a uma função definida normalmente dentro desse escopo, com
+        identificador fixo.
+\end{smallitem} \medskip
+
+Funções de alta ordem respeitam as seguintes restrições:
+\begin{smallitem}
+    \item \texttt{map}, \texttt{fold} e \texttt{filter} tornam-se palavras
+        reservadas da linguagem;
+    \item devem ter obrigatoriamente dois argumentos, nesta ordem: uma função
+        anônima ou já declarada, e um \texttt{array}, chamados respectivamente
+        de \texttt{f()} e \texttt{it} neste documento para facilitar a
+        visualização das regras;
+    \item será necessário estender a linguagem com a adição de um operador
+        unário \texttt{len}, que retorna o tamanho do \texttt{array}, para que
+        o código gerado nas funções de alta ordem seja semanticamente correto;
+    \item o tipo de retorno de \texttt{map} deve ser igual ao tipo de retorno
+        de \texttt{f()}, que deve ser igual ao tipo de \texttt{it};
+    \item o tipo de retorno de \texttt{fold} deve ser igual ao tipo básico de
+        \texttt{it}, e o tipo de retorno de \texttt{f()} deve ser igual ao
+        tipo de \texttt{it};
+    \item o tipo de retorno de \texttt{filter} deve ser igual ao tipo de
+        \texttt{it}, e \texttt{f()} deve ser sempre uma função booleana;
+    \item para evitar erros de redefinição, as funções de alta ordem levam
+        como sufixo um traço inferior seguido do nome de seu segundo parâmetro;
+    \item arrays, índices e variáveis temporários devem ser criados adicionando
+        os sufixos \texttt{\_ta} e \texttt{\_ti} e \texttt{\_tv} ao nome original
+        do parâmetro, respectivamente.
+\end{smallitem}
+
+\subsection{Exemplo de código}
+
+\begin{verbatim}
+int t(10), output(10)
+output = map(lambda int x -> x + 2, t)
+\end{verbatim}
+
+\subsection{Saída esperada}
+
+\begin{verbatim}
+int array: t (size: 10), output (size: 10)
+int array fun: map_arr (params: int array t)
+   int fun: lambda (params: int x)
+     int var: tmp
+     = tmp + x 2
+     ret tmp         # retorna ID ou expr???
+   int array fun: t_ta (size: 10)
+   for = t_ti 0, < t_ti [len] t, = t_ti + t_ti 1:
+     = [index] t_ta t_ti lambda[1 params]
+   ret t_ta
+= output map_arr[1 params]
+
+\end{verbatim}
+
+% int result
+% result = fold(lambda int x, y -> x + y, output)
+
+% int var: result
+% int fun: fold_output (params: int array output)
+%   int fun: lambda (params: int x, int y)
+%     int var: tmp
+%     = tmp + x y
+%     ret tmp
+%   int var: output_tv
+%   for = output_ti 0, < output_ti [len] output, = output_ti + output_ti 1:
+%     = output_tv lambda[2 params]
+%   ret output_tv
+% = result fold_output[1 params]
+
+\section{Suporte a caracteres e cadeias destes}
+
+\subsection{Definições}
+
+Os seguintes recursos são adicionados à linguagem:
+
+\begin{smallitem}
+    \item suporte a algumas operações com caracteres ASCII entre $32_{10}$
+        (espaço) e $126_{10}$ (\texttt{\~}), inclusive;
+    \item variáveis com apenas um caractere, de tipo \texttt{char}, podem ser
+        declaradas com aspas simples;
+    \item variáveis com múltiplos caracteres, de tipo \texttt{str} podem ser
+        declaradas com aspas duplas. Considera-se que um \texttt{str} é
+        similar a um \texttt{char array};
+    \item o operador de adição causa coerção se utilizado entre \texttt{char} e
+        \texttt{char}, ou \texttt{char} e \texttt{str} (independente da ordem);
+    \item os operadores de comparação (maior, menor...) podem ser utilizados
+        entre estes dois tipos;
+    \item o operador de índice pode ser utilizado em um \texttt{str}; esta
+        variável é tratada como um \texttt{char};
+    \item comentários podem ser feitos em linhas individuais começando com
+        \texttt{\#}. Os caracteres válidos são os mesmos citados acima.
+        Serão ignorados pelo \emph{parser} e não serão mostrados na
+        representação intermediária de código.
+\end{smallitem}
+
+\subsection{Exemplo de código}
+
+\begin{verbatim}
+    char let = 'a'
+    str wd = "luka", result
+    # i can add letters together
+    result = wd + let
+    let = result(1)
+\end{verbatim}
+
+\subsection{Saída esperada}
+
+\begin{verbatim}
+    char var: let = 'a'
+    str var: wd = "luka", result
+    = result + wd [str] let
+    = let [index] result 1
+\end{verbatim}
+
+\section{Geração de código intermediário com LLVM}
+
+\subsection{Roteiro}
+Propõe-se compilar código-fonte de Łukasiewicz para representação intermediária
+de LLVM (LLVM IR). A fragmentação desta tarefa será definida de forma similar
+ao Projeto 1:
+
+\begin{smallenum}
+    \item linguagem introdutória
+    \item ponto flutuante e valores booleanos
+    \item conversão de tipos
+    \item caracteres e cadeias
+    \item expressões condicionais
+    \item laços
+    \item múltiplos escopos
+    \item funções (usuais, anônimas e de alta ordem)
+    \item arranjos
+    \item ponteiros
+\end{smallenum}
+
+\section{\emph{Transpiler} de Łukasiewicz para Python}
+
+\subsection{Roteiro}
+
+Adicionalmente, propõe-se compilar código-fonte de Łukasiewicz para código Python, de
+modo a testar seu funcionamento e ver resultados reais sem a implementação de um
+interpretador completo. O roteiro é similar ao anterior. As características
+diferentes das linguagens fonte e destino devem ser levadas em conta, e assim,
+alguns comportamentos poderão ser simulados de modo diferente:
+
+\begin{smallitem}
+    \item tipagem dinâmica em Python faz com que as variáveis não precisem ser
+        declaradas junto a seus tipos;
+    \item as palavras reservadas \texttt{True} e \texttt{False}, em Python, podem
+        ser operadas como inteiros de valor \texttt{0} e \texttt{1};
+    \item outros comportamentos serão documentados se descobertos.
+\end{smallitem}
+
+\end{document}
