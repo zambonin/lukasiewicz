@@ -148,7 +148,7 @@ line
   ;
 
 prod-error
-  : error NL               { yyerrok; }
+  : error NL                { yyerrok; }
   ;
 
 /*

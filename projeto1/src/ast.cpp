@@ -81,11 +81,9 @@ binOp(binOp), left(left), right(right) {
   if (binOp == index && right->_type() == INT) {
     // only valid index operation
     return;
-  } else if (left->_type() % 4 != right->_type() % 4) {
-    // the modulo operator ignores the array types, considering them as
-    // their primitive types
+  } else if (left->_type() != right->_type()) {
+    // first two ifs ensure coercion
     if (left->_type() == INT && right->_type() == FLOAT && binOp != assign) {
-      // first two ifs ensure coercion
       this->left = new UnaryOpNode(cast_float, left);
     } else if (left->_type() == FLOAT && right->_type() == INT) {
       this->right = new UnaryOpNode(cast_float, right);
@@ -99,6 +97,7 @@ binOp(binOp), left(left), right(right) {
 
 void BinaryOpNode::print(bool prefix) {
   if (prefix) {
+    // prints a space if the operation is not an assignment
     text("", binOp != assign);
     text(_bin[binOp], spaces);
     _notab(
@@ -115,7 +114,11 @@ void BinaryOpNode::print(bool prefix) {
 }
 
 NodeType BinaryOpNode::_type() {
-  return static_cast<int>(binOp) < 6 ? left->_type() : BOOL;
+  if (binOp == index) {
+    // needs to return primitive type of element inside array
+    return static_cast<NodeType>(static_cast<int>(left->_type()) - 3);
+  }
+  return (binOp < 6) ? left->_type() : BOOL;
 }
 
 UnaryOpNode::UnaryOpNode(Operation op, Node* node):
@@ -168,7 +171,7 @@ void BlockNode::print(bool prefix) {
 void MessageNode::print(bool prefix) {
   if (node->_type() != ND) {
     // prints only the primitive type and its type (variable or array)
-    text(_var[this->_type() % 4] + this->msg, spaces);
+    text(_var[this->_type() % 3] + this->msg, spaces);
     node->print(false);
   }
 }
