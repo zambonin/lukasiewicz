@@ -21,8 +21,9 @@ namespace AST {
 
   //! Possible types for the nodes.
   enum NodeType {
-    INT, FLOAT, BOOL, ND,
+    INT, FLOAT, BOOL,
     A_INT, A_FLOAT, A_BOOL,
+    ND
   };
 
   //! String representation for the operations.
@@ -43,7 +44,9 @@ namespace AST {
 
   //! Verbose representation for the node types.
   static const std::string _usr[] = {
-    "integer", "float", "boolean", "", "integer", "float", "boolean" };
+    "integer", "float", "boolean",
+    "integer array", "float array", "boolean array", ""
+  };
 
   //! Basic representation for the node types.
   static const std::string _var[] = { "int", "float", "bool" };
