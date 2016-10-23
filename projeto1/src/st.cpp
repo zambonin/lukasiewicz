@@ -24,15 +24,15 @@ bool SymbolTable::varExists(std::string key) {
 AST::Node* SymbolTable::getNodeFromTable(std::string key) {
   if (varExistsHere(key)) {
     AST::Node* n = entryList[key].node;
-    return new AST::VariableNode(key, nullptr, n->_type(), 0);
+    return new AST::VariableNode(key, nullptr, n->_type(), 0, n->ptr_cnt);
   } else if (external == nullptr) {
-    return new AST::VariableNode(key, nullptr, AST::ND, 0);
+    return new AST::VariableNode(key, nullptr, AST::ND, 0, 0);
   }
   return external->getNodeFromTable(key);
 }
 
 AST::Node* SymbolTable::newVariable(std::string id, AST::Node* next,
-                                    AST::NodeType type, int size) {
+                                    AST::NodeType type, int size, int ref) {
   if (varExistsHere(id)) {
     yyerror("semantic error: re-declaration of variable %s", id.c_str());
     // new variable is not added to the symbol table and
@@ -40,7 +40,7 @@ AST::Node* SymbolTable::newVariable(std::string id, AST::Node* next,
     return (next != nullptr) ? next : new AST::Node();
   }
 
-  AST::Node* n = new AST::VariableNode(id, next, type, size);
+  AST::Node* n = new AST::VariableNode(id, next, type, size, ref);
   Symbol newEntry(type, n, variable);
   addSymbol(id, newEntry);
 

@@ -13,40 +13,36 @@ namespace AST {
 
   //! Operations accepted by the language.
   enum Operation {
-    add, sub, mul, div, assign, index,
+    add, sub, mul, div, assign, index, addr, ref,
     eq, neq, gt, lt, geq, leq, _and, _or,
-    uminus, _not, if_test, cast_int,
-    cast_float, cast_bool
+    uminus, _not, if_test, cast_int, cast_float, cast_bool
   };
 
   //! Possible types for the nodes.
   enum NodeType {
-    INT, FLOAT, BOOL,
+    ND = -1, INT, FLOAT, BOOL,
     A_INT, A_FLOAT, A_BOOL,
-    ND
+    P_INT, P_FLOAT, P_BOOL,
+    PA_INT, PA_FLOAT, PA_BOOL,
   };
 
   //! String representation for the operations.
   static const std::string _bin[] = {
-    "+", "-", "*", "/", "=", "[index]",
+    "+", "-", "*", "/", "=", "[index]", " [addr]", " [ref]",
     "==", "!=", ">", "<", ">=", "<=", "&", "|",
-    " -u", " !", "",
-    " [int]", " [float]", " [bool]"
+    " -u", " !", "", " [int]", " [float]", " [bool]"
   };
 
   //! Verbose representation for the operations.
   static const std::string _opt[] = {
     "addition", "subtraction", "multiplication", "division", "attribution",
-    "index", "equal",  "different", "greater than", "less than",
-    "greater or equal than", "less or equal than", "and", "or",
+    "index", "address", "reference", "equal", "different", "greater than",
+    "less than", "greater or equal than", "less or equal than", "and", "or",
     "unary minus", "negation", "test"
   };
 
   //! Verbose representation for the node types.
-  static const std::string _usr[] = {
-    "integer", "float", "boolean",
-    "integer array", "float array", "boolean array", ""
-  };
+  static const std::string _usr[] = { "integer", "float", "boolean" };
 
   //! Basic representation for the node types.
   static const std::string _var[] = { "int", "float", "bool" };
@@ -57,15 +53,17 @@ namespace AST {
     //! Type of the node.
     NodeType type;
 
+    //! Reference counter.
+    int ptr_cnt;
+
     //! Prints the node contents to `stdout`.
     /*!
      *  \param prefix  chooses between polish or infix notation.
      */
     virtual void print(bool prefix) {}
 
-    //! Returns the type of the node. The modulo operation
-    //! is used sometimes to represent arrays as their basic types.
-    virtual NodeType _type() { return ND; }
+    //! Returns the type of the node.
+    virtual NodeType _type() { return this->type; }
 
     //! Prints a semantic error message.
     /*!
@@ -74,6 +72,10 @@ namespace AST {
      *  \param n2   right child (operand) of the node.
      */
     void errorMessage(Operation op, Node* n1, Node* n2);
+
+    //! Prints the verbose type of the node, taking in account its
+    //! status as an array and/or pointer.
+    std::string verboseType();
 
   };
 
@@ -203,8 +205,7 @@ namespace AST {
     int size;
 
     //! Basic constructor.
-    VariableNode(std::string id, Node* next, NodeType type, int size):
-    id(id), next(next), type(type), size(size) {}
+    VariableNode(std::string id, Node* next, NodeType type, int size, int ref);
 
     //! Prints the node contents to `stdout`.
     /*!
@@ -238,8 +239,7 @@ namespace AST {
     std::string msg;
 
     //! Basic constructor.
-    MessageNode(Node* node, std::string msg):
-    node(node), msg(msg) {}
+    MessageNode(Node* node, std::string msg, int ref);
 
     //! Prints the node contents to `stdout`.
     /*!
