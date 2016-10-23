@@ -19,7 +19,7 @@
   AST::BlockNode* root;
 
   /* Temporary variable used to simplify the grammar on declarations. */
-  ST::VarType temp;
+  AST::NodeType temp;
 %}
 
 /* Bison declaration summary. */
@@ -189,9 +189,9 @@ iteration
  * a declaration production.
  */
 d-type
-  : T_INT   { temp = ST::integer; }
-  | T_FLOAT { temp = ST::decimal; }
-  | T_BOOL  { temp = ST::boolean; }
+  : T_INT   { temp = AST::INT; }
+  | T_FLOAT { temp = AST::FLOAT; }
+  | T_BOOL  { temp = AST::BOOL; }
   ;
 
 /*
@@ -220,10 +220,10 @@ declaration
  */
 decl-array
   : ID LPAR INT RPAR
-    { ST::VarType t = static_cast<ST::VarType>(static_cast<int>(temp) + 3);
+    { AST::NodeType t = static_cast<AST::NodeType>(static_cast<int>(temp) + 3);
       $$ = current->newVariable($1, nullptr, t, $3); }
   | decl-array COMMA ID LPAR INT RPAR
-    { ST::VarType t = static_cast<ST::VarType>(static_cast<int>(temp) + 3);
+    { AST::NodeType t = static_cast<AST::NodeType>(static_cast<int>(temp) + 3);
       $$ = current->newVariable($3, $1, t, $5); }
   ;
 

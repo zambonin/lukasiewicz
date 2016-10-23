@@ -21,17 +21,18 @@ bool SymbolTable::varExists(std::string key) {
   return external->varExists(key);
 }
 
-std::string SymbolTable::getSymbolType(std::string key) {
+AST::Node* SymbolTable::getNodeFromTable(std::string key) {
   if (varExistsHere(key)) {
-    return mapVarStr[entryList[key].type];
+    AST::Node* n = entryList[key].node;
+    return new AST::VariableNode(key, nullptr, n->_type(), 0);
   } else if (external == nullptr) {
-    return "non";
+    return new AST::VariableNode(key, nullptr, AST::ND, 0);
   }
-  return external->getSymbolType(key);
+  return external->getNodeFromTable(key);
 }
 
 AST::Node* SymbolTable::newVariable(std::string id, AST::Node* next,
-                                    VarType type, int size) {
+                                    AST::NodeType type, int size) {
   if (varExistsHere(id)) {
     yyerror("semantic error: re-declaration of variable %s", id.c_str());
     // new variable is not added to the symbol table and
@@ -39,9 +40,11 @@ AST::Node* SymbolTable::newVariable(std::string id, AST::Node* next,
     return (next != nullptr) ? next : new AST::Node();
   }
 
-  Symbol newEntry(type, variable);
+  AST::Node* n = new AST::VariableNode(id, next, type, size);
+  Symbol newEntry(type, n, variable);
   addSymbol(id, newEntry);
-  return new AST::VariableNode(id, next, mapStrNode[mapVarStr[type]], size);
+
+  return n;
 }
 
 AST::Node* SymbolTable::useVariable(std::string id) {
@@ -49,6 +52,5 @@ AST::Node* SymbolTable::useVariable(std::string id) {
     yyerror("semantic error: undeclared variable %s", id.c_str());
   }
 
-  return new AST::VariableNode(
-    id, nullptr, mapStrNode[current->getSymbolType(id)], 0);
+  return getNodeFromTable(id);
 }
