@@ -19,7 +19,10 @@
   AST::BlockNode* root;
 
   /* Temporary variable used to simplify the grammar on declarations. */
-  AST::NodeType temp;
+  AST::NodeType tmp_t;
+
+  /* Temporary variable that acts as a reference counter. */
+  int tmp_c;
 %}
 
 /* Bison declaration summary. */
@@ -60,7 +63,8 @@
 
 /* Nonterminal symbols and their types. */
 %type <block> lines program else body start-scope scope
-%type <node> expr line declaration d-type basic-type iteration decl-array
+%type <node> expr line declaration d-type basic-type
+%type <node> iteration decl-array ref-cnt
 
 /* Operator precedence. */
 %left C_INT C_FLOAT C_BOOL
@@ -68,7 +72,7 @@
 %left EQ NEQ GT LT GEQ LEQ
 %left PLUS MINUS
 %left TIMES DIV
-%left UMINUS NOT
+%left UMINUS NOT ADDR REF
 %nonassoc error
 
 /* Starting grammar rule. */
@@ -131,24 +135,27 @@ lines
  *   - a loop operation, called `for`.
  */
 line
-  : NL                      { $$ = 0; }
-  | d-type declaration      { $$ = new AST::MessageNode($2, " var:"); }
-  | d-type decl-array       { $$ = new AST::MessageNode($2, " array:"); }
-  | ID ASSIGN expr
-    { $$ = new AST::BinaryOpNode(AST::assign, current->useVariable($1), $3); }
-  | ID LPAR expr RPAR ASSIGN expr
-    { AST::Node* n = current->useVariable($1);
-      AST::Node* left = new AST::BinaryOpNode(AST::index, n, $3);
-      $$ = new AST::BinaryOpNode(AST::assign, left, $6); }
+  : NL                  { $$ = 0; }
+  | d-type declaration  { $$ = new AST::MessageNode($2, " var:", tmp_c); }
+  | d-type decl-array   { $$ = new AST::MessageNode($2, " array:", tmp_c); }
+  | ref-cnt ID ASSIGN expr
+    { AST::Node* n = current->useVariable($2);
+      if (tmp_c) n = new AST::UnaryOpNode(AST::ref, n);
+      $$ = new AST::BinaryOpNode(AST::assign, n, $4); }
+  | ref-cnt ID LPAR expr RPAR ASSIGN expr
+    { AST::Node* n = current->useVariable($2);
+      if (tmp_c) n = new AST::UnaryOpNode(AST::ref, n);
+      AST::Node* left = new AST::BinaryOpNode(AST::index, n, $4);
+      $$ = new AST::BinaryOpNode(AST::assign, left, $7); }
   | IF expr NL THEN LCURLY NL body else
     { $$ = new AST::IfNode($2, $7, $8); }
   | FOR iteration COMMA expr COMMA iteration LCURLY NL body
     { $$ = new AST::ForNode($2, $4, $6, $9); }
-  | prod-error line         { $$ = $2; }
+  | prod-error line     { $$ = $2; }
   ;
 
 prod-error
-  : error NL                { yyerrok; }
+  : error NL            { yyerrok; }
   ;
 
 /*
@@ -189,9 +196,19 @@ iteration
  * a declaration production.
  */
 d-type
-  : T_INT   { temp = AST::INT; }
-  | T_FLOAT { temp = AST::FLOAT; }
-  | T_BOOL  { temp = AST::BOOL; }
+  : T_INT ref-cnt   { tmp_t = AST::INT; }
+  | T_FLOAT ref-cnt { tmp_t = AST::FLOAT; }
+  | T_BOOL ref-cnt  { tmp_t = AST::BOOL; }
+  ;
+
+/*
+ * ref-cnt
+ *
+ * Counts how many pointer references are being made.
+ */
+ref-cnt
+  : %empty      { tmp_c = 0; }
+  | ref-cnt REF { tmp_c += 1; }
   ;
 
 /*
@@ -202,14 +219,14 @@ d-type
  */
 declaration
   : ID
-    { $$ = current->newVariable($1, nullptr, temp, 0); }
+    { $$ = current->newVariable($1, nullptr, tmp_t, 0, tmp_c); }
   | ID ASSIGN basic-type
-    { AST::Node* n = current->newVariable($1, nullptr, temp, 0);
+    { AST::Node* n = current->newVariable($1, nullptr, tmp_t, 0, tmp_c);
       $$ = new AST::BinaryOpNode(AST::assign, n, $3); }
   | declaration COMMA ID
-    { $$ = current->newVariable($3, $1, temp, 0); }
+    { $$ = current->newVariable($3, $1, tmp_t, 0, tmp_c); }
   | declaration COMMA ID ASSIGN basic-type
-    { AST::Node* n = current->newVariable($3, $1, temp, 0);
+    { AST::Node* n = current->newVariable($3, $1, tmp_t, 0, tmp_c);
       if (n != $1) $$ = new AST::BinaryOpNode(AST::assign, n, $5); }
   ;
 
@@ -220,11 +237,9 @@ declaration
  */
 decl-array
   : ID LPAR INT RPAR
-    { AST::NodeType t = static_cast<AST::NodeType>(static_cast<int>(temp) + 3);
-      $$ = current->newVariable($1, nullptr, t, $3); }
+    { $$ = current->newVariable($1, nullptr, tmp_t, $3, tmp_c); }
   | decl-array COMMA ID LPAR INT RPAR
-    { AST::NodeType t = static_cast<AST::NodeType>(static_cast<int>(temp) + 3);
-      $$ = current->newVariable($3, $1, t, $5); }
+    { $$ = current->newVariable($3, $1, tmp_t, $5, tmp_c); }
   ;
 
 /*
@@ -260,6 +275,8 @@ expr
   | expr LEQ expr           { $$ = new AST::BinaryOpNode(AST::leq, $1, $3); }
   | MINUS expr %prec UMINUS { $$ = new AST::UnaryOpNode(AST::uminus, $2); }
   | NOT expr                { $$ = new AST::UnaryOpNode(AST::_not, $2); }
+  | ADDR expr               { $$ = new AST::UnaryOpNode(AST::addr, $2); }
+  | REF expr                { $$ = new AST::UnaryOpNode(AST::ref, $2); }
   | C_INT expr              { $$ = new AST::UnaryOpNode(AST::cast_int, $2); }
   | C_FLOAT expr            { $$ = new AST::UnaryOpNode(AST::cast_float, $2); }
   | C_BOOL expr             { $$ = new AST::UnaryOpNode(AST::cast_bool, $2); }

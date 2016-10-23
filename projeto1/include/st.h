@@ -86,9 +86,10 @@ namespace ST {
      *                assignments.
      *  \param type   type of the variable.
      *  \param size   size of the array if applicable.
+     *  \param ref    reference counter.
      */
     AST::Node* newVariable(std::string id, AST::Node* next,
-                           AST::NodeType type, int size);
+                           AST::NodeType type, int size, int ref);
 
     //! Used to connect the nodes when multiple ones are declared.
     /*!

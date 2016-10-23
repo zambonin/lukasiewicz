@@ -58,9 +58,11 @@ error [^a-zA-Z0-9_\.\+\-\*\/\,\=\(\)\=\<\>\&\|\!\{\} \t\n]+
 "&"     { return AND; }
 "|"     { return OR; }
 "!"     { return NOT; }
+"addr"  { return ADDR; }
 "{"     { return LCURLY; }
 "}"     { return RCURLY; }
 \n      { return NL; }
+"ref"   { return REF; }
 "int"   { return T_INT; }
 "float" { return T_FLOAT; }
 "bool"  { return T_BOOL; }

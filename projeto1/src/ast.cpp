@@ -32,9 +32,21 @@ void text(const T& text, int n) {
   std::cout << blank << text;
 }
 
+std::string Node::verboseType() {
+  if (this->_type() < 0) {
+    return "undefined";
+  }
+  std::string basic = _usr[this->_type() % 3], ptr = "";
+  for (int i = 0; i < this->ptr_cnt; i++) {
+    ptr += " pointer";
+  }
+  std::string is_array = (this->_type() % 6 > 2) ? " array" : "";
+  return basic + ptr + is_array;
+}
+
 void Node::errorMessage(Operation op, Node* n1, Node* n2) {
   yyerror("semantic error: %s operation expected %s but received %s",
-    _opt[op].c_str(), _usr[n1->_type()].c_str(), _usr[n2->_type()].c_str());
+    _opt[op].c_str(), n1->verboseType().c_str(), n2->verboseType().c_str());
 }
 
 IntNode::IntNode(int value):
@@ -81,6 +93,8 @@ binOp(binOp), left(left), right(right) {
   if (binOp == index && right->_type() == INT) {
     // only valid index operation
     return;
+  } else if (binOp == ref && (left->_type() < 0 || right->_type() < 0)) {
+    yyerror("semantic error: reference operation expects a pointer");
   } else if (left->_type() != right->_type()) {
     // first two ifs ensure coercion
     if (left->_type() == INT && right->_type() == FLOAT && binOp != assign) {
@@ -118,7 +132,7 @@ NodeType BinaryOpNode::_type() {
     // needs to return primitive type of element inside array
     return static_cast<NodeType>(static_cast<int>(left->_type()) - 3);
   }
-  return (binOp < 6) ? left->_type() : BOOL;
+  return (binOp < 8) ? left->_type() : BOOL;
 }
 
 UnaryOpNode::UnaryOpNode(Operation op, Node* node):
@@ -131,6 +145,17 @@ op(op), node(node) {
     this->type = BOOL;
   } else if (op == uminus) {
     this->type = node->_type();
+  } else if (op == ref) {
+    this->type = static_cast<NodeType>(static_cast<int>(node->_type()) - 6);
+  } else if (op == addr) {
+    this->type = static_cast<NodeType>(static_cast<int>(node->_type()) + 6);
+    if (!dynamic_cast<VariableNode*>(node)) {
+      AST::UnaryOpNode* test = dynamic_cast<UnaryOpNode*>(node);
+      if (test != nullptr && test->op != index) {
+        yyerror(
+          "semantic error: address operation expects a variable or array item");
+      }
+    }
   }
 }
 
@@ -141,6 +166,20 @@ void UnaryOpNode::print(bool prefix) {
 
 NodeType UnaryOpNode::_type() {
   return this->type;
+}
+
+VariableNode::VariableNode(std::string id, Node* next, NodeType type, int size,
+                           int ref):
+id(id), next(next), type(type), size(size) {
+  this->ptr_cnt = ref;
+  if (this->type < 3) {
+    // since enums are integers with names, we shift them by n positions
+    // depending on their status as arrays and/or pointers
+    // if they don't have primitive types, then this process is not necessary
+    int s = (this->size) ? 3 : 0;
+    s += 6 * this->ptr_cnt;
+    this->type = static_cast<AST::NodeType>(static_cast<int>(this->type) + s);
+  }
 }
 
 void VariableNode::print(bool prefix) {
@@ -168,8 +207,16 @@ void BlockNode::print(bool prefix) {
   }
 }
 
+MessageNode::MessageNode(Node* node, std::string msg, int ref):
+node(node), msg(msg) {
+  this->ptr_cnt = ref;
+}
+
 void MessageNode::print(bool prefix) {
   if (node->_type() != ND) {
+    for (int i = 0; i < this->ptr_cnt; i++) {
+      this->msg = " ref" + this->msg;
+    }
     // prints only the primitive type and its type (variable or array)
     text(_var[this->_type() % 3] + this->msg, spaces);
     node->print(false);
