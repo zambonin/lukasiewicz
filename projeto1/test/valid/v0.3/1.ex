@@ -5,4 +5,3 @@ bool var: b = true
 = i [int] j
 = b & b [bool] f
 = f + [float] b 0.0
-

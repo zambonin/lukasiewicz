@@ -8,4 +8,3 @@ int ref array: pointers (size: 2)
 = [index] pointers 1 [addr] [index] a 3
 int ref ref var: doublepointer
 = doublepointer [addr] [index] pointers 0
-

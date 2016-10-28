@@ -6,4 +6,3 @@ for: = i 0, < i 2, = i + i 2
 do:
   int var: a
 bool var: a = true
-

@@ -10,4 +10,3 @@ then:
   = d 0
 else:
   = d 20
-

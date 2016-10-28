@@ -7,4 +7,3 @@ do:
   = temp + j i
   = j temp
 = j + j 0
-
