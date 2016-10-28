@@ -9,4 +9,3 @@ do:
     = [index] parity i true
   else:
     = [index] parity i false
-

@@ -1,4 +1,3 @@
 int var: Abra = 1, Kadabra, Alakazam
 = Kadabra + * Abra 10 1
 = Alakazam + 1 * Kadabra 10
-

@@ -3,4 +3,3 @@ float var: abba, ikea
 = ikea + * 13.21 1.7 4.2
 bool var: svenska
 = svenska <= abba ikea
-
