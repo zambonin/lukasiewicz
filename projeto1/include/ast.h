@@ -54,7 +54,7 @@ namespace AST {
     NodeType type;
 
     //! Reference counter.
-    int ptr_cnt;
+    int ptr_cnt = 0;
 
     //! Prints the node contents to `stdout`.
     /*!
@@ -76,6 +76,8 @@ namespace AST {
     //! Prints the verbose type of the node, taking in account its
     //! status as an array and/or pointer.
     std::string verboseType();
+
+    virtual ~Node() {}
 
   };
 
@@ -116,6 +118,10 @@ namespace AST {
 
     //! Returns the type of the node.
     NodeType _type();
+
+    ~FloatNode() {
+      free(value);
+    }
 
   };
 
@@ -164,6 +170,11 @@ namespace AST {
     //! or an assignment, and a boolean type otherwise.
     NodeType _type();
 
+    ~BinaryOpNode() {
+      if (left != nullptr) delete left;
+      if (right != nullptr) delete right;
+    }
+
   };
 
   //! Node representing an unary operation, such as the unary minus or casting.
@@ -187,12 +198,16 @@ namespace AST {
     //! Returns the type of this node.
     NodeType _type();
 
+    ~UnaryOpNode() {
+      if (node != nullptr) delete node;
+    }
+
   };
 
   class VariableNode : public Node {
   public:
     //! Name of the variable.
-    std::string id;
+    char* id;
 
     //! Pointer to the next node in the case of multiple declarations on
     //! the same line, producing a data structure similar to a linked list.
@@ -205,7 +220,7 @@ namespace AST {
     int size;
 
     //! Basic constructor.
-    VariableNode(std::string id, Node* next, NodeType type, int size, int ref);
+    VariableNode(char* id, Node* next, NodeType type, int size, int ref);
 
     //! Prints the node contents to `stdout`.
     /*!
@@ -215,6 +230,11 @@ namespace AST {
 
     //! Returns the type of the node.
     NodeType _type();
+
+    ~VariableNode() {
+      free(id);
+      if (next != nullptr) delete next;
+    }
 
   };
 
@@ -228,6 +248,10 @@ namespace AST {
      *  \param prefix  chooses between polish or infix notation.
      */
     void print(bool prefix);
+
+    ~BlockNode() {
+      for (auto n : nodeList) delete n;
+    }
   };
 
   class MessageNode : public Node {
@@ -249,6 +273,10 @@ namespace AST {
 
     //! Returns the type of the node.
     NodeType _type();
+
+    ~MessageNode() {
+      if (node != nullptr) delete node;
+    }
 
   };
 
@@ -274,6 +302,12 @@ namespace AST {
      *  \param prefix  chooses between polish or infix notation.
      */
     void print(bool prefix);
+
+    ~IfNode() {
+      if (condition != nullptr) delete condition;
+      if (_then != nullptr) delete _then;
+      if (_else != nullptr) delete _else;
+    }
 
   };
 
@@ -302,6 +336,13 @@ namespace AST {
      *  \param prefix  chooses between polish or infix notation.
      */
     void print(bool prefix);
+
+    ~ForNode() {
+      if (assign != nullptr) delete assign;
+      if (test != nullptr) delete test;
+      if (iteration != nullptr) delete iteration;
+      if (body != nullptr) delete body;
+    }
 
   };
 

@@ -6,10 +6,12 @@
  *          Marcello Klingelfus
  */
 %{
+  #include <cstring>
   #include "ast.h"
   #include "st.h"
 
   extern int yylex();
+  extern int yylex_destroy();
   extern void yyerror(const char* s, ...);
 
   /* First symbol table (global scope). */
@@ -51,20 +53,26 @@
   bool boolean;
   AST::Node* node;
   AST::BlockNode* block;
-  const char* name;
+  char* name;
 }
 
+%destructor { free($$); } <name>
+%destructor { free($$); } <decimal>
+%destructor { delete $$; } <node>
+%destructor { delete $$; } <block>
+
 /* Definition of tokens and their types. */
-%token NL COMMA ASSIGN LPAR RPAR LCURLY RCURLY IF THEN ELSE FOR
+%token NL COMMA ASSIGN LPAR RPAR LCURLY RCURLY
+%token IF THEN ELSE FOR T_INT T_FLOAT T_BOOL
 %token <integer> INT
 %token <decimal> FLOAT
 %token <boolean> BOOL
-%token <name> ID T_INT T_FLOAT T_BOOL
+%token <name> ID
 
 /* Nonterminal symbols and their types. */
-%type <block> lines program else body start-scope scope
-%type <node> expr line declaration d-type basic-type
-%type <node> iteration decl-array ref-cnt
+%type <block> lines else body scope
+%type <node> expr line declaration basic-type iteration decl-array
+%type <null> program start-scope d-type ref-cnt
 
 /* Operator precedence. */
 %left C_INT C_FLOAT C_BOOL
@@ -109,7 +117,11 @@ start-scope
  * Configures the correct symbol table according to the scope.
  */
 scope
-  : lines   { if (current->external != nullptr) current = current->external;
+  : lines   { if (current->external != nullptr) {
+                ST::SymbolTable* pt = current;
+                current = current->external;
+                delete pt;
+              }
               $$ = $1; }
   ;
 
@@ -121,7 +133,7 @@ scope
 lines
   : line            { $$ = new AST::BlockNode();
                       if ($1 != nullptr) $$->nodeList.push_back($1); }
-  | lines line      { if ($2 != nullptr) $1->nodeList.push_back($2); }
+  | lines line      { if ($2 != nullptr) $1->nodeList.push_back($2); $$ = $1; }
   ;
 
 /*
@@ -288,3 +300,24 @@ expr
 %%
 
 /* Additional C code. */
+
+int main(int argc, char *argv[]) {
+
+  if (argv[1] != nullptr) {
+    yydebug = (strcmp(argv[1], "--debug") == 0);
+  }
+
+  yyparse();
+
+  if (root != nullptr) {
+    root->print(true);
+  }
+
+  delete root;
+  delete current;
+
+  yylex_destroy();
+
+  return 0;
+
+}
