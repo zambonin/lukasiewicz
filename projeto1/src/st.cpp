@@ -8,11 +8,12 @@ void SymbolTable::addSymbol(std::string key, Symbol symbol) {
   entryList[key] = symbol;
 }
 
-bool SymbolTable::varExistsHere(std::string key) {
-  return (bool) entryList.count(key);
+bool SymbolTable::varExistsHere(char* key) {
+  std::string entry(key);
+  return (bool) entryList.count(entry);
 }
 
-bool SymbolTable::varExists(std::string key) {
+bool SymbolTable::varExists(char* key) {
   if (varExistsHere(key)) {
     return true;
   } else if (external == nullptr) {
@@ -21,7 +22,7 @@ bool SymbolTable::varExists(std::string key) {
   return external->varExists(key);
 }
 
-AST::Node* SymbolTable::getNodeFromTable(std::string key) {
+AST::Node* SymbolTable::getNodeFromTable(char* key) {
   if (varExistsHere(key)) {
     AST::Node* n = entryList[key].node;
     return new AST::VariableNode(key, nullptr, n->_type(), 0, n->ptr_cnt);
@@ -31,13 +32,20 @@ AST::Node* SymbolTable::getNodeFromTable(std::string key) {
   return external->getNodeFromTable(key);
 }
 
-AST::Node* SymbolTable::newVariable(std::string id, AST::Node* next,
+AST::Node* SymbolTable::newVariable(char* id, AST::Node* next,
                                     AST::NodeType type, int size, int ref) {
   if (varExistsHere(id)) {
-    yyerror("semantic error: re-declaration of variable %s", id.c_str());
+    yyerror("semantic error: re-declaration of variable %s", id);
     // new variable is not added to the symbol table and
-    // is skipped by returning `next` or an empty node
-    return (next != nullptr) ? next : new AST::Node();
+    // is skipped by returning `next` or the old node
+
+    AST::Node* old = getNodeFromTable(id);
+    if (next != nullptr) {
+      delete old;
+      return next;
+    }
+    return old;
+
   }
 
   AST::Node* n = new AST::VariableNode(id, next, type, size, ref);
@@ -47,9 +55,9 @@ AST::Node* SymbolTable::newVariable(std::string id, AST::Node* next,
   return n;
 }
 
-AST::Node* SymbolTable::useVariable(std::string id) {
+AST::Node* SymbolTable::useVariable(char* id) {
   if (!varExists(id)) {
-    yyerror("semantic error: undeclared variable %s", id.c_str());
+    yyerror("semantic error: undeclared variable %s", id);
   }
 
   return getNodeFromTable(id);

@@ -102,7 +102,9 @@ binOp(binOp), left(left), right(right) {
     } else if (left->_type() == FLOAT && right->_type() == INT) {
       this->right = new UnaryOpNode(cast_float, right);
     } else if (binOp == index) {
-      errorMessage(binOp, new IntNode(0), right);
+      AST::Node* n = new IntNode(0);
+      errorMessage(binOp, n, right);
+      delete n;
     } else if (left->_type() != ND) {
       errorMessage(binOp, left, right);
     }
@@ -168,7 +170,7 @@ NodeType UnaryOpNode::_type() {
   return this->type;
 }
 
-VariableNode::VariableNode(std::string id, Node* next, NodeType type, int size,
+VariableNode::VariableNode(char* id, Node* next, NodeType type, int size,
                            int ref):
 id(id), next(next), type(type), size(size) {
   this->ptr_cnt = ref;
@@ -200,8 +202,8 @@ NodeType VariableNode::_type() {
 void BlockNode::print(bool prefix) {
   for (Node* n : nodeList) {
     n->print(prefix);
-    if (n->_type() != ND || dynamic_cast<BinaryOpNode*>(n)) {
-      // prints new line on assignment to undeclared variable
+    if (!dynamic_cast<IfNode*>(n) && !dynamic_cast<ForNode*>(n)) {
+      // don't print an extra new line after these nodes
       text("\n", 0);
     }
   }
@@ -231,7 +233,9 @@ IfNode::IfNode(Node* condition, BlockNode* _then, BlockNode* _else):
 condition(condition), _then(_then), _else(_else) {
   // ensures semantic error if condition is not a boolean test
   if (condition->_type() != BOOL) {
-    errorMessage(if_test, new AST::BoolNode(0), condition);
+    AST::Node* _bool = new AST::BoolNode(0);
+    errorMessage(if_test, _bool, condition);
+    delete _bool;
   }
 }
 
@@ -250,7 +254,9 @@ void IfNode::print(bool prefix) {
 ForNode::ForNode(Node* assign, Node* test, Node* iteration, BlockNode* body):
 assign(assign), test(test), iteration(iteration), body(body) {
   if (test->_type() != BOOL) {
-    errorMessage(if_test, new AST::BoolNode(0), test);
+    AST::Node* _bool = new AST::BoolNode(0);
+    errorMessage(if_test, _bool, test);
+    delete _bool;
   }
 }
 

@@ -64,19 +64,19 @@ namespace ST {
     /*!
      *  \param key  string identifier of the symbol.
      */
-    bool varExistsHere(std::string key);
+    bool varExistsHere(char* key);
 
     //! Checks if an identifier is present anywhere on the program.
     /*!
      *  \param key  string identifier of the symbol.
      */
-    bool varExists(std::string key);
+    bool varExists(char* key);
 
     //! Returns a node inside of a certain symbol.
     /*!
      *  \param key  string identifier of the symbol.
      */
-    AST::Node* getNodeFromTable(std::string key);
+    AST::Node* getNodeFromTable(char* key);
 
     //! Creates a new node with informations from the table and tokens
     //! from the grammar.
@@ -88,14 +88,14 @@ namespace ST {
      *  \param size   size of the array if applicable.
      *  \param ref    reference counter.
      */
-    AST::Node* newVariable(std::string id, AST::Node* next,
+    AST::Node* newVariable(char* id, AST::Node* next,
                            AST::NodeType type, int size, int ref);
 
     //! Used to connect the nodes when multiple ones are declared.
     /*!
      *  \param id     string identifier of the symbol.
      */
-    AST::Node* useVariable(std::string id);
+    AST::Node* useVariable(char* id);
 
   };
 
