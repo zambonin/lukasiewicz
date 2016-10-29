@@ -77,6 +77,7 @@ namespace AST {
     //! status as an array and/or pointer.
     std::string verboseType();
 
+    //! Basic destructor.
     virtual ~Node() {}
 
   };
@@ -119,9 +120,8 @@ namespace AST {
     //! Returns the type of the node.
     NodeType _type();
 
-    ~FloatNode() {
-      free(value);
-    }
+    //! Basic destructor. Needs to delete the pointer to the value.
+    ~FloatNode();
 
   };
 
@@ -170,10 +170,8 @@ namespace AST {
     //! or an assignment, and a boolean type otherwise.
     NodeType _type();
 
-    ~BinaryOpNode() {
-      if (left != nullptr) delete left;
-      if (right != nullptr) delete right;
-    }
+    //! Basic destructor.
+    ~BinaryOpNode();
 
   };
 
@@ -198,9 +196,8 @@ namespace AST {
     //! Returns the type of this node.
     NodeType _type();
 
-    ~UnaryOpNode() {
-      if (node != nullptr) delete node;
-    }
+    //! Basic destructor.
+    ~UnaryOpNode();
 
   };
 
@@ -231,10 +228,8 @@ namespace AST {
     //! Returns the type of the node.
     NodeType _type();
 
-    ~VariableNode() {
-      free(id);
-      if (next != nullptr) delete next;
-    }
+    //! Basic destructor. Needs to delete the pointer to the value.
+    ~VariableNode();
 
   };
 
@@ -249,9 +244,9 @@ namespace AST {
      */
     void print(bool prefix);
 
-    ~BlockNode() {
-      for (auto n : nodeList) delete n;
-    }
+    //! Basic destructor.
+    ~BlockNode();
+
   };
 
   class MessageNode : public Node {
@@ -274,9 +269,8 @@ namespace AST {
     //! Returns the type of the node.
     NodeType _type();
 
-    ~MessageNode() {
-      if (node != nullptr) delete node;
-    }
+    //! Basic destructor.
+    ~MessageNode();
 
   };
 
@@ -303,11 +297,8 @@ namespace AST {
      */
     void print(bool prefix);
 
-    ~IfNode() {
-      if (condition != nullptr) delete condition;
-      if (_then != nullptr) delete _then;
-      if (_else != nullptr) delete _else;
-    }
+    //! Basic destructor.
+    ~IfNode();
 
   };
 
@@ -337,12 +328,8 @@ namespace AST {
      */
     void print(bool prefix);
 
-    ~ForNode() {
-      if (assign != nullptr) delete assign;
-      if (test != nullptr) delete test;
-      if (iteration != nullptr) delete iteration;
-      if (body != nullptr) delete body;
-    }
+    //! Basic destructor.
+    ~ForNode();
 
   };
 

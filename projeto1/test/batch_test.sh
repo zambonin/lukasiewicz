@@ -9,10 +9,10 @@ bold=$(tput bold)
 normal=$(tput sgr0)
 
 for f in valid/*/*.in ; do
-    diff <("$1" < "$f") "${f/in/ex}"
-    (("$?" > 0)) && echo -e "${bold}$f${normal} is not correct\n"
+    cmp -s <("$1" < "$f" 2>/dev/null) "${f/.in/.ex}"
+    (("$?" > 0)) && echo -e "${bold}$f${normal} is not correct"
     valgrind "$1" < "$f" 2>&1 | grep -q "no leaks"
-    (("$?" > 0)) && echo -e "${bold}$f${normal} is leaking memory\n"
+    (("$?" > 0)) && echo -e "${bold}$f${normal} is leaking memory"
 done
 
 for f in invalid/*/*.in ; do

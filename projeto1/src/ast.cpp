@@ -75,6 +75,10 @@ NodeType FloatNode::_type() {
   return this->type;
 }
 
+FloatNode::~FloatNode() {
+  free(value);
+}
+
 BoolNode::BoolNode(bool value):
 value(value) {
   this->type = BOOL;
@@ -137,6 +141,11 @@ NodeType BinaryOpNode::_type() {
   return (binOp < 8) ? left->_type() : BOOL;
 }
 
+BinaryOpNode::~BinaryOpNode() {
+  delete left;
+  delete right;
+}
+
 UnaryOpNode::UnaryOpNode(Operation op, Node* node):
 op(op), node(node) {
   if (op == cast_int) {
@@ -170,6 +179,10 @@ NodeType UnaryOpNode::_type() {
   return this->type;
 }
 
+UnaryOpNode::~UnaryOpNode() {
+  delete node;
+}
+
 VariableNode::VariableNode(char* id, Node* next, NodeType type, int size,
                            int ref):
 id(id), next(next), type(type), size(size) {
@@ -199,6 +212,11 @@ NodeType VariableNode::_type() {
   return this->type;
 }
 
+VariableNode::~VariableNode() {
+  free(id);
+  delete next;
+}
+
 void BlockNode::print(bool prefix) {
   for (Node* n : nodeList) {
     n->print(prefix);
@@ -206,6 +224,12 @@ void BlockNode::print(bool prefix) {
       // don't print an extra new line after these nodes
       text("\n", 0);
     }
+  }
+}
+
+BlockNode::~BlockNode() {
+  for (Node* n : nodeList) {
+    delete n;
   }
 }
 
@@ -227,6 +251,10 @@ void MessageNode::print(bool prefix) {
 
 NodeType MessageNode::_type() {
   return node->_type();
+}
+
+MessageNode::~MessageNode() {
+  delete node;
 }
 
 IfNode::IfNode(Node* condition, BlockNode* _then, BlockNode* _else):
@@ -251,6 +279,12 @@ void IfNode::print(bool prefix) {
   }
 }
 
+IfNode::~IfNode() {
+  delete condition;
+  delete _then;
+  delete _else;
+}
+
 ForNode::ForNode(Node* assign, Node* test, Node* iteration, BlockNode* body):
 assign(assign), test(test), iteration(iteration), body(body) {
   if (test->_type() != BOOL) {
@@ -271,4 +305,11 @@ void ForNode::print(bool prefix) {
   text("\n", 0);
   text("do:\n", spaces);
   _tab(body->print(true));
+}
+
+ForNode::~ForNode() {
+  delete assign;
+  delete test;
+  delete iteration;
+  delete body;
 }
