@@ -21,10 +21,7 @@
   AST::BlockNode* root;
 
   /* Temporary variable used to simplify the grammar on declarations. */
-  AST::NodeType tmp_t;
-
-  /* Temporary variable that acts as a reference counter. */
-  int tmp_c;
+  int tmp_t;
 %}
 
 /* Bison declaration summary. */
@@ -147,16 +144,16 @@ lines
  *   - a loop operation, called `for`.
  */
 line
-  : NL                  { $$ = 0; }
-  | d-type declaration  { $$ = new AST::MessageNode($2, " var:", tmp_c); }
-  | d-type decl-array   { $$ = new AST::MessageNode($2, " array:", tmp_c); }
+  : NL                  { $$ = 0; tmp_t = 0; }
+  | d-type declaration  { $$ = new AST::MessageNode($2); }
+  | d-type decl-array   { $$ = new AST::MessageNode($2); }
   | ref-cnt ID ASSIGN expr
     { AST::Node* n = current->useVariable($2);
-      if (tmp_c) n = new AST::UnaryOpNode(AST::ref, n);
+      if (tmp_t > 5) n = new AST::UnaryOpNode(AST::ref, n);
       $$ = new AST::BinaryOpNode(AST::assign, n, $4); }
   | ref-cnt ID LPAR expr RPAR ASSIGN expr
     { AST::Node* n = current->useVariable($2);
-      if (tmp_c) n = new AST::UnaryOpNode(AST::ref, n);
+      if (tmp_t > 5) n = new AST::UnaryOpNode(AST::ref, n);
       AST::Node* left = new AST::BinaryOpNode(AST::index, n, $4);
       $$ = new AST::BinaryOpNode(AST::assign, left, $7); }
   | IF expr NL THEN LCURLY NL body else
@@ -208,9 +205,9 @@ iteration
  * a declaration production.
  */
 d-type
-  : T_INT ref-cnt   { tmp_t = AST::INT; }
-  | T_FLOAT ref-cnt { tmp_t = AST::FLOAT; }
-  | T_BOOL ref-cnt  { tmp_t = AST::BOOL; }
+  : T_INT ref-cnt   { tmp_t += 0; }
+  | T_FLOAT ref-cnt { tmp_t += 1; }
+  | T_BOOL ref-cnt  { tmp_t += 2; }
   ;
 
 /*
@@ -219,8 +216,8 @@ d-type
  * Counts how many pointer references are being made.
  */
 ref-cnt
-  : %empty      { tmp_c = 0; }
-  | ref-cnt REF { tmp_c += 1; }
+  : %empty      { }
+  | ref-cnt REF { tmp_t += 6; }
   ;
 
 /*
@@ -231,14 +228,14 @@ ref-cnt
  */
 declaration
   : ID
-    { $$ = current->newVariable($1, nullptr, tmp_t, 0, tmp_c); }
+    { $$ = current->newVariable($1, nullptr, tmp_t, 0); }
   | ID ASSIGN basic-type
-    { AST::Node* n = current->newVariable($1, nullptr, tmp_t, 0, tmp_c);
+    { AST::Node* n = current->newVariable($1, nullptr, tmp_t, 0);
       $$ = new AST::BinaryOpNode(AST::assign, n, $3); }
   | declaration COMMA ID
-    { $$ = current->newVariable($3, $1, tmp_t, 0, tmp_c); }
+    { $$ = current->newVariable($3, $1, tmp_t, 0); }
   | declaration COMMA ID ASSIGN basic-type
-    { AST::Node* n = current->newVariable($3, $1, tmp_t, 0, tmp_c);
+    { AST::Node* n = current->newVariable($3, $1, tmp_t, 0);
       if (n != $1) $$ = new AST::BinaryOpNode(AST::assign, n, $5); }
   ;
 
@@ -249,9 +246,9 @@ declaration
  */
 decl-array
   : ID LPAR INT RPAR
-    { $$ = current->newVariable($1, nullptr, tmp_t, $3, tmp_c); }
+    { $$ = current->newVariable($1, nullptr, tmp_t + 3, $3); }
   | decl-array COMMA ID LPAR INT RPAR
-    { $$ = current->newVariable($3, $1, tmp_t, $5, tmp_c); }
+    { $$ = current->newVariable($3, $1, tmp_t + 3, $5); }
   ;
 
 /*

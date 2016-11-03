@@ -4,61 +4,58 @@ using namespace ST;
 
 extern SymbolTable* current;
 
-void SymbolTable::addSymbol(std::string key, Symbol symbol) {
-  entryList[key] = symbol;
+void SymbolTable::addSymbol(SymbolType type, std::string key, AST::Node* symbol) {
+  entryList[type][key] = symbol;
 }
 
-bool SymbolTable::varExistsHere(char* key) {
+bool SymbolTable::symbolExistsHere(SymbolType type, char* key) {
   std::string entry(key);
-  return (bool) entryList.count(entry);
+  return (bool) entryList[type].count(entry);
 }
 
-bool SymbolTable::varExists(char* key) {
-  if (varExistsHere(key)) {
+bool SymbolTable::symbolExists(SymbolType type, char* key) {
+  if (symbolExistsHere(type, key)) {
     return true;
   } else if (external == nullptr) {
     return false;
   }
-  return external->varExists(key);
+  return external->symbolExists(type, key);
 }
 
-AST::Node* SymbolTable::getNodeFromTable(char* key) {
-  if (varExistsHere(key)) {
-    AST::Node* n = entryList[key].node;
-    return new AST::VariableNode(key, nullptr, n->_type(), 0, n->ptr_cnt);
+AST::Node* SymbolTable::getVarFromTable(char* key) {
+  if (symbolExistsHere(SymbolType::variable, key)) {
+    AST::Node* n = entryList[SymbolType::variable][key];
+    return new AST::VariableNode(key, nullptr, n->_type(), 0);
   } else if (external == nullptr) {
-    return new AST::VariableNode(key, nullptr, AST::ND, 0, 0);
+    return new AST::VariableNode(key, nullptr, -1, 0);
   }
-  return external->getNodeFromTable(key);
+  return external->getVarFromTable(key);
 }
 
-AST::Node* SymbolTable::newVariable(char* id, AST::Node* next,
-                                    AST::NodeType type, int size, int ref) {
-  if (varExistsHere(id)) {
-    yyerror("semantic error: re-declaration of variable %s", id);
+AST::Node* SymbolTable::newVariable(char* key, AST::Node* next,
+                                    int type, int size) {
+  if (symbolExistsHere(SymbolType::variable, key)) {
+    yyerror("semantic error: re-declaration of variable %s", key);
     // new variable is not added to the symbol table and
     // is skipped by returning `next` or the old node
 
-    AST::Node* old = getNodeFromTable(id);
+    AST::Node* old = getVarFromTable(key);
     if (next != nullptr) {
       delete old;
       return next;
     }
     return old;
-
   }
 
-  AST::Node* n = new AST::VariableNode(id, next, type, size, ref);
-  Symbol newEntry(type, n, variable);
-  addSymbol(id, newEntry);
-
+  AST::Node* n = new AST::VariableNode(key, next, type, size);
+  addSymbol(SymbolType::variable, key, n);
   return n;
 }
 
-AST::Node* SymbolTable::useVariable(char* id) {
-  if (!varExists(id)) {
-    yyerror("semantic error: undeclared variable %s", id);
+AST::Node* SymbolTable::useVariable(char* key) {
+  if (!symbolExists(SymbolType::variable, key)) {
+    yyerror("semantic error: undeclared variable %s", key);
   }
 
-  return getNodeFromTable(id);
+  return getVarFromTable(key);
 }

@@ -25,6 +25,16 @@ extern void yyerror(const char* s, ...);
 /* Saves the current indentation status. */
 int spaces;
 
+/* Addition operator overload for NodeType enum. */
+NodeType operator+(NodeType t, int v) {
+  return static_cast<NodeType>(static_cast<int>(t) + v);
+}
+
+/* Subtraction operator overload for NodeType enum. */
+NodeType operator-(NodeType t, int v) {
+  return static_cast<NodeType>(static_cast<int>(t) - v);
+}
+
 /* Prints an object with `cout`, prepended by `n` spaces. */
 template<typename T>
 void text(const T& text, int n) {
@@ -32,21 +42,24 @@ void text(const T& text, int n) {
   std::cout << blank << text;
 }
 
-std::string Node::verboseType() {
-  if (this->_type() < 0) {
-    return "undefined";
+std::string Node::verboseType(bool _short) {
+  int n = this->_type();
+  std::string t = _short ? _var[n % 3] : _usr[n % 3];
+  std::string ptr = _short ? " ref" : " pointer";
+
+  while (n >= 6) {
+    t += ptr;
+    n -= 6;
   }
-  std::string basic = _usr[this->_type() % 3], ptr = "";
-  for (int i = 0; i < this->ptr_cnt; i++) {
-    ptr += " pointer";
-  }
-  std::string is_array = (this->_type() % 6 > 2) ? " array" : "";
-  return basic + ptr + is_array;
+
+  t += (n >= 3) ? " array" : "";
+  return t;
 }
 
 void Node::errorMessage(Operation op, Node* n1, Node* n2) {
   yyerror("semantic error: %s operation expected %s but received %s",
-    _opt[op].c_str(), n1->verboseType().c_str(), n2->verboseType().c_str());
+    _opt[op].c_str(), n1->verboseType(false).c_str(),
+    n2->verboseType(false).c_str());
 }
 
 IntNode::IntNode(int value):
@@ -58,10 +71,6 @@ void IntNode::print(bool prefix) {
   text(value, 1);
 }
 
-NodeType IntNode::_type() {
-  return this->type;
-}
-
 FloatNode::FloatNode(char* value):
 value(value) {
   this->type = FLOAT;
@@ -69,10 +78,6 @@ value(value) {
 
 void FloatNode::print(bool prefix) {
   text(value, 1);
-}
-
-NodeType FloatNode::_type() {
-  return this->type;
 }
 
 FloatNode::~FloatNode() {
@@ -86,10 +91,6 @@ value(value) {
 
 void BoolNode::print(bool prefix) {
   text(value ? "true" : "false", 1);
-}
-
-NodeType BoolNode::_type() {
-  return this->type;
 }
 
 BinaryOpNode::BinaryOpNode(Operation binOp, Node* left, Node* right):
@@ -136,7 +137,7 @@ void BinaryOpNode::print(bool prefix) {
 NodeType BinaryOpNode::_type() {
   if (binOp == index) {
     // needs to return primitive type of element inside array
-    return static_cast<NodeType>(static_cast<int>(left->_type()) - 3);
+    return left->_type() - 3;
   }
   return (binOp < 8) ? left->_type() : BOOL;
 }
@@ -157,9 +158,9 @@ op(op), node(node) {
   } else if (op == uminus) {
     this->type = node->_type();
   } else if (op == ref) {
-    this->type = static_cast<NodeType>(static_cast<int>(node->_type()) - 6);
+    this->type = node->_type() - 6;
   } else if (op == addr) {
-    this->type = static_cast<NodeType>(static_cast<int>(node->_type()) + 6);
+    this->type = node->_type() + 6;
     if (!dynamic_cast<VariableNode*>(node)) {
       AST::UnaryOpNode* test = dynamic_cast<UnaryOpNode*>(node);
       if (test != nullptr && test->op != index) {
@@ -175,26 +176,13 @@ void UnaryOpNode::print(bool prefix) {
   node->print(prefix);
 }
 
-NodeType UnaryOpNode::_type() {
-  return this->type;
-}
-
 UnaryOpNode::~UnaryOpNode() {
   delete node;
 }
 
-VariableNode::VariableNode(char* id, Node* next, NodeType type, int size,
-                           int ref):
-id(id), next(next), type(type), size(size) {
-  this->ptr_cnt = ref;
-  if (this->type < 3) {
-    // since enums are integers with names, we shift them by n positions
-    // depending on their status as arrays and/or pointers
-    // if they don't have primitive types, then this process is not necessary
-    int s = (this->size) ? 3 : 0;
-    s += 6 * this->ptr_cnt;
-    this->type = static_cast<AST::NodeType>(static_cast<int>(this->type) + s);
-  }
+VariableNode::VariableNode(char* id, Node* next, int type, int size):
+id(id), next(next), size(size) {
+  this->type = static_cast<NodeType>(type);
 }
 
 void VariableNode::print(bool prefix) {
@@ -220,8 +208,7 @@ VariableNode::~VariableNode() {
 void BlockNode::print(bool prefix) {
   for (Node* n : nodeList) {
     n->print(prefix);
-    if (!dynamic_cast<IfNode*>(n) && !dynamic_cast<ForNode*>(n)) {
-      // don't print an extra new line after these nodes
+    if (n->_type() != ND) {
       text("\n", 0);
     }
   }
@@ -233,20 +220,10 @@ BlockNode::~BlockNode() {
   }
 }
 
-MessageNode::MessageNode(Node* node, std::string msg, int ref):
-node(node), msg(msg) {
-  this->ptr_cnt = ref;
-}
-
 void MessageNode::print(bool prefix) {
-  if (node->_type() != ND) {
-    for (int i = 0; i < this->ptr_cnt; i++) {
-      this->msg = " ref" + this->msg;
-    }
-    // prints only the primitive type and its type (variable or array)
-    text(_var[this->_type() % 3] + this->msg, spaces);
-    node->print(false);
-  }
+  std::string s = (this->_type() % 6 < 3) ? " var:" : ":";
+  text(this->verboseType(true) + s, spaces);
+  node->print(false);
 }
 
 NodeType MessageNode::_type() {

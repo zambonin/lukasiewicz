@@ -51,7 +51,7 @@ namespace AST {
   class Node {
   public:
     //! Type of the node.
-    NodeType type;
+    NodeType type = ND;
 
     //! Reference counter.
     int ptr_cnt = 0;
@@ -75,7 +75,10 @@ namespace AST {
 
     //! Prints the verbose type of the node, taking in account its
     //! status as an array and/or pointer.
-    std::string verboseType();
+    /*!
+     *  \param _short   prints a short version of the type used in declarations.
+     */
+    std::string verboseType(bool _short);
 
     //! Basic destructor.
     virtual ~Node() {}
@@ -97,9 +100,6 @@ namespace AST {
      */
     void print(bool prefix);
 
-    //! Returns the type of the node.
-    NodeType _type();
-
   };
 
   //! Represents a node containing a floating point variable.
@@ -116,9 +116,6 @@ namespace AST {
      *  \param prefix  chooses between polish or infix notation.
      */
     void print(bool prefix);
-
-    //! Returns the type of the node.
-    NodeType _type();
 
     //! Basic destructor. Needs to delete the pointer to the value.
     ~FloatNode();
@@ -139,9 +136,6 @@ namespace AST {
      *  \param prefix  chooses between polish or infix notation.
      */
     void print(bool prefix);
-
-    //! Returns the type of the node.
-    NodeType _type();
 
   };
 
@@ -193,9 +187,6 @@ namespace AST {
      */
     void print(bool prefix);
 
-    //! Returns the type of this node.
-    NodeType _type();
-
     //! Basic destructor.
     ~UnaryOpNode();
 
@@ -210,14 +201,11 @@ namespace AST {
     //! the same line, producing a data structure similar to a linked list.
     Node* next;
 
-    //! Type of the node.
-    NodeType type;
-
     //! Length of the array if applicable.
     int size;
 
     //! Basic constructor.
-    VariableNode(char* id, Node* next, NodeType type, int size, int ref);
+    VariableNode(char* id, Node* next, int type, int size);
 
     //! Prints the node contents to `stdout`.
     /*!
@@ -254,11 +242,8 @@ namespace AST {
     //! Pointer to the last VariableNode of the line.
     Node* node;
 
-    //! Type of the declaration.
-    std::string msg;
-
     //! Basic constructor.
-    MessageNode(Node* node, std::string msg, int ref);
+    MessageNode(Node* node): node(node) {}
 
     //! Prints the node contents to `stdout`.
     /*!
