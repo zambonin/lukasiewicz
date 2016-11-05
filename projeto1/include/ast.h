@@ -52,17 +52,22 @@ namespace AST {
   //! Basic representation for the node types.
   static const std::string _var[] = { "int", "float", "bool" };
 
-  //! Parent class representing a basic node.
   class Node {
   public:
     //! Type of the node.
-    NodeType type = ND;
+    NodeType type;
+
+    //! Default constructor declared to prevent errors.
+    Node();
+
+    //! Basic constructor that also sets the type of the node.
+    explicit Node(int type);
 
     //! Prints the node contents to `stdout`.
     /*!
      *  \param prefix  chooses between polish or infix notation.
      */
-    virtual void print(bool prefix) {}
+    virtual void print(bool /*prefix*/) {}
 
     //! Returns the type of the node.
     virtual NodeType _type() { return this->type; }
@@ -83,65 +88,57 @@ namespace AST {
     std::string verboseType(bool _short);
 
     //! Basic destructor.
-    virtual ~Node() {}
-
+    virtual ~Node() = default;
   };
 
-  //! Represents a node containing an integer.
   class IntNode : public Node {
   public:
     //! Integer value of the node.
     int value;
 
     //! Basic constructor that also sets the type of the node.
-    IntNode(int value);
+    explicit IntNode(int value): Node(0), value(value) {}
 
     //! Prints the node contents to `stdout`.
     /*!
      *  \param prefix  chooses between polish or infix notation.
      */
-    void print(bool prefix);
-
+    void print(bool prefix) override;
   };
 
-  //! Represents a node containing a floating point variable.
   class FloatNode : public Node {
   public:
     //! Char pointer value of the node, displaying exactly the user input.
     char* value;
 
     //! Basic constructor that also sets the type of the node.
-    FloatNode(char* value);
+    explicit FloatNode(char* value): Node(1), value(value) {}
 
     //! Prints the node contents to `stdout`.
     /*!
      *  \param prefix  chooses between polish or infix notation.
      */
-    void print(bool prefix);
+    void print(bool prefix) override;
 
     //! Basic destructor. Needs to delete the pointer to the value.
-    ~FloatNode();
-
+    ~FloatNode() override;
   };
 
-  //! Represents a node containing a boolean variable.
   class BoolNode : public Node {
   public:
     //! Boolean value of the node.
     bool value;
 
     //! Basic constructor that also sets the type of the node.
-    BoolNode(bool value);
+    explicit BoolNode(bool value): Node(2), value(value) {}
 
     //! Prints the node contents to `stdout`.
     /*!
      *  \param prefix  chooses between polish or infix notation.
      */
-    void print(bool prefix);
-
+    void print(bool prefix) override;
   };
 
-  //! Node representing a binary operation, such as arithmetic or logic ones.
   class BinaryOpNode : public Node {
   public:
     //! Operation enum value of the node.
@@ -160,18 +157,16 @@ namespace AST {
     /*!
      *  \param prefix  chooses between polish or infix notation.
      */
-    void print(bool prefix);
+    void print(bool prefix) override;
 
     //! Returns the type of the left child if the operation is arithmetic
     //! or an assignment, and a boolean type otherwise.
-    NodeType _type();
+    NodeType _type() override;
 
     //! Basic destructor.
-    ~BinaryOpNode();
-
+    ~BinaryOpNode() override;
   };
 
-  //! Node representing an unary operation, such as the unary minus or casting.
   class UnaryOpNode : public Node {
   public:
     //! Operation enum value of the node.
@@ -187,40 +182,47 @@ namespace AST {
     /*!
      *  \param prefix  chooses between polish or infix notation.
      */
-    void print(bool prefix);
+    void print(bool prefix) override;
 
     //! Basic destructor.
-    ~UnaryOpNode();
-
+    ~UnaryOpNode() override;
   };
 
-  class VariableNode : public Node {
+  class LinkedNode : public Node {
+  public:
+    //! Head of the linked list.
+    Node* next;
+
+    //! Basic constructor.
+    LinkedNode(Node* next, int type): Node(type), next(next) {}
+
+    //! Basic destructor.
+    ~LinkedNode() override;
+
+    /* length from here method? */
+  };
+
+  //! Represents a variable that may be simple or an array/pointer.
+  class VariableNode : public LinkedNode {
   public:
     //! Name of the variable.
     char* id;
-
-    //! Pointer to the next node in the case of multiple declarations on
-    //! the same line, producing a data structure similar to a linked list.
-    Node* next;
 
     //! Length of the array if applicable.
     int size;
 
     //! Basic constructor.
-    VariableNode(char* id, Node* next, int type, int size);
+    VariableNode(char* id, Node* next, int type, int size):
+    LinkedNode(next, type), id(id), size(size) {}
 
     //! Prints the node contents to `stdout`.
     /*!
      *  \param prefix  chooses between polish or infix notation.
      */
-    void print(bool prefix);
+    void print(bool prefix) override;
 
-    //! Returns the type of the node.
-    NodeType _type();
-
-    //! Basic destructor. Needs to delete the pointer to the value.
-    ~VariableNode();
-
+    //! Basic destructor. Needs to delete the pointer to the o.
+    ~VariableNode() override;
   };
 
   class BlockNode : public Node {
@@ -232,33 +234,22 @@ namespace AST {
     /*!
      *  \param prefix  chooses between polish or infix notation.
      */
-    void print(bool prefix);
+    void print(bool prefix) override;
 
     //! Basic destructor.
-    ~BlockNode();
-
+    ~BlockNode() override;
   };
 
-  class MessageNode : public Node {
+  class MessageNode : public LinkedNode {
   public:
-    //! Pointer to the last VariableNode of the line.
-    Node* node;
-
     //! Basic constructor.
-    MessageNode(Node* node): node(node) {}
+    using LinkedNode::LinkedNode;
 
     //! Prints the node contents to `stdout`.
     /*!
      *  \param prefix  chooses between polish or infix notation.
      */
-    void print(bool prefix);
-
-    //! Returns the type of the node.
-    NodeType _type();
-
-    //! Basic destructor.
-    ~MessageNode();
-
+    void print(bool prefix) override;
   };
 
   class IfNode : public Node {
@@ -282,11 +273,10 @@ namespace AST {
     /*!
      *  \param prefix  chooses between polish or infix notation.
      */
-    void print(bool prefix);
+    void print(bool prefix) override;
 
     //! Basic destructor.
-    ~IfNode();
-
+    ~IfNode() override;
   };
 
   class ForNode : public Node {
@@ -313,11 +303,10 @@ namespace AST {
     /*!
      *  \param prefix  chooses between polish or infix notation.
      */
-    void print(bool prefix);
+    void print(bool prefix) override;
 
     //! Basic destructor.
-    ~ForNode();
-
+    ~ForNode() override;
   };
 
   class FuncNode : public Node {
@@ -339,11 +328,10 @@ namespace AST {
     /*!
      *  \param prefix  chooses between polish or infix notation.
      */
-    void print(bool prefix);
+    void print(bool prefix) override;
 
     //! Basic destructor. Needs to delete the pointer to the id.
-    ~FuncNode();
-
+    ~FuncNode() override;
   };
 
   class ParamNode : public VariableNode {
@@ -355,21 +343,19 @@ namespace AST {
     /*!
      *  \param prefix  chooses between polish or infix notation.
      */
-    void print(bool prefix);
-
+    void print(bool prefix) override;
   };
 
-  class ReturnNode : public MessageNode {
+  class ReturnNode : public LinkedNode {
   public:
     //! Basic constructor.
-    using MessageNode::MessageNode;
+    using LinkedNode::LinkedNode;
 
     //! Prints the node contents to `stdout`.
     /*!
      *  \param prefix  chooses between polish or infix notation.
      */
-    void print(bool prefix);
-
+    void print(bool prefix) override;
   };
 
-}
+} // namespace AST

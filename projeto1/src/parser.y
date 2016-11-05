@@ -146,8 +146,8 @@ lines
  */
 line
   : NL                  { $$ = 0; tmp_t = 0; }
-  | d-type declaration  { $$ = new AST::MessageNode($2); }
-  | d-type decl-array   { $$ = new AST::MessageNode($2); }
+  | d-type declaration  { $$ = new AST::MessageNode($2, $1); }
+  | d-type decl-array   { $$ = new AST::MessageNode($2, $1 + 3); }
   | ref-cnt ID ASSIGN expr
     { AST::Node* n = current->useVariable($2);
       if ($1) n = new AST::UnaryOpNode(AST::ref, n);
@@ -175,7 +175,7 @@ f-body
   : %empty
     { $$ = nullptr; }
   | LCURLY lines RET expr end-scope NL RCURLY
-    { $2->nodeList.push_back(new AST::ReturnNode($4));
+    { $2->nodeList.push_back(new AST::ReturnNode($4, $4->_type()));
       $$ = $2; }
   ;
 

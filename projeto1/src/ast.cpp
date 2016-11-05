@@ -17,13 +17,13 @@
  */
 #define _notab(...) int tmp = spaces; spaces = 0; (__VA_ARGS__); spaces = tmp;
 
-using namespace AST;
-
 /* Bison standard error output function. */
 extern void yyerror(const char* s, ...);
 
 /* Saves the current indentation status. */
 int spaces;
+
+namespace AST {
 
 /* Addition operator overload for NodeType enum. */
 NodeType operator+(NodeType t, int v) {
@@ -40,6 +40,14 @@ template<typename T>
 void text(const T& text, int n) {
   std::string blank(n, ' ');
   std::cout << blank << text;
+}
+
+Node::Node() {
+  this->type = ND;
+}
+
+Node::Node(int type) {
+  this->type = static_cast<NodeType>(type);
 }
 
 std::string Node::verboseType(bool _short) {
@@ -62,21 +70,11 @@ void Node::errorMessage(Operation op, Node* n1, Node* n2) {
     n2->verboseType(false).c_str());
 }
 
-IntNode::IntNode(int value):
-value(value) {
-  this->type = INT;
-}
-
-void IntNode::print(bool prefix) {
+void IntNode::print(bool /*prefix*/) {
   text(value, 1);
 }
 
-FloatNode::FloatNode(char* value):
-value(value) {
-  this->type = FLOAT;
-}
-
-void FloatNode::print(bool prefix) {
+void FloatNode::print(bool /*prefix*/) {
   text(value, 1);
 }
 
@@ -84,12 +82,7 @@ FloatNode::~FloatNode() {
   free(value);
 }
 
-BoolNode::BoolNode(bool value):
-value(value) {
-  this->type = BOOL;
-}
-
-void BoolNode::print(bool prefix) {
+void BoolNode::print(bool /*prefix*/) {
   text(value ? "true" : "false", 1);
 }
 
@@ -98,7 +91,8 @@ binOp(binOp), left(left), right(right) {
   if (binOp == index && right->_type() == INT) {
     // only valid index operation
     return;
-  } else if (binOp == ref && (left->_type() < 0 || right->_type() < 0)) {
+  }
+  if (binOp == ref && (left->_type() < 0 || right->_type() < 0)) {
     yyerror("semantic error: reference operation expects a pointer");
   } else if (left->_type() != right->_type()) {
     // first two ifs ensure coercion
@@ -119,7 +113,7 @@ binOp(binOp), left(left), right(right) {
 void BinaryOpNode::print(bool prefix) {
   if (prefix) {
     // prints a space if the operation is not an assignment
-    text("", binOp != assign);
+    text("", static_cast<int>(static_cast<int>(binOp) != assign));
     text(_bin[binOp], spaces);
     _notab(
       left->print(prefix),
@@ -161,7 +155,7 @@ op(op), node(node) {
     this->type = node->_type() - 6;
   } else if (op == addr) {
     this->type = node->_type() + 6;
-    if (!dynamic_cast<VariableNode*>(node)) {
+    if (dynamic_cast<VariableNode*>(node) == nullptr) {
       AST::UnaryOpNode* test = dynamic_cast<UnaryOpNode*>(node);
       if (test != nullptr && test->op != index) {
         yyerror(
@@ -180,35 +174,29 @@ UnaryOpNode::~UnaryOpNode() {
   delete node;
 }
 
-VariableNode::VariableNode(char* id, Node* next, int type, int size):
-id(id), next(next), size(size) {
-  this->type = static_cast<NodeType>(type);
+LinkedNode::~LinkedNode() {
+  delete next;
 }
 
-void VariableNode::print(bool prefix) {
+void VariableNode::print(bool /*prefix*/) {
   if (next != nullptr) {
     next->print(false);
     text(",", 0);
   }
   std::string s;
   // prints the size of the array if the `size` attribute is not zero
-  s = this->size ? " (size: " + std::to_string(this->size) + ")" : "";
+  s = (this->size != 0) ? " (size: " + std::to_string(this->size) + ")" : "";
   text(id + s, 1);
-}
-
-NodeType VariableNode::_type() {
-  return this->type;
 }
 
 VariableNode::~VariableNode() {
   free(id);
-  delete next;
 }
 
 void BlockNode::print(bool prefix) {
   for (Node* n : nodeList) {
     n->print(prefix);
-    if (!dynamic_cast<FuncNode*>(n) && n->_type() != ND) {
+    if (dynamic_cast<FuncNode*>(n) == nullptr && n->_type() != ND) {
       text("\n", 0);
     }
   }
@@ -220,31 +208,23 @@ BlockNode::~BlockNode() {
   }
 }
 
-void MessageNode::print(bool prefix) {
+void MessageNode::print(bool /*prefix*/) {
   std::string s = (this->_type() % 6 < 3) ? " var:" : ":";
   text(this->verboseType(true) + s, spaces);
-  node->print(false);
-}
-
-NodeType MessageNode::_type() {
-  return node->_type();
-}
-
-MessageNode::~MessageNode() {
-  delete node;
+  next->print(false);
 }
 
 IfNode::IfNode(Node* condition, BlockNode* _then, BlockNode* _else):
 condition(condition), _then(_then), _else(_else) {
   // ensures semantic error if condition is not a boolean test
   if (condition->_type() != BOOL) {
-    AST::Node* _bool = new AST::BoolNode(0);
+    AST::Node* _bool = new AST::BoolNode(false);
     errorMessage(if_test, _bool, condition);
     delete _bool;
   }
 }
 
-void IfNode::print(bool prefix) {
+void IfNode::print(bool /*prefix*/) {
   text("if:", spaces);
   _notab(condition->print(true));
   text("\n", 0);
@@ -265,13 +245,13 @@ IfNode::~IfNode() {
 ForNode::ForNode(Node* assign, Node* test, Node* iteration, BlockNode* body):
 assign(assign), test(test), iteration(iteration), body(body) {
   if (test->_type() != BOOL) {
-    AST::Node* _bool = new AST::BoolNode(0);
+    AST::Node* _bool = new AST::BoolNode(false);
     errorMessage(if_test, _bool, test);
     delete _bool;
   }
 }
 
-void ForNode::print(bool prefix) {
+void ForNode::print(bool /*prefix*/) {
   text("for: ", spaces);
   _notab(
     assign->print(true),
@@ -303,7 +283,7 @@ id(id), params(params), contents(contents) {
   }
 }
 
-void FuncNode::print(bool prefix) {
+void FuncNode::print(bool /*prefix*/) {
   if (this->contents != nullptr) {
     text(this->verboseType(true) + " fun: " + this->id + " (params: ", spaces);
     params->print(false);
@@ -321,7 +301,7 @@ FuncNode::~FuncNode() {
   delete contents;
 }
 
-void ParamNode::print(bool prefix) {
+void ParamNode::print(bool /*prefix*/) {
   if (next != nullptr) {
     next->print(false);
     text(", ", 0);
@@ -329,7 +309,9 @@ void ParamNode::print(bool prefix) {
   text(this->verboseType(true) + " " + id, 0);
 }
 
-void ReturnNode::print(bool prefix) {
+void ReturnNode::print(bool /*prefix*/) {
   text("ret", spaces);
-  node->print(true);
+  next->print(true);
 }
+
+} // namespace AST

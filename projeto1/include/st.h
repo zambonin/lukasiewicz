@@ -29,7 +29,7 @@ namespace ST {
     SymbolTable* external;
 
     //! Basic constructor.
-    SymbolTable(SymbolTable* external):
+    explicit SymbolTable(SymbolTable* external):
     external(external) {}
 
     //! Inserts a symbol on this table.
@@ -38,7 +38,7 @@ namespace ST {
      *  \param key      string identifier of the symbol.
      *  \param symbol   Node object.
      */
-    void addSymbol(SymbolType type, std::string key, AST::Node* symbol);
+    void addSymbol(SymbolType type, const std::string& key, AST::Node* symbol);
 
     //! Checks if an identifier is present on this table.
     /*!
@@ -98,4 +98,4 @@ namespace ST {
 
   };
 
-}
+} // namespace ST

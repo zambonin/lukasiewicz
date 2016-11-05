@@ -1,22 +1,23 @@
 #include "st.h"
 
-using namespace ST;
+namespace ST {
 
 extern SymbolTable* current;
 
-void SymbolTable::addSymbol(SymbolType type, std::string key, AST::Node* symbol) {
+void SymbolTable::addSymbol(SymbolType type, const std::string& key, AST::Node* symbol) {
   entryList[type][key] = symbol;
 }
 
 bool SymbolTable::symbolExistsHere(SymbolType type, char* key) {
   std::string entry(key);
-  return (bool) entryList[type].count(entry);
+  return static_cast<bool>(entryList[type].count(entry));
 }
 
 bool SymbolTable::symbolExists(SymbolType type, char* key) {
   if (symbolExistsHere(type, key)) {
     return true;
-  } else if (external == nullptr) {
+  }
+  if (external == nullptr) {
     return false;
   }
   return external->symbolExists(type, key);
@@ -26,7 +27,8 @@ AST::Node* SymbolTable::getVarFromTable(char* key) {
   if (symbolExistsHere(SymbolType::variable, key)) {
     AST::Node* n = entryList[SymbolType::variable][key];
     return new AST::VariableNode(key, nullptr, n->_type(), 0);
-  } else if (external == nullptr) {
+  }
+  if (external == nullptr) {
     return new AST::VariableNode(key, nullptr, -1, 0);
   }
   return external->getVarFromTable(key);
@@ -63,16 +65,16 @@ AST::Node* SymbolTable::useVariable(char* key) {
 AST::Node* SymbolTable::getFuncFromTable(char* key) {
   if (symbolExistsHere(SymbolType::function, key)) {
     return entryList[SymbolType::function][key];
-  } else if (external == nullptr) {
+  }
+  if (external == nullptr) {
     return new AST::Node();
   }
   return external->getFuncFromTable(key);
 }
 
-AST::Node* SymbolTable::newFunction(char* key, AST::Node* params,
-  int type, AST::BlockNode* contents) {
-
-  if (symbolExistsHere(function, key)) {
+AST::Node* SymbolTable::newFunction(
+  char* key, AST::Node* params,int type, AST::BlockNode* contents) {
+  if (symbolExistsHere(SymbolType::function, key)) {
     AST::FuncNode* n = dynamic_cast<AST::FuncNode*>(getFuncFromTable(key));
     if (n->contents != nullptr) {
       yyerror("semantic error: re-definition of function %s", key);
@@ -84,7 +86,7 @@ AST::Node* SymbolTable::newFunction(char* key, AST::Node* params,
 
   AST::Node* n = new AST::FuncNode(key, params, type, contents);
   addSymbol(SymbolType::function, key, n);
-
   return n;
-
 }
+
+} // namespace ST
