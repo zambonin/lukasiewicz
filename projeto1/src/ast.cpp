@@ -208,7 +208,7 @@ VariableNode::~VariableNode() {
 void BlockNode::print(bool prefix) {
   for (Node* n : nodeList) {
     n->print(prefix);
-    if (n->_type() != ND) {
+    if (!dynamic_cast<FuncNode*>(n) && n->_type() != ND) {
       text("\n", 0);
     }
   }
@@ -289,4 +289,47 @@ ForNode::~ForNode() {
   delete test;
   delete iteration;
   delete body;
+}
+
+FuncNode::FuncNode(char* id, Node* params, int type, BlockNode* contents):
+id(id), params(params), contents(contents) {
+  this->type = static_cast<NodeType>(type);
+  if (this->contents != nullptr) {
+    AST::Node* ret = this->contents->nodeList.back();
+    if (this->type != ret->_type()) {
+      yyerror(
+        "semantic error: function %s has incoherent return type", this->id);
+    }
+  }
+}
+
+void FuncNode::print(bool prefix) {
+  if (this->contents != nullptr) {
+    text(this->verboseType(true) + " fun: " + this->id + " (params: ", spaces);
+    params->print(false);
+    text(")\n", 0);
+    _tab(contents->print(true));
+  } else {
+    yyerror(
+      "semantic error: function %s is declared but never defined", this->id);
+  }
+}
+
+FuncNode::~FuncNode() {
+  free(id);
+  delete params;
+  delete contents;
+}
+
+void ParamNode::print(bool prefix) {
+  if (next != nullptr) {
+    next->print(false);
+    text(", ", 0);
+  }
+  text(this->verboseType(true) + " " + id, 0);
+}
+
+void ReturnNode::print(bool prefix) {
+  text("ret", spaces);
+  node->print(true);
 }

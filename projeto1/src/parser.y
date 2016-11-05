@@ -60,16 +60,17 @@
 
 /* Definition of tokens and their types. */
 %token NL COMMA ASSIGN LPAR RPAR LCURLY RCURLY
-%token IF THEN ELSE FOR T_INT T_FLOAT T_BOOL
+%token IF THEN ELSE FOR T_INT T_FLOAT T_BOOL FUN RET ARR
 %token <integer> INT
 %token <decimal> FLOAT
 %token <boolean> BOOL
 %token <name> ID
 
 /* Nonterminal symbols and their types. */
-%type <block> lines else body scope
-%type <node> expr line declaration basic-type iteration decl-array
-%type <null> program start-scope d-type ref-cnt
+%type <block> lines else body f-body
+%type <node> expr line declaration basic-type iteration decl-array f-decl
+%type <integer> is-array d-type ref-cnt
+%type <null> program start-scope end-scope
 
 /* Operator precedence. */
 %left C_INT C_FLOAT C_BOOL
@@ -90,37 +91,36 @@
 /*
  * program
  *
- * Sets the root of the abstract syntax tree
- * to the beginning of the global scope.
+ * Sets the root of the abstract syntax tree and initializes the global scope.
  */
 program
-  : %empty              {}
-  | start-scope scope   { root = $2; }
+  : %empty                        {}
+  | start-scope lines end-scope   { root = $2; }
   ;
 
 /*
  * start-scope
  *
- * Initializes a new scope whenever a for or if is derived, or if it is the
- * first line of the program (global scope).
+ * Initializes a new scope.
  */
 start-scope
   : %empty  { current = new ST::SymbolTable(current); }
   ;
 
 /*
- * scope
+ * end-scope
  *
- * Configures the correct symbol table according to the scope.
+ * Cleans up the current scope and configures the grammar to use its parent.
  */
-scope
-  : lines   { if (current->external != nullptr) {
-                ST::SymbolTable* pt = current;
-                current = current->external;
-                delete pt;
-              }
-              $$ = $1; }
-  ;
+end-scope
+  : %empty
+    {
+      if (current->external != nullptr) {
+        ST::SymbolTable* pt = current;
+        current = current->external;
+        delete pt;
+      }
+    }
 
 /*
  * lines
@@ -142,6 +142,7 @@ lines
  *     variables and arrays may not be declared together;
  *   - a conditional branch operation, called `if`;
  *   - a loop operation, called `for`.
+ *   - functions, that may be declared using the keyword `fun`.
  */
 line
   : NL                  { $$ = 0; tmp_t = 0; }
@@ -149,22 +150,51 @@ line
   | d-type decl-array   { $$ = new AST::MessageNode($2); }
   | ref-cnt ID ASSIGN expr
     { AST::Node* n = current->useVariable($2);
-      if (tmp_t > 5) n = new AST::UnaryOpNode(AST::ref, n);
+      if ($1) n = new AST::UnaryOpNode(AST::ref, n);
       $$ = new AST::BinaryOpNode(AST::assign, n, $4); }
   | ref-cnt ID LPAR expr RPAR ASSIGN expr
     { AST::Node* n = current->useVariable($2);
-      if (tmp_t > 5) n = new AST::UnaryOpNode(AST::ref, n);
+      if ($1) n = new AST::UnaryOpNode(AST::ref, n);
       AST::Node* left = new AST::BinaryOpNode(AST::index, n, $4);
       $$ = new AST::BinaryOpNode(AST::assign, left, $7); }
   | IF expr NL THEN LCURLY NL body else
     { $$ = new AST::IfNode($2, $7, $8); }
   | FOR iteration COMMA expr COMMA iteration LCURLY NL body
     { $$ = new AST::ForNode($2, $4, $6, $9); }
+  | d-type is-array FUN ID start-scope LPAR f-decl RPAR f-body
+    { $$ = current->newFunction($4, $7, $1 + $2, $9); }
   | prod-error line     { $$ = $2; }
   ;
 
-prod-error
-  : error NL            { yyerrok; }
+/*
+ * f-body
+ *
+ * Represents the lines inside a function.
+ */
+f-body
+  : %empty
+    { $$ = nullptr; }
+  | LCURLY lines RET expr end-scope NL RCURLY
+    { $2->nodeList.push_back(new AST::ReturnNode($4));
+      $$ = $2; }
+  ;
+
+/*
+ * f-decl
+ *
+ * Defines the possible parameters for a function.
+ */
+f-decl
+  : %empty
+    { $$ = new AST::Node(); }
+  | d-type ID
+    { $$ = current->newVariable($2, nullptr, $1, 0, true); }
+  | d-type ID LPAR INT RPAR
+    { $$ = current->newVariable($2, nullptr, $1 + 3, $4, true); }
+  | f-decl COMMA d-type ID
+    { $$ = current->newVariable($4, $1, $3, 0, true); }
+  | f-decl COMMA d-type ID LPAR INT RPAR
+    { $$ = current->newVariable($4, $1, $3 + 3, $6, true); }
   ;
 
 /*
@@ -173,8 +203,8 @@ prod-error
  * Represents the lines inside `if` or `for` operations.
  */
 body
-  : RCURLY                      { $$ = new AST::BlockNode(); }
-  | start-scope scope RCURLY    { $$ = $2; }
+  : RCURLY                                { $$ = new AST::BlockNode(); }
+  | start-scope lines end-scope RCURLY    { $$ = $2; }
   ;
 
 /*
@@ -188,7 +218,7 @@ else
   ;
 
 /*
- * operation
+ * iteration
  *
  * Defines the initialization of a variable on a `for` operation.
  */
@@ -201,13 +231,12 @@ iteration
 /*
  * d-type
  *
- * Defines the primitive types accepted by the grammar on
- * a declaration production.
+ * Defines the primitive types accepted by the grammar.
  */
 d-type
-  : T_INT ref-cnt   { tmp_t += 0; }
-  | T_FLOAT ref-cnt { tmp_t += 1; }
-  | T_BOOL ref-cnt  { tmp_t += 2; }
+  : T_INT ref-cnt   { $$ = 0 + $2; tmp_t += 0; }
+  | T_FLOAT ref-cnt { $$ = 1 + $2; tmp_t += 1; }
+  | T_BOOL ref-cnt  { $$ = 2 + $2; tmp_t += 2; }
   ;
 
 /*
@@ -216,8 +245,18 @@ d-type
  * Counts how many pointer references are being made.
  */
 ref-cnt
-  : %empty      { }
-  | ref-cnt REF { tmp_t += 6; }
+  : %empty      { $$ = 0; }
+  | ref-cnt REF { $$ = $1 + 6; tmp_t += 6; }
+  ;
+
+/*
+ * is-array
+ *
+ * Checks if the return type of a function is an array.
+ */
+is-array
+  : %empty { $$ = 0; }
+  | ARR    { $$ = 3; }
   ;
 
 /*
@@ -292,6 +331,15 @@ expr
   | LPAR expr RPAR          { $$ = $2; }
   | ID LPAR expr RPAR       { AST::Node* n = current->useVariable($1);
                               $$ = new AST::BinaryOpNode(AST::index, n, $3); }
+  ;
+
+/*
+ * prod-error
+ *
+ * Syntax error handler.
+ */
+prod-error
+  : error NL            { yyerrok; }
   ;
 
 %%

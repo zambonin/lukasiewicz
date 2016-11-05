@@ -70,6 +70,9 @@ error [^a-zA-Z0-9_\.\+\-\*\/\,\=\(\)\=\<\>\&\|\!\{\} \t\n]+
 "then"  { return THEN; }
 "else"  { return ELSE; }
 "for"   { return FOR; }
+"fun"   { return FUN; }
+"ret"   { return RET; }
+"array" { return ARR; }
 {intgT} { yylval.integer = std::atoi(yytext); return INT; }
 {deciT} { yylval.decimal = strdup(yytext); return FLOAT; }
 {boolT} { yylval.boolean = (strcmp(yytext, "true") == 0); return BOOL; }

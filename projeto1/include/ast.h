@@ -18,7 +18,12 @@ namespace AST {
     uminus, _not, if_test, cast_int, cast_float, cast_bool
   };
 
-  //! Possible types for the nodes.
+  /*
+   * Possible types for the nodes. This enum may overflow with multiple
+   * references; it can be considered that any variable that has a `type`
+   * value greater than 6 is a pointer, and `type` modulo 6 greater than
+   * three is an array.
+   */
   enum NodeType {
     ND = -1, INT, FLOAT, BOOL,
     A_INT, A_FLOAT, A_BOOL,
@@ -52,9 +57,6 @@ namespace AST {
   public:
     //! Type of the node.
     NodeType type = ND;
-
-    //! Reference counter.
-    int ptr_cnt = 0;
 
     //! Prints the node contents to `stdout`.
     /*!
@@ -315,6 +317,58 @@ namespace AST {
 
     //! Basic destructor.
     ~ForNode();
+
+  };
+
+  class FuncNode : public Node {
+  public:
+    //! Name of the function.
+    char* id;
+
+    //! Pointer to the head node of the parameter list,
+    //! producing a data structure similar to a linked list.
+    Node* params;
+
+    //! Body of the function.
+    BlockNode* contents;
+
+    //! Basic constructor.
+    FuncNode(char* id, Node* params, int type, BlockNode* contents);
+
+    //! Prints the node contents to `stdout`.
+    /*!
+     *  \param prefix  chooses between polish or infix notation.
+     */
+    void print(bool prefix);
+
+    //! Basic destructor. Needs to delete the pointer to the id.
+    ~FuncNode();
+
+  };
+
+  class ParamNode : public VariableNode {
+  public:
+    //! Basic constructor.
+    using VariableNode::VariableNode;
+
+    //! Prints the node contents to `stdout`.
+    /*!
+     *  \param prefix  chooses between polish or infix notation.
+     */
+    void print(bool prefix);
+
+  };
+
+  class ReturnNode : public MessageNode {
+  public:
+    //! Basic constructor.
+    using MessageNode::MessageNode;
+
+    //! Prints the node contents to `stdout`.
+    /*!
+     *  \param prefix  chooses between polish or infix notation.
+     */
+    void print(bool prefix);
 
   };
 

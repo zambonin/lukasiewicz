@@ -54,7 +54,7 @@ namespace ST {
      */
     bool symbolExists(SymbolType type, char* key);
 
-    //! Returns a node inside of a certain symbol.
+    //! Returns a variable node inside of a certain symbol.
     /*!
      *  \param key      string identifier of the symbol.
      */
@@ -68,14 +68,33 @@ namespace ST {
      *                  assignments.
      *  \param type     type of the variable.
      *  \param size     size of the array if applicable.
+     *  \param isParam  returns a `ParamNode` if applicable.
      */
-    AST::Node* newVariable(char* key, AST::Node* next, int type, int size);
+    AST::Node* newVariable(
+        char* key, AST::Node* next, int type, int size, bool isParam=false);
 
     //! Used to connect the nodes when multiple ones are declared.
     /*!
      *  \param key      string identifier of the symbol.
      */
     AST::Node* useVariable(char* key);
+
+    //! Creates a new node representing a function, with informations
+    //! from the grammar.
+    /*!
+     *  \param key      string identifier of the symbol.
+     *  \param params   head node for a linked list of parameters.
+     *  \param type     return type of the function.
+     *  \param contents body of the function.
+     */
+    AST::Node* newFunction(
+        char* key, AST::Node* params, int type, AST::BlockNode* contents);
+
+    //! Returns a function node inside of a certain symbol.
+    /*!
+     *  \param key      string identifier of the symbol.
+     */
+    AST::Node* getFuncFromTable(char* key);
 
   };
 
