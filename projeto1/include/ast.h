@@ -120,7 +120,7 @@ namespace AST {
      */
     void print(bool prefix) override;
 
-    //! Basic destructor. Needs to delete the pointer to the value.
+    //! Basic destructor.
     ~FloatNode() override;
   };
 
@@ -199,7 +199,8 @@ namespace AST {
     //! Basic destructor.
     ~LinkedNode() override;
 
-    /* length from here method? */
+    //! Length of the linked list.
+    int length();
   };
 
   //! Represents a variable that may be simple or an array/pointer.
@@ -221,7 +222,7 @@ namespace AST {
      */
     void print(bool prefix) override;
 
-    //! Basic destructor. Needs to delete the pointer to the o.
+    //! Basic destructor.
     ~VariableNode() override;
   };
 
@@ -330,7 +331,7 @@ namespace AST {
      */
     void print(bool prefix) override;
 
-    //! Basic destructor. Needs to delete the pointer to the id.
+    //! Basic destructor.
     ~FuncNode() override;
   };
 
@@ -356,6 +357,30 @@ namespace AST {
      *  \param prefix  chooses between polish or infix notation.
      */
     void print(bool prefix) override;
+  };
+
+  class FuncCallNode : public Node {
+  public:
+    //! Name of the function being called.
+    char* id;
+
+    //! Node representing the original function.
+    Node* function;
+
+    //! List of parameters used in the function call.
+    BlockNode* params;
+
+    //! Basic constructor.
+    FuncCallNode(char* id, Node* function, BlockNode* params);
+
+    //! Prints the node contents to `stdout`.
+    /*!
+     *  \param prefix  chooses between polish or infix notation.
+     */
+    void print(bool prefix) override;
+
+    //! Basic destructor.
+    ~FuncCallNode() override;
   };
 
 } // namespace AST

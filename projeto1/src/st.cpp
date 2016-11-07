@@ -4,7 +4,8 @@ namespace ST {
 
 extern SymbolTable* current;
 
-void SymbolTable::addSymbol(SymbolType type, const std::string& key, AST::Node* symbol) {
+void SymbolTable::addSymbol(
+  SymbolType type, const std::string& key, AST::Node* symbol) {
   entryList[type][key] = symbol;
 }
 
@@ -13,22 +14,13 @@ bool SymbolTable::symbolExistsHere(SymbolType type, char* key) {
   return static_cast<bool>(entryList[type].count(entry));
 }
 
-bool SymbolTable::symbolExists(SymbolType type, char* key) {
-  if (symbolExistsHere(type, key)) {
-    return true;
-  }
-  if (external == nullptr) {
-    return false;
-  }
-  return external->symbolExists(type, key);
-}
-
 AST::Node* SymbolTable::getVarFromTable(char* key) {
   if (symbolExistsHere(SymbolType::variable, key)) {
     AST::Node* n = entryList[SymbolType::variable][key];
     return new AST::VariableNode(key, nullptr, n->_type(), 0);
   }
   if (external == nullptr) {
+    yyerror("semantic error: undeclared variable %s", key);
     return new AST::VariableNode(key, nullptr, -1, 0);
   }
   return external->getVarFromTable(key);
@@ -55,33 +47,28 @@ AST::Node* SymbolTable::newVariable(
   return n;
 }
 
-AST::Node* SymbolTable::useVariable(char* key) {
-  if (!symbolExists(SymbolType::variable, key)) {
-    yyerror("semantic error: undeclared variable %s", key);
-  }
-  return getVarFromTable(key);
-}
-
 AST::Node* SymbolTable::getFuncFromTable(char* key) {
   if (symbolExistsHere(SymbolType::function, key)) {
     return entryList[SymbolType::function][key];
   }
   if (external == nullptr) {
+    yyerror("semantic error: undeclared function %s", key);
     return new AST::Node();
   }
   return external->getFuncFromTable(key);
 }
 
 AST::Node* SymbolTable::newFunction(
-  char* key, AST::Node* params,int type, AST::BlockNode* contents) {
+  char* key, AST::Node* params, int type, AST::BlockNode* contents) {
   if (symbolExistsHere(SymbolType::function, key)) {
     AST::FuncNode* n = dynamic_cast<AST::FuncNode*>(getFuncFromTable(key));
     if (n->contents != nullptr) {
       yyerror("semantic error: re-definition of function %s", key);
     } else {
       n->contents = contents;
+      delete params;
     }
-    return new AST::Node();
+    return new AST::ParamNode(key, nullptr, -1, 0);
   }
 
   AST::Node* n = new AST::FuncNode(key, params, type, contents);

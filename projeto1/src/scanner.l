@@ -34,7 +34,7 @@ nameT [a-zA-Z][a-zA-Z0-9_]*
 intgC "[int]"
 deciC "[float]"
 boolC "[bool]"
-error [^a-zA-Z0-9_\.\+\-\*\/\,\=\(\)\=\<\>\&\|\!\{\} \t\n]+
+error [^a-zA-Z0-9_\.\+\-\*\/\,\=\(\)\=\<\>\&\|\!\{\}\[\] \t\n]+
 
 %%
 
@@ -61,6 +61,8 @@ error [^a-zA-Z0-9_\.\+\-\*\/\,\=\(\)\=\<\>\&\|\!\{\} \t\n]+
 "addr"  { return ADDR; }
 "{"     { return LCURLY; }
 "}"     { return RCURLY; }
+"["     { return LBRAC; }
+"]"     { return RBRAC; }
 \n      { return NL; }
 "ref"   { return REF; }
 "int"   { return T_INT; }

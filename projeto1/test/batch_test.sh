@@ -9,9 +9,9 @@ bold=$(tput bold)
 normal=$(tput sgr0)
 
 for f in valid/*/*.in ; do
-    cmp -s <("$1" < "$f" 2>/dev/null) "${f/.in/.ex}"
+    cmp -s <("$1" < "$f") "${f/.in/.ex}"
     (("$?" > 0)) && echo -e "${bold}$f${normal} is not correct"
-    valgrind "$1" < "$f" 2>&1 | grep -q "no leaks"
+    valgrind "$1" < "$f" 2>&1 | grep -q "SUMMARY: 0"
     (("$?" > 0)) && echo -e "${bold}$f${normal} is leaking memory"
 done
 

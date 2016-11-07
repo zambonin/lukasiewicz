@@ -52,6 +52,9 @@ Node::Node(int type) {
 
 std::string Node::verboseType(bool _short) {
   int n = this->_type();
+  if (n < 0) {
+    return "undefined";
+  }
   std::string t = _short ? _var[n % 3] : _usr[n % 3];
   std::string ptr = _short ? " ref" : " pointer";
 
@@ -172,6 +175,15 @@ void UnaryOpNode::print(bool prefix) {
 
 UnaryOpNode::~UnaryOpNode() {
   delete node;
+}
+
+int LinkedNode::length() {
+  int l = 1;
+  while (next != nullptr) {
+    ++l;
+    next = dynamic_cast<LinkedNode*>(next)->next;
+  }
+  return l;
 }
 
 LinkedNode::~LinkedNode() {
@@ -302,16 +314,37 @@ FuncNode::~FuncNode() {
 }
 
 void ParamNode::print(bool /*prefix*/) {
-  if (next != nullptr) {
-    next->print(false);
-    text(", ", 0);
+  if (this->_type() != ND) {
+    if (next != nullptr) {
+      next->print(false);
+      text(", ", 0);
+    }
+    text(this->verboseType(true) + " " + id, 0);
   }
-  text(this->verboseType(true) + " " + id, 0);
 }
 
 void ReturnNode::print(bool /*prefix*/) {
   text("ret", spaces);
   next->print(true);
+}
+
+FuncCallNode::FuncCallNode(char* id, Node* function, BlockNode* params):
+id(id), function(function), params(params) {
+  this->type = function->type;
+}
+
+void FuncCallNode::print(bool /*prefix*/) {
+  std::string fname(id);
+  std::string psize = std::to_string(params->nodeList.size());
+  text(" " + fname + "[" + psize + " params]", spaces);
+  for (Node* n : params->nodeList) {
+    n->print(true);
+  }
+}
+
+FuncCallNode::~FuncCallNode() {
+  free(id);
+  delete params;
 }
 
 } // namespace AST

@@ -40,19 +40,12 @@ namespace ST {
      */
     void addSymbol(SymbolType type, const std::string& key, AST::Node* symbol);
 
-    //! Checks if an identifier is present on this table.
+    //! Checks if an identifier is present on this symbol table.
     /*!
      *  \param type     discerns between variable and function.
      *  \param key      string identifier of the symbol.
      */
     bool symbolExistsHere(SymbolType type, char* key);
-
-    //! Checks if an identifier is present anywhere on the program.
-    /*!
-     *  \param type     discerns between variable and function.
-     *  \param key      string identifier of the symbol.
-     */
-    bool symbolExists(SymbolType type, char* key);
 
     //! Returns a variable node inside of a certain symbol.
     /*!
@@ -73,11 +66,11 @@ namespace ST {
     AST::Node* newVariable(
         char* key, AST::Node* next, int type, int size, bool isParam=false);
 
-    //! Used to connect the nodes when multiple ones are declared.
+    //! Returns a function node inside of a certain symbol.
     /*!
      *  \param key      string identifier of the symbol.
      */
-    AST::Node* useVariable(char* key);
+    AST::Node* getFuncFromTable(char* key);
 
     //! Creates a new node representing a function, with informations
     //! from the grammar.
@@ -89,13 +82,6 @@ namespace ST {
      */
     AST::Node* newFunction(
         char* key, AST::Node* params, int type, AST::BlockNode* contents);
-
-    //! Returns a function node inside of a certain symbol.
-    /*!
-     *  \param key      string identifier of the symbol.
-     */
-    AST::Node* getFuncFromTable(char* key);
-
   };
 
 } // namespace ST

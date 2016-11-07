@@ -1,2 +1,2 @@
-float values(100), vars(10)
+float values[100], vars[10]
 
