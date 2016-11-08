@@ -60,21 +60,13 @@ AST::Node* SymbolTable::getFuncFromTable(char* key) {
 AST::Node* SymbolTable::newFunction(
   char* key, AST::Node* params, int type, AST::BlockNode* contents) {
 
-  // workaround: removes duplicate variables from parent symbol table
-  AST::ParamNode* it = dynamic_cast<AST::ParamNode*>(params);
-  while (it != nullptr) {
-    entryList[SymbolType::variable].erase(it->id);
-    it = dynamic_cast<AST::ParamNode*>(it->next);
-  }
-
   if (symbolExistsHere(SymbolType::function, key)) {
     AST::FuncNode* n = dynamic_cast<AST::FuncNode*>(getFuncFromTable(key));
-    if (n->contents != nullptr || n->contents == contents) {
-      // needs to check number and names of parameters
-      yyerror("semantic error: re-definition of function %s", key);
-    } else {
+    if (contents != nullptr && n->verifyParams(params)) {
       n->contents = contents;
       delete params;
+    } else {
+      yyerror("semantic error: re-definition of function %s", key);
     }
     return new AST::ParamNode(key, nullptr, -1, 0);
   }

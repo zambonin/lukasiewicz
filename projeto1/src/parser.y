@@ -143,8 +143,8 @@ line
     { $$ = new AST::IfNode($2, $7, $8); }
   | FOR iteration COMMA expr COMMA iteration LCURLY NL body
     { $$ = new AST::ForNode($2, $4, $6, $9); }
-  | d-type is-array FUN ID LPAR f-decl RPAR f-body
-    { $$ = current->newFunction($4, $6, $1 + $2, $8); }
+  | d-type is-array FUN ID start-scope LPAR f-decl RPAR f-body end-scope
+    { $$ = current->newFunction($4, $7, $1 + $2, $9); }
   | prod-error line     { $$ = $2; }
   ;
 
@@ -152,9 +152,9 @@ line
 f-body
   : %empty
     { $$ = nullptr; }
-  | LCURLY start-scope lines RET expr end-scope NL RCURLY
-    { $3->nodeList.push_back(new AST::ReturnNode($5, $5->_type()));
-      $$ = $3; }
+  | LCURLY lines RET expr NL RCURLY
+    { $2->nodeList.push_back(new AST::ReturnNode($4, $4->_type()));
+      $$ = $2; }
   ;
 
 /* Defines the possible parameters for a function. */

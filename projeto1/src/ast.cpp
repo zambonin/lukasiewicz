@@ -35,6 +35,15 @@ NodeType operator-(NodeType t, int v) {
   return static_cast<NodeType>(static_cast<int>(t) - v);
 }
 
+/*
+ * Equal to operator overload for ParamNode. Two ParamNodes
+ * are the same if they have the same id and type.
+ */
+bool operator==(const ParamNode& n1, const ParamNode& n2) {
+  std::string s1(n1.id), s2(n2.id);
+  return s1 == s2 && n1.type == n2.type;
+}
+
 template<typename T>
 void text(const T& text, int n) {
   std::string blank(n, ' ');
@@ -301,6 +310,20 @@ void FuncNode::print(bool /*prefix*/) {
     yyerror(
       "semantic error: function %s is declared but never defined", this->id);
   }
+}
+
+bool FuncNode::verifyParams(Node* n) {
+  ParamNode* a = dynamic_cast<ParamNode*>(this->params);
+  ParamNode* b = dynamic_cast<ParamNode*>(n);
+
+  bool sameNode = true;
+  while (sameNode && a != nullptr && b != nullptr) {
+    sameNode = (*a == *b);
+    a = dynamic_cast<ParamNode*>(a->next);
+    b = dynamic_cast<ParamNode*>(b->next);
+  }
+
+  return a == nullptr && b == nullptr && sameNode;
 }
 
 FuncNode::~FuncNode() {

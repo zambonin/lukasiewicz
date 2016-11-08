@@ -314,6 +314,13 @@ namespace AST {
      */
     void print(bool prefix) override;
 
+    //! Compares two linked lists of parameters to check if they
+    //! contain the same nodes.
+    /*!
+     *  \param n      list to be compared against.
+     */
+    bool verifyParams(Node* n);
+
     //! Basic destructor.
     ~FuncNode() override;
   };
