@@ -107,13 +107,13 @@ int array fun: map_arr (params: int array t)
    int fun: lambda (params: int x)
      int var: tmp
      = tmp + x 2
-     ret tmp         # retorna ID ou expr???
+     ret tmp
    int array fun: t_ta (size: 10)
-   for = t_ti 0, < t_ti [len] t, = t_ti + t_ti 1:
-     = [index] t_ta t_ti lambda[1 params]
+   for: = t_ti 0, < t_ti [len] t, = t_ti + t_ti 1
+   do:
+     = [index] t_ta t_ti lambda[1 params] x
    ret t_ta
-= output map_arr[1 params]
-
+= output map_arr[1 params] t
 \end{verbatim}
 
 % int result
@@ -126,10 +126,11 @@ int array fun: map_arr (params: int array t)
 %     = tmp + x y
 %     ret tmp
 %   int var: output_tv
-%   for = output_ti 0, < output_ti [len] output, = output_ti + output_ti 1:
-%     = output_tv lambda[2 params]
+%   for: = output_ti 0, < output_ti [len] output, = output_ti + output_ti 1
+%   do:
+%     = output_tv lambda[2 params] x y
 %   ret output_tv
-% = result fold_output[1 params]
+% = result fold_output[1 params] output
 
 \section{Suporte a caracteres e cadeias destes}
 
