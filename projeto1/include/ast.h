@@ -6,6 +6,7 @@
  */
 #pragma once
 
+#include <deque>
 #include <iostream>
 #include <vector>
 
@@ -15,7 +16,7 @@ namespace AST {
   enum Operation {
     add, sub, mul, div, assign, index, addr, ref,
     eq, neq, gt, lt, geq, leq, _and, _or,
-    uminus, _not, if_test, cast_int, cast_float, cast_bool
+    uminus, _not, cast_int, cast_float, cast_bool
   };
 
   /*
@@ -35,7 +36,7 @@ namespace AST {
   static const std::string _bin[] = {
     "+", "-", "*", "/", "=", "[index]", " [addr]", " [ref]",
     "==", "!=", ">", "<", ">=", "<=", "&", "|",
-    " -u", " !", "", " [int]", " [float]", " [bool]"
+    " -u", " !", " [int]", " [float]", " [bool]"
   };
 
   //! Verbose representation for the operations.
@@ -43,7 +44,7 @@ namespace AST {
     "addition", "subtraction", "multiplication", "division", "attribution",
     "index", "address", "reference", "equal", "different", "greater than",
     "less than", "greater or equal than", "less or equal than", "and", "or",
-    "unary minus", "negation", "test"
+    "unary minus", "negation"
   };
 
   //! Verbose representation for the node types.
@@ -71,21 +72,6 @@ namespace AST {
 
     //! Returns the type of the node.
     virtual NodeType _type() { return this->type; }
-
-    //! Prints a semantic error message.
-    /*!
-     *  \param op   operation of the node.
-     *  \param n1   left child (operand) of the node.
-     *  \param n2   right child (operand) of the node.
-     */
-    void errorMessage(Operation op, Node* n1, Node* n2);
-
-    //! Prints the verbose type of the node, taking in account its
-    //! status as an array and/or pointer.
-    /*!
-     *  \param _short   prints a short version of the type used in declarations.
-     */
-    std::string verboseType(bool _short);
 
     //! Basic destructor.
     virtual ~Node() = default;
@@ -198,9 +184,6 @@ namespace AST {
 
     //! Basic destructor.
     ~LinkedNode() override;
-
-    //! Length of the linked list.
-    int length();
   };
 
   //! Represents a variable that may be simple or an array/pointer.
@@ -345,6 +328,10 @@ namespace AST {
      *  \param prefix  chooses between polish or infix notation.
      */
     void print(bool prefix) override;
+
+    //! Produces a double ended queue with all the nodes on the
+    //! linked list of parameters.
+    std::deque<ParamNode*> createDeque();
   };
 
   class ReturnNode : public LinkedNode {
@@ -382,5 +369,21 @@ namespace AST {
     //! Basic destructor.
     ~FuncCallNode() override;
   };
+
+  //! Pretty-prints an object with `cout`. Useful for tabulation.
+  /*!
+   *  \param text     text to be printed.
+   *  \param n        spaces to be added before the text.
+   */
+  template<typename T>
+  void text(const T& text, int n);
+
+  //! Prints the verbose type of the node, taking in account its
+  //! status as an array and/or pointer.
+  /*!
+   *  \param node     node in question.
+   *  \param _short   prints a short version of the type used in declarations.
+   */
+  std::string verboseType(Node* node, bool _short);
 
 } // namespace AST

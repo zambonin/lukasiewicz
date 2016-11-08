@@ -35,23 +35,14 @@ NodeType operator-(NodeType t, int v) {
   return static_cast<NodeType>(static_cast<int>(t) - v);
 }
 
-/* Prints an object with `cout`, prepended by `n` spaces. */
 template<typename T>
 void text(const T& text, int n) {
   std::string blank(n, ' ');
   std::cout << blank << text;
 }
 
-Node::Node() {
-  this->type = ND;
-}
-
-Node::Node(int type) {
-  this->type = static_cast<NodeType>(type);
-}
-
-std::string Node::verboseType(bool _short) {
-  int n = this->_type();
+std::string verboseType(Node* node, bool _short) {
+  int n = node->_type();
   if (n < 0) {
     return "undefined";
   }
@@ -67,10 +58,12 @@ std::string Node::verboseType(bool _short) {
   return t;
 }
 
-void Node::errorMessage(Operation op, Node* n1, Node* n2) {
-  yyerror("semantic error: %s operation expected %s but received %s",
-    _opt[op].c_str(), n1->verboseType(false).c_str(),
-    n2->verboseType(false).c_str());
+Node::Node() {
+  this->type = ND;
+}
+
+Node::Node(int type) {
+  this->type = static_cast<NodeType>(type);
 }
 
 void IntNode::print(bool /*prefix*/) {
@@ -91,32 +84,37 @@ void BoolNode::print(bool /*prefix*/) {
 
 BinaryOpNode::BinaryOpNode(Operation binOp, Node* left, Node* right):
 binOp(binOp), left(left), right(right) {
-  if (binOp == index && right->_type() == INT) {
-    // only valid index operation
-    return;
+  // coercion enforcing
+  if (left->_type() == INT && right->_type() == FLOAT && binOp != assign) {
+    this->left = new UnaryOpNode(cast_float, left);
+  } else if (left->_type() == FLOAT && right->_type() == INT) {
+    this->right = new UnaryOpNode(cast_float, right);
   }
-  if (binOp == ref && (left->_type() < 0 || right->_type() < 0)) {
-    yyerror("semantic error: reference operation expects a pointer");
-  } else if (left->_type() != right->_type()) {
-    // first two ifs ensure coercion
-    if (left->_type() == INT && right->_type() == FLOAT && binOp != assign) {
-      this->left = new UnaryOpNode(cast_float, left);
-    } else if (left->_type() == FLOAT && right->_type() == INT) {
-      this->right = new UnaryOpNode(cast_float, right);
-    } else if (binOp == index) {
-      AST::Node* n = new IntNode(0);
-      errorMessage(binOp, n, right);
-      delete n;
-    } else if (left->_type() != ND) {
-      errorMessage(binOp, left, right);
+
+  // error handling
+  bool differentTypes = (this->left->_type() != this->right->_type());
+  bool bothValidNodes = ((this->left->_type() + this->right->_type()) >= 0);
+
+  if (binOp == index) {
+    if (this->left->_type() % 6 < 3) {
+      yyerror("semantic error: variable %s is not an array",
+        dynamic_cast<VariableNode*>(this->left)->id);
+    } else if (this->right->_type() != INT) {
+      yyerror(
+        "semantic error: index operation expected integer but received %s",
+        verboseType(this->right, false).c_str());
     }
+  } else if (differentTypes && bothValidNodes) {
+    yyerror("semantic error: %s operation expected %s but received %s",
+      _opt[binOp].c_str(), verboseType(this->left, false).c_str(),
+      verboseType(this->right, false).c_str());
   }
 }
 
 void BinaryOpNode::print(bool prefix) {
   if (prefix) {
     // prints a space if the operation is not an assignment
-    text("", static_cast<int>(static_cast<int>(binOp) != assign));
+    text("", binOp != assign);
     text(_bin[binOp], spaces);
     _notab(
       left->print(prefix),
@@ -158,12 +156,16 @@ op(op), node(node) {
     this->type = node->_type() - 6;
   } else if (op == addr) {
     this->type = node->_type() + 6;
-    if (dynamic_cast<VariableNode*>(node) == nullptr) {
-      AST::UnaryOpNode* test = dynamic_cast<UnaryOpNode*>(node);
-      if (test != nullptr && test->op != index) {
-        yyerror(
-          "semantic error: address operation expects a variable or array item");
-      }
+  }
+
+  // error handling
+  if (op == ref && this->type < 0) {
+    yyerror("semantic error: reference operation expects a pointer");
+  } else if (op == addr && dynamic_cast<VariableNode*>(node) == nullptr) {
+    AST::UnaryOpNode* test = dynamic_cast<UnaryOpNode*>(node);
+    if (test != nullptr && test->op != index) {
+      yyerror(
+        "semantic error: address operation expects a variable or array item");
     }
   }
 }
@@ -175,15 +177,6 @@ void UnaryOpNode::print(bool prefix) {
 
 UnaryOpNode::~UnaryOpNode() {
   delete node;
-}
-
-int LinkedNode::length() {
-  int l = 1;
-  while (next != nullptr) {
-    ++l;
-    next = dynamic_cast<LinkedNode*>(next)->next;
-  }
-  return l;
 }
 
 LinkedNode::~LinkedNode() {
@@ -222,17 +215,17 @@ BlockNode::~BlockNode() {
 
 void MessageNode::print(bool /*prefix*/) {
   std::string s = (this->_type() % 6 < 3) ? " var:" : ":";
-  text(this->verboseType(true) + s, spaces);
+  text(verboseType(this, true) + s, spaces);
   next->print(false);
 }
 
 IfNode::IfNode(Node* condition, BlockNode* _then, BlockNode* _else):
 condition(condition), _then(_then), _else(_else) {
-  // ensures semantic error if condition is not a boolean test
+  // error handling
   if (condition->_type() != BOOL) {
-    AST::Node* _bool = new AST::BoolNode(false);
-    errorMessage(if_test, _bool, condition);
-    delete _bool;
+    yyerror(
+      "semantic error: test operation expected boolean but received %s",
+      verboseType(condition, false).c_str());
   }
 }
 
@@ -256,10 +249,11 @@ IfNode::~IfNode() {
 
 ForNode::ForNode(Node* assign, Node* test, Node* iteration, BlockNode* body):
 assign(assign), test(test), iteration(iteration), body(body) {
+  // error handling
   if (test->_type() != BOOL) {
-    AST::Node* _bool = new AST::BoolNode(false);
-    errorMessage(if_test, _bool, test);
-    delete _bool;
+    yyerror(
+      "semantic error: test operation expected boolean but received %s",
+      verboseType(test, false).c_str());
   }
 }
 
@@ -286,6 +280,8 @@ ForNode::~ForNode() {
 FuncNode::FuncNode(char* id, Node* params, int type, BlockNode* contents):
 id(id), params(params), contents(contents) {
   this->type = static_cast<NodeType>(type);
+
+  // error handling
   if (this->contents != nullptr) {
     AST::Node* ret = this->contents->nodeList.back();
     if (this->type != ret->_type()) {
@@ -297,7 +293,7 @@ id(id), params(params), contents(contents) {
 
 void FuncNode::print(bool /*prefix*/) {
   if (this->contents != nullptr) {
-    text(this->verboseType(true) + " fun: " + this->id + " (params: ", spaces);
+    text(verboseType(this, true) + " fun: " + this->id + " (params: ", spaces);
     params->print(false);
     text(")\n", 0);
     _tab(contents->print(true));
@@ -313,13 +309,23 @@ FuncNode::~FuncNode() {
   delete contents;
 }
 
+std::deque<ParamNode*> ParamNode::createDeque() {
+  std::deque<ParamNode*> v = {};
+  ParamNode* l = this;
+  while (l != nullptr) {
+    v.push_front(l);
+    l = dynamic_cast<ParamNode*>(l->next);
+  }
+  return v;
+}
+
 void ParamNode::print(bool /*prefix*/) {
   if (this->_type() != ND) {
     if (next != nullptr) {
       next->print(false);
       text(", ", 0);
     }
-    text(this->verboseType(true) + " " + id, 0);
+    text(verboseType(this, true) + " " + id, 0);
   }
 }
 
@@ -331,6 +337,33 @@ void ReturnNode::print(bool /*prefix*/) {
 FuncCallNode::FuncCallNode(char* id, Node* function, BlockNode* params):
 id(id), function(function), params(params) {
   this->type = function->type;
+
+  // error handling
+  std::vector<Node*> callParam = params->nodeList;
+  int callSize = callParam.size();
+
+  AST::FuncNode* f = dynamic_cast<AST::FuncNode*>(function);
+  AST::ParamNode* l = dynamic_cast<ParamNode*>(f->params);
+  std::deque<ParamNode*> origParam = {};
+  if (l != nullptr) {
+    origParam = l->createDeque();
+  }
+  int origSize = origParam.size();
+
+  if (origSize != callSize) {
+    yyerror(
+      "semantic error: function %s expects %d parameters but received %d",
+      id, origSize, callSize);
+  } else {
+    for (int i = 0; i < origSize; ++i) {
+      if (origParam[i]->_type() != callParam[i]->_type()) {
+        yyerror("semantic error: parameter %s expected %s but received %s",
+          origParam[i]->id,
+          verboseType(origParam[i], false).c_str(),
+          verboseType(callParam[i], false).c_str());
+      }
+    }
+  }
 }
 
 void FuncCallNode::print(bool /*prefix*/) {
