@@ -4,8 +4,8 @@ notation.
 
 This compiler generates the syntax tree for given Łukasiewicz code. It
 currently supports logic and arithmetic operations with integers, floats and
-booleans, that optionally can be saved in variables, arrays and referenced by
-pointers, as well as if, else and for constructs.
+booleans, that optionally can be saved in variables, arrays and (de)referenced
+by pointers, as well as functions, if, else and for constructs.
 
 The debug tracer for the parser can be enabled with the `--debug` flag.
 
