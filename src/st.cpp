@@ -9,27 +9,26 @@ void SymbolTable::addSymbol(
   entryList[type][key] = symbol;
 }
 
-bool SymbolTable::symbolExistsHere(SymbolType type, char* key) {
-  std::string entry(key);
-  return entryList[type].count(entry) == 1;
+bool SymbolTable::symbolExistsHere(SymbolType type, std::string key) {
+  return entryList[type].count(key) == 1;
 }
 
-AST::Node* SymbolTable::getVarFromTable(char* key) {
+AST::Node* SymbolTable::getVarFromTable(std::string key) {
   if (symbolExistsHere(SymbolType::variable, key)) {
     AST::Node* n = entryList[SymbolType::variable][key];
     return new AST::VariableNode(key, nullptr, n->_type(), 0);
   }
   if (external == nullptr) {
-    yyerror("semantic error: undeclared variable %s", key);
+    yyerror("semantic error: undeclared variable %s", key.c_str());
     return new AST::VariableNode(key, nullptr, -1, 0);
   }
   return external->getVarFromTable(key);
 }
 
 AST::Node* SymbolTable::newVariable(
-  char* key, AST::Node* next, int type, int size, bool isParam) {
+  std::string key, AST::Node* next, int type, int size, bool isParam) {
   if (symbolExistsHere(SymbolType::variable, key)) {
-    yyerror("semantic error: re-declaration of variable %s", key);
+    yyerror("semantic error: re-declaration of variable %s", key.c_str());
     // new variable is not added to the symbol table and
     // is skipped by returning `next` or the old node
     AST::Node* old = getVarFromTable(key);
@@ -46,32 +45,33 @@ AST::Node* SymbolTable::newVariable(
   return n;
 }
 
-AST::Node* SymbolTable::getFuncFromTable(char* key) {
+AST::FuncNode* SymbolTable::getFuncFromTable(std::string key) {
   if (symbolExistsHere(SymbolType::function, key)) {
-    return entryList[SymbolType::function][key];
+    return dynamic_cast<AST::FuncNode*>(entryList[SymbolType::function][key]);
   }
   if (external == nullptr) {
-    yyerror("semantic error: undeclared function %s", key);
+    yyerror("semantic error: undeclared function %s", key.c_str());
     return new AST::FuncNode(key, nullptr, -1, nullptr);
   }
   return external->getFuncFromTable(key);
 }
 
 AST::Node* SymbolTable::newFunction(
-  char* key, AST::Node* params, int type, AST::BlockNode* contents) {
-
+  std::string key, AST::Node* params, int type, AST::BlockNode* contents) {
   if (symbolExistsHere(SymbolType::function, key)) {
-    AST::FuncNode* n = dynamic_cast<AST::FuncNode*>(getFuncFromTable(key));
+    AST::FuncNode* n = getFuncFromTable(key);
     if (contents != nullptr && n->verifyParams(params)) {
       n->contents = contents;
       delete params;
     } else {
-      yyerror("semantic error: re-definition of function %s", key);
+      yyerror("semantic error: re-definition of function %s", key.c_str());
     }
-    return new AST::ParamNode(key, nullptr, -1, 0);
+    return nullptr;
   }
 
   AST::Node* n = new AST::FuncNode(key, params, type, contents);
+  // make lambda function callable by the symbol
+  key = (key == "lambda") ? "λ" : key;
   addSymbol(SymbolType::function, key, n);
   return n;
 }

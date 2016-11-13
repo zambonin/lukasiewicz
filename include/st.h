@@ -45,13 +45,13 @@ namespace ST {
      *  \param type     discerns between variable and function.
      *  \param key      string identifier of the symbol.
      */
-    bool symbolExistsHere(SymbolType type, char* key);
+    bool symbolExistsHere(SymbolType type, std::string key);
 
     //! Returns a variable node inside of a certain symbol.
     /*!
      *  \param key      string identifier of the symbol.
      */
-    AST::Node* getVarFromTable(char* key);
+    AST::Node* getVarFromTable(std::string key);
 
     //! Creates a new node with informations from the table and tokens
     //! from the grammar.
@@ -64,13 +64,13 @@ namespace ST {
      *  \param isParam  returns a `ParamNode` if applicable.
      */
     AST::Node* newVariable(
-        char* key, AST::Node* next, int type, int size, bool isParam=false);
+      std::string key, AST::Node* next, int type, int size, bool isParam=false);
 
     //! Returns a function node inside of a certain symbol.
     /*!
      *  \param key      string identifier of the symbol.
      */
-    AST::Node* getFuncFromTable(char* key);
+    AST::FuncNode* getFuncFromTable(std::string key);
 
     //! Creates a new node representing a function, with informations
     //! from the grammar.
@@ -81,7 +81,7 @@ namespace ST {
      *  \param contents body of the function.
      */
     AST::Node* newFunction(
-        char* key, AST::Node* params, int type, AST::BlockNode* contents);
+      std::string key, AST::Node* params, int type, AST::BlockNode* contents);
   };
 
 } // namespace ST

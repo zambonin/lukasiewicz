@@ -190,13 +190,13 @@ namespace AST {
   class VariableNode : public LinkedNode {
   public:
     //! Name of the variable.
-    char* id;
+    std::string id;
 
     //! Length of the array if applicable.
     int size;
 
     //! Basic constructor.
-    VariableNode(char* id, Node* next, int type, int size):
+    VariableNode(std::string id, Node* next, int type, int size):
     LinkedNode(next, type), id(id), size(size) {}
 
     //! Prints the node contents to `stdout`.
@@ -205,8 +205,9 @@ namespace AST {
      */
     void print(bool prefix) override;
 
-    //! Basic destructor.
-    ~VariableNode() override;
+    //! Produces a double ended queue with all the nodes on the
+    //! linked list of parameters.
+    std::deque<VariableNode*> createDeque();
   };
 
   class BlockNode : public Node {
@@ -296,7 +297,7 @@ namespace AST {
   class FuncNode : public Node {
   public:
     //! Name of the function.
-    char* id;
+    std::string id;
 
     //! Pointer to the head node of the parameter list,
     //! producing a data structure similar to a linked list.
@@ -306,7 +307,7 @@ namespace AST {
     BlockNode* contents;
 
     //! Basic constructor.
-    FuncNode(char* id, Node* params, int type, BlockNode* contents);
+    FuncNode(std::string id, Node* params, int type, BlockNode* contents);
 
     //! Prints the node contents to `stdout`.
     /*!
@@ -335,10 +336,6 @@ namespace AST {
      *  \param prefix  chooses between polish or infix notation.
      */
     void print(bool prefix) override;
-
-    //! Produces a double ended queue with all the nodes on the
-    //! linked list of parameters.
-    std::deque<ParamNode*> createDeque();
   };
 
   class ReturnNode : public LinkedNode {
@@ -355,17 +352,14 @@ namespace AST {
 
   class FuncCallNode : public Node {
   public:
-    //! Name of the function being called.
-    char* id;
-
     //! Node representing the original function.
-    Node* function;
+    FuncNode* function;
 
     //! List of parameters used in the function call.
     BlockNode* params;
 
     //! Basic constructor.
-    FuncCallNode(char* id, Node* function, BlockNode* params);
+    FuncCallNode(FuncNode* function, BlockNode* params);
 
     //! Prints the node contents to `stdout`.
     /*!
@@ -375,6 +369,21 @@ namespace AST {
 
     //! Basic destructor.
     ~FuncCallNode() override;
+  };
+
+  class LambdaNode : public FuncNode {
+  public:
+    //! Basic constructor.
+    LambdaNode(std::string id, Node* params, int type, Node* expr);
+  };
+
+  class MapFuncNode : public FuncNode {
+  public:
+    //! Node representing an anonymous function used as parameter.
+    Node* func;
+
+    //! Basic constructor.
+    MapFuncNode(Node* array, Node* func);
   };
 
   //! Pretty-prints an object with `cout`. Useful for tabulation.
