@@ -1,0 +1,7 @@
+int var: a, b, c
+float var: f = 3.4
+= a 2
+= b 4
+int fun: lambda (params: int x, int y)
+  ret + x y
+= c lambda[2 params] a [int] f

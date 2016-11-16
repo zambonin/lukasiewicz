@@ -1,0 +1,3 @@
+int i
+float ref point
+point = addr i

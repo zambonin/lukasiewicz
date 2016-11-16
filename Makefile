@@ -15,4 +15,5 @@ grammar:
 	@bison src/parser.y
 
 clean:
-	@rm src/parser.{cpp,output} include/parser.h src/scanner.cpp $(OUTPUT)
+	@rm src/parser.cpp src/parser.output \
+		include/parser.h src/scanner.cpp $(OUTPUT)

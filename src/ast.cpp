@@ -172,7 +172,7 @@ op(op), node(node) {
     yyerror("semantic error: reference operation expects a pointer");
   } else if (op == addr && dynamic_cast<VariableNode*>(node) == nullptr) {
     AST::UnaryOpNode* test = dynamic_cast<UnaryOpNode*>(node);
-    if (test != nullptr && test->op != index) {
+    if (test == nullptr || test->op != index) {
       yyerror(
         "semantic error: address operation expects a variable or array item");
     }

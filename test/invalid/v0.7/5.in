@@ -1,0 +1,7 @@
+int a, b
+bool fun f(int a)
+bool fun f(int a){
+ret false	
+}
+bool c
+c = f(a, b)
