@@ -16,7 +16,7 @@ namespace AST {
   enum Operation {
     add, sub, mul, div, assign, index, addr, ref,
     eq, neq, gt, lt, geq, leq, _and, _or,
-    uminus, _not, cast_int, cast_float, cast_bool
+    uminus, _not, cast_int, cast_float, cast_bool, len
   };
 
   /*
@@ -36,7 +36,7 @@ namespace AST {
   static const std::string _bin[] = {
     "+", "-", "*", "/", "=", "[index]", " [addr]", " [ref]",
     "==", "!=", ">", "<", ">=", "<=", "&", "|",
-    " -u", " !", " [int]", " [float]", " [bool]"
+    " -u", " !", " [int]", " [float]", " [bool]", " [len]"
   };
 
   //! Verbose representation for the operations.
@@ -44,7 +44,7 @@ namespace AST {
     "addition", "subtraction", "multiplication", "division", "attribution",
     "index", "address", "reference", "equal", "different", "greater than",
     "less than", "greater or equal than", "less or equal than", "and", "or",
-    "unary minus", "negation"
+    "unary minus", "negation", "length"
   };
 
   //! Verbose representation for the node types.
@@ -306,6 +306,9 @@ namespace AST {
     //! Body of the function.
     BlockNode* contents;
 
+    //! Defines if the function is a higher order function.
+    bool isFunctor;
+
     //! Basic constructor.
     FuncNode(std::string id, Node* params, int type, BlockNode* contents);
 
@@ -371,6 +374,13 @@ namespace AST {
     ~FuncCallNode() override;
   };
 
+  class DeclarationNode : public VariableNode {
+  public:
+    using VariableNode::VariableNode;
+
+    void print(bool prefix);
+  };
+
   class LambdaNode : public FuncNode {
   public:
     //! Basic constructor.
@@ -383,7 +393,8 @@ namespace AST {
     Node* func;
 
     //! Basic constructor.
-    MapFuncNode(Node* array, Node* func);
+    MapFuncNode(VariableNode* array, Node* func);
+
   };
 
   //! Pretty-prints an object with `cout`. Useful for tabulation.

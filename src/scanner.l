@@ -87,6 +87,7 @@ error [^a-zA-Z0-9_\.\+\-\*\/\,\=\(\)\=\<\>\&\|\!\{\}\[\]\λ \t\n]+
 {intgC}   { return C_INT; }
 {deciC}   { return C_FLOAT; }
 {boolC}   { return C_BOOL; }
+"[len]"   { return LEN; }
 {nameT}   { yylval.name = strdup(yytext); return ID; }
 {error}   { yyerror("lexical error: unknown symbol %s", yytext); }
 .         ;

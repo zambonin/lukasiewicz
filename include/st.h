@@ -51,7 +51,7 @@ namespace ST {
     /*!
      *  \param key      string identifier of the symbol.
      */
-    AST::Node* getVarFromTable(std::string key);
+    AST::VariableNode* getVarFromTable(std::string key);
 
     //! Creates a new node with informations from the table and tokens
     //! from the grammar.

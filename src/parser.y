@@ -13,6 +13,7 @@
   extern int yylex();
   extern int yylex_destroy();
   extern void yyerror(const char* s, ...);
+  extern AST::Node* isHigherOrderFunc(AST::Node* expr);
 
   /* First symbol table (global scope). */
   ST::SymbolTable* current;
@@ -76,7 +77,7 @@
 %type <null> program start-scope end-scope
 
 /* Operator precedence. */
-%left C_INT C_FLOAT C_BOOL
+%left C_INT C_FLOAT C_BOOL LEN
 %left AND OR
 %left EQ NEQ GT LT GEQ LEQ
 %left PLUS MINUS
@@ -119,12 +120,14 @@ lines
     {
       $$ = new AST::BlockNode();
       if ($1 != nullptr) {
+        $$->nodeList.push_back(isHigherOrderFunc($1));
         $$->nodeList.push_back($1);
       }
     }
   | lines line
     {
       if ($2 != nullptr) {
+        $1->nodeList.push_back(isHigherOrderFunc($2));
         $1->nodeList.push_back($2);
       }
       $$ = $1;
@@ -295,6 +298,7 @@ expr
   | C_INT expr              { $$ = new AST::UnaryOpNode(AST::cast_int, $2); }
   | C_FLOAT expr            { $$ = new AST::UnaryOpNode(AST::cast_float, $2); }
   | C_BOOL expr             { $$ = new AST::UnaryOpNode(AST::cast_bool, $2); }
+  | LEN expr                { $$ = new AST::UnaryOpNode(AST::len, $2); }
   | LPAR expr RPAR          { $$ = $2; }
   ;
 
@@ -313,7 +317,7 @@ v-expr
       $$ = new AST::FuncCallNode(n, $3); free($1); }
   | F_MAP LPAR f-lambda COMMA ID RPAR
     {
-      AST::Node* n = current->getVarFromTable($5);
+      AST::VariableNode* n = current->getVarFromTable($5);
       AST::MapFuncNode* m = new AST::MapFuncNode(n, $3);
       AST::BlockNode* p = new AST::BlockNode();
       p->nodeList.push_back(n);
@@ -359,4 +363,15 @@ int main(int argc, char *argv[]) {
 
   return 0;
 
+}
+
+AST::Node* isHigherOrderFunc(AST::Node* expr) {
+  AST::BinaryOpNode* isBinaryOp = dynamic_cast<AST::BinaryOpNode*>(expr);
+  if (isBinaryOp != nullptr) {
+    AST::FuncCallNode* rightChild = dynamic_cast<AST::FuncCallNode*>(isBinaryOp->right);
+    if (rightChild != nullptr && rightChild->function->isFunctor) {
+      return rightChild->function;
+    }
+  }
+  return new AST::Node();
 }

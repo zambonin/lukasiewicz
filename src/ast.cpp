@@ -153,7 +153,7 @@ BinaryOpNode::~BinaryOpNode() {
 
 UnaryOpNode::UnaryOpNode(Operation op, Node* node):
 op(op), node(node) {
-  if (op == cast_int) {
+  if (op == cast_int || op == len) {
     this->type = INT;
   } else if (op == cast_float) {
     this->type = FLOAT;
@@ -171,11 +171,13 @@ op(op), node(node) {
   if (op == ref && this->type < 0) {
     yyerror("semantic error: reference operation expects a pointer");
   } else if (op == addr && dynamic_cast<VariableNode*>(node) == nullptr) {
-    AST::UnaryOpNode* test = dynamic_cast<UnaryOpNode*>(node);
+    UnaryOpNode* test = dynamic_cast<UnaryOpNode*>(node);
     if (test == nullptr || test->op != index) {
       yyerror(
         "semantic error: address operation expects a variable or array item");
     }
+  } else if (op == len && (node->_type() % 6) < 3) {
+    yyerror("semantic error: index operation expects an array");
   }
 }
 
@@ -193,14 +195,7 @@ LinkedNode::~LinkedNode() {
 }
 
 void VariableNode::print(bool /*prefix*/) {
-  if (next != nullptr) {
-    next->print(false);
-    text(",", 0);
-  }
-  std::string s;
-  // prints the size of the array if the `size` attribute is not zero
-  s = (this->size != 0) ? " (size: " + std::to_string(this->size) + ")" : "";
-  text(id + s, 1);
+  text(id, 1);
 }
 
 void BlockNode::print(bool prefix) {
@@ -213,9 +208,9 @@ void BlockNode::print(bool prefix) {
 }
 
 BlockNode::~BlockNode() {
-  for (Node* n : nodeList) {
-    delete n;
-  }
+  // for (Node* n : nodeList) {
+    // delete n;
+  // }
 }
 
 void MessageNode::print(bool /*prefix*/) {
@@ -284,9 +279,10 @@ ForNode::~ForNode() {
 
 FuncNode::FuncNode(std::string id, Node* params, int type, BlockNode* contents):
 Node(type), id(id), params(params), contents(contents) {
+  this->isFunctor = false;
   // error handling
   if (this->contents != nullptr) {
-    AST::Node* ret = this->contents->nodeList.back();
+    Node* ret = this->contents->nodeList.back();
     if (this->type != ret->_type()) {
       yyerror("semantic error: function %s has incoherent return type",
         this->id.c_str());
@@ -360,7 +356,7 @@ function(function), params(params) {
   std::vector<Node*> callParam = params->nodeList;
   int callSize = callParam.size();
 
-  AST::VariableNode* l = dynamic_cast<VariableNode*>(function->params);
+  VariableNode* l = dynamic_cast<VariableNode*>(function->params);
   std::deque<VariableNode*> origParam = {};
   if (l != nullptr) {
     origParam = l->createDeque();
@@ -395,21 +391,71 @@ FuncCallNode::~FuncCallNode() {
   delete params;
 }
 
+void DeclarationNode::print(bool prefix) {
+  if (next != nullptr) {
+    next->print(false);
+    text(",", 0);
+  }
+  std::string s;
+  // prints the size of the array if the `size` attribute is not zero
+  s = (this->size != 0) ? " (size: " + std::to_string(this->size) + ")" : "";
+  text(id + s, 1);
+}
+
 LambdaNode::LambdaNode(std::string id, Node* params, int type, Node* expr):
 FuncNode(id, params, type, nullptr) {
   this->contents = new BlockNode();
   this->contents->nodeList.push_back(new ReturnNode(expr, expr->_type()));
 }
 
-MapFuncNode::MapFuncNode(Node* array, Node* func):
-FuncNode("_map", array, array->type, nullptr), func(func) {
-  this->id = dynamic_cast<VariableNode*>(array)->id + this->id;
+MapFuncNode::MapFuncNode(VariableNode* array, Node* func):
+FuncNode("map", nullptr, array->_type(), nullptr), func(func) {
+  this->id = array->id + "_" + this->id;
+  this->isFunctor = true;
+  this->params = new ParamNode(array->id, nullptr, array->_type(), array->size);
+
   this->contents = new BlockNode();
-  // insert lambda, iteration and return inside contents
-  // and then this node before the assignment one
+  this->contents->nodeList.push_back(func);
+
+  FuncNode* f = dynamic_cast<FuncNode*>(func);
+
+  VariableNode* it = new VariableNode(array->id + "_ti", nullptr, 0, 0);
+  VariableNode* ret = new VariableNode(array->id + "_ta", nullptr,
+    array->_type(), array->size);
+
+  BinaryOpNode* _init = new BinaryOpNode(assign, it, new IntNode(0));
+  UnaryOpNode* length = new UnaryOpNode(len, array);
+  BinaryOpNode* _test = new BinaryOpNode(lt, it, length);
+  BinaryOpNode* _sum = new BinaryOpNode(add, it, new IntNode(1));
+  BinaryOpNode* iter = new BinaryOpNode(assign, it, _sum);
+
+  BinaryOpNode* arr_it = new BinaryOpNode(index, array, it);
+  BlockNode* l_param = new BlockNode();
+
+  BinaryOpNode* ret_arr_it = new BinaryOpNode(index, ret, it);
+
+  l_param->nodeList.push_back(arr_it);
+  FuncCallNode* l_call = new FuncCallNode(f, l_param);
+
+  BinaryOpNode* _attr = new BinaryOpNode(assign, ret_arr_it, l_call);
+
+  BlockNode* _body = new BlockNode();
+  _body->nodeList.push_back(_attr);
+
+  ForNode* forNode = new ForNode(_init, _test, iter, _body);
+
+  ReturnNode* retNode = new ReturnNode(ret, ret->_type());
+
+  DeclarationNode* retDecl = new DeclarationNode(array->id + "_ta", nullptr,
+    array->_type(), array->size);
+
+  this->contents->nodeList.push_back(new MessageNode(it, it->_type()));
+  this->contents->nodeList.push_back(
+    new MessageNode(retDecl, retDecl->_type()));
+  this->contents->nodeList.push_back(forNode);
+  this->contents->nodeList.push_back(retNode);
 
   // error handling
-  AST::FuncNode* f = dynamic_cast<FuncNode*>(func);
   if ((array->_type() % 6) < 3) {
     yyerror("semantic error: second parameter must be an array");
   }

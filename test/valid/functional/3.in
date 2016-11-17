@@ -1,0 +1,2 @@
+int t[10], output[10]
+output = map(lambda int x -> x + 2, t)
