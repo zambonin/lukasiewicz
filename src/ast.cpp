@@ -46,15 +46,15 @@ std::string verboseType(Node* node, bool _short) {
   if (n < 0) {
     return "undefined";
   }
-  std::string t = _short ? _var[n % 3] : _usr[n % 3];
+  std::string t = _short ? _var[n % 4] : _usr[n % 4];
   std::string ptr = _short ? " ref" : " pointer";
 
-  while (n >= 6) {
+  while (n >= 8) {
     t += ptr;
-    n -= 6;
+    n -= 8;
   }
 
-  t += (n >= 3) ? " array" : "";
+  t += (n >= 4) ? " array" : "";
   return t;
 }
 
@@ -82,13 +82,35 @@ void BoolNode::print(bool /*prefix*/) {
   text(value ? "true" : "false", 1);
 }
 
+void CharNode::print(bool /*prefix*/) {
+  text(value, 1);
+}
+
+NodeType CharNode::_type() {
+  return (value[0] == '\"') ? this->type + 4 : this->type;
+}
+
+CharNode::~CharNode() {
+  free(value);
+}
+
 BinaryOpNode::BinaryOpNode(Operation binOp, Node* left, Node* right):
 binOp(binOp), left(left), right(right) {
   // coercion enforcing
-  if (left->_type() == INT && right->_type() == FLOAT && binOp != assign) {
-    this->left = new UnaryOpNode(cast_float, left);
-  } else if (left->_type() == FLOAT && right->_type() == INT) {
+  if (binOp != assign) {
+    if (left->_type() == INT && right->_type() == FLOAT) {
+      this->left = new UnaryOpNode(cast_float, left);
+    } else if (left->_type() == CHAR && right->_type() == A_CHAR) {
+      this->left = new UnaryOpNode(cast_word, left);
+    } else if (left->_type() == CHAR && right->_type() == CHAR) {
+      this->left = new UnaryOpNode(cast_word, left);
+      this->right = new UnaryOpNode(cast_word, right);
+    }
+  }
+  if (left->_type() == FLOAT && right->_type() == INT) {
     this->right = new UnaryOpNode(cast_float, right);
+  } else if (left->_type() == A_CHAR && right->_type() == CHAR) {
+    this->right = new UnaryOpNode(cast_word, right);
   }
 
   // error handling
@@ -96,7 +118,7 @@ binOp(binOp), left(left), right(right) {
   bool bothValid = (this->left->_type() >= 0 && this->right->_type() >= 0);
 
   if (binOp == index) {
-    if (this->left->_type() % 6 < 3) {
+    if ((this->left->_type() % 8) < 4) {
       yyerror("semantic error: variable %s is not an array",
         dynamic_cast<VariableNode*>(this->left)->id.c_str());
     } else if (this->right->_type() != INT) {
@@ -132,7 +154,7 @@ void BinaryOpNode::print(bool prefix) {
 NodeType BinaryOpNode::_type() {
   if (binOp == index) {
     // needs to return primitive type of element inside array
-    return left->_type() - 3;
+    return left->_type() - 4;
   }
   return (binOp < 8) ? left->_type() : BOOL;
 }
@@ -150,25 +172,29 @@ op(op), node(node) {
     this->type = FLOAT;
   } else if (op == cast_bool || op == _not) {
     this->type = BOOL;
+  } else if (op == cast_word) {
+    this->type = A_CHAR;
   } else if (op == uminus) {
     this->type = node->_type();
   } else if (op == ref) {
-    this->type = node->_type() - 6;
+    this->type = node->_type() - 8;
   } else if (op == addr) {
-    this->type = node->_type() + 6;
+    this->type = node->_type() + 8;
   }
 
   // error handling
   if (op == ref && this->type < 0) {
     yyerror("semantic error: reference operation expects a pointer");
-  } else if (op == addr && dynamic_cast<VariableNode*>(node) == nullptr) {
-    UnaryOpNode* test = dynamic_cast<UnaryOpNode*>(node);
-    if (test == nullptr || test->op != index) {
-      yyerror(
-        "semantic error: address operation expects a variable or array item");
-    }
   } else if (op == len && (node->_type() % 6) < 3) {
     yyerror("semantic error: length operation expects an array");
+  } else if (op == addr) {
+    bool isNotVar = (dynamic_cast<VariableNode*>(node) == nullptr);
+    AST::BinaryOpNode* indexNode = dynamic_cast<BinaryOpNode*>(node);
+    bool isNotIndex = (indexNode != nullptr && indexNode->binOp != index);
+    if ((indexNode == nullptr && isNotVar) || isNotIndex) {
+       yyerror(
+         "semantic error: address operation expects a variable or array item");
+     }
   }
 }
 
@@ -205,7 +231,7 @@ BlockNode::~BlockNode() {
 }
 
 void MessageNode::print(bool /*prefix*/) {
-  std::string s = (this->_type() % 6 < 3) ? " var:" : ":";
+  std::string s = ((this->_type() % 8) < 4) ? " var:" : ":";
   text(verboseType(this, true) + s, spaces);
   next->print(false);
 }
@@ -407,10 +433,10 @@ FuncNode("map", nullptr, array->_type(), nullptr), func(func) {
 
   // error handling
   FuncNode* f = dynamic_cast<FuncNode*>(func);
-  if ((array->_type() % 6) < 3) {
+  if ((array->_type() % 8) < 4) {
     yyerror("semantic error: second parameter must be an array");
   }
-  if (f->_type() != this->_type() % 3) {
+  if (f->_type() != (this->_type() % 4)) {
     yyerror("semantic error: function %s has incoherent return type",
       f->id.c_str());
   }
@@ -421,7 +447,7 @@ void MapFuncNode::expandBody(VariableNode* array) {
 
   std::ostringstream out;
   out << "int " << ti << "\n"                                                 \
-    << _var[array->_type() - 3] << " " << ta << "[" << array->size << "]\n"   \
+    << _var[array->_type() - 4] << " " << ta << "[" << array->size << "]\n"   \
     << "for " << ti << " = 0, " << ti << " < [len] t, "                       \
     << ti << " = " << ti << " + 1 {\n  "                                      \
     << ta << "[" << ti << "] = λ(" << array->id << "[" << ti << "])\n}\n";

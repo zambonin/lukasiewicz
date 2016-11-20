@@ -17,6 +17,7 @@
   extern int yylineno;
 
   void yyerror(const char* s, ...);
+  char* reduce_char(char*);
 %}
 
 /*
@@ -31,15 +32,14 @@
 
 %option noyywrap nodefault yylineno
 
-intgT [0-9]+
-deciT ([0-9]*\.[0-9]+)|([0-9]+\.)
-boolT "true"|"false"
-nameT [a-zA-Z][a-zA-Z0-9_]*
-intgC "[int]"
-deciC "[float]"
-boolC "[bool]"
-error [^a-zA-Z0-9_\.\+\-\*\/\,\=\(\)\=\<\>\&\|\!\{\}\[\]\λ \t\n]+
-
+chars   [ !#-&(-~]
+intgT   [0-9]+
+deciT   ([0-9]*\.[0-9]+)|([0-9]+\.)
+boolT   "true"|"false"
+nameT   [a-zA-Z][a-zA-Z0-9_]*
+charT   [\']{chars}+[\']
+wordT   [\"]{chars}*[\"]
+error   [^ -~\λ\t\n]+
 %%
 
  /* Rules section. */
@@ -72,6 +72,7 @@ error [^a-zA-Z0-9_\.\+\-\*\/\,\=\(\)\=\<\>\&\|\!\{\}\[\]\λ \t\n]+
 "int"     { return T_INT; }
 "float"   { return T_FLOAT; }
 "bool"    { return T_BOOL; }
+"char"    { return T_CHAR; }
 "if"      { return IF; }
 "then"    { return THEN; }
 "else"    { return ELSE; }
@@ -86,14 +87,18 @@ error [^a-zA-Z0-9_\.\+\-\*\/\,\=\(\)\=\<\>\&\|\!\{\}\[\]\λ \t\n]+
 "->"      { return RET_L; }
 "λ"       { return L_CALL; }
 {intgT}   { yylval.integer = std::atoi(yytext); return INT; }
-{deciT}   { yylval.decimal = strdup(yytext); return FLOAT; }
 {boolT}   { yylval.boolean = (strcmp(yytext, "true") == 0); return BOOL; }
-{intgC}   { return C_INT; }
-{deciC}   { return C_FLOAT; }
-{boolC}   { return C_BOOL; }
+{nameT}   { yylval.word = strdup(yytext); return ID; }
+{deciT}   { yylval.word = strdup(yytext); return FLOAT; }
+{charT}   { yylval.word = reduce_char(strdup(yytext)); return CHAR; }
+{wordT}   { yylval.word = strdup(yytext); return STR; }
+"[int]"   { return C_INT; }
+"[float]" { return C_FLOAT; }
+"[bool]"  { return C_BOOL; }
+"[word]"  { return C_STR; }
 "[len]"   { return LEN; }
-{nameT}   { yylval.name = strdup(yytext); return ID; }
 {error}   { yyerror("lexical error: unknown symbol %s", yytext); }
+"#".*     { /* single-line comments */ }
 .         ;
 
 %%
@@ -145,5 +150,20 @@ char* rl_read() {
 
   _input += "\n";
   return strdup(_input.c_str());
+
+}
+
+/* Truncates a single-quoted word to its first character. */
+char* reduce_char(char* s) {
+
+  if (strlen(s) > 3) {
+    char _new[3] = {'\'', s[1], '\''};
+    char* p = strdup(_new);
+    yyerror("warning: multicharacter value truncated to %s", p);
+    free(s);
+    return p;
+  } else {
+    return s;
+  }
 
 }

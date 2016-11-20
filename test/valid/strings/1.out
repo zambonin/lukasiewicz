@@ -1,0 +1,6 @@
+char var: a = '/'
+char array: b (size: 10)
+= b "teste"
+= b ""
+= b [word] 'a'
+= b + "um" [word] 'a'

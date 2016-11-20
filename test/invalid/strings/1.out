@@ -1,0 +1,7 @@
+[Line 1] warning: multicharacter value truncated to 'a'
+[Line 4] semantic error: undeclared variable p
+[Line 5] semantic error: undeclared variable q
+[Line 6] syntax error, unexpected NL
+[Line 7] syntax error, unexpected NL
+[Line 8] semantic error: undeclared variable r
+[Line 8] syntax error, unexpected ID

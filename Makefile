@@ -14,6 +14,10 @@ grammar:
 	@flex -o src/scanner.cpp src/scanner.l
 	@bison src/parser.y
 
+test: default
+	@cd test/ && ./batch_test.sh ../lukacompiler
+	@$(MAKE) -s clean
+
 clean:
 	@rm src/parser.cpp src/parser.output \
 		include/parser.h src/scanner.cpp $(OUTPUT)

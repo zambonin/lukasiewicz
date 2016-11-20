@@ -53,27 +53,24 @@
 /* Possible C types for semantic values. */
 %union {
   int integer;
-  char* decimal;
   bool boolean;
+  char* word;
   AST::Node* node;
   AST::BlockNode* block;
-  char* name;
 }
 
 /* Delete symbols automatically discarded. */
-%destructor { free($$); } <name>
-%destructor { free($$); } <decimal>
+%destructor { free($$); } <word>
 %destructor { delete $$; } <node>
 %destructor { delete $$; } <block>
 
 /* Definition of tokens and their types. */
 %token NL COMMA ASSIGN LPAR RPAR LCURLY RCURLY LBRAC RBRAC
-%token IF THEN ELSE FOR T_INT T_FLOAT T_BOOL FUN RET ARR
+%token IF THEN ELSE FOR T_INT T_FLOAT T_BOOL T_CHAR FUN RET ARR
 %token RET_L F_LAMBDA L_CALL F_MAP F_FOLD F_FILTER
 %token <integer> INT
-%token <decimal> FLOAT
 %token <boolean> BOOL
-%token <name> ID
+%token <word> ID FLOAT CHAR STR
 
 /* Nonterminal symbols and their types. */
 %type <block> lines else body f-body f-expr
@@ -83,7 +80,7 @@
 %type <null> program start-scope end-scope
 
 /* Operator precedence. */
-%left C_INT C_FLOAT C_BOOL LEN
+%left C_INT C_FLOAT C_BOOL C_STR LEN
 %left AND OR
 %left EQ NEQ GT LT GEQ LEQ
 %left PLUS MINUS
@@ -151,7 +148,7 @@ lines
 line
   : NL                  { $$ = 0; tmp_t = 0; tmp_f = 0; }
   | d-type declaration  { $$ = new AST::MessageNode($2, $1); }
-  | d-type decl-array   { $$ = new AST::MessageNode($2, $1 + 3); }
+  | d-type decl-array   { $$ = new AST::MessageNode($2, $1 + 4); }
   | ref-cnt ID ASSIGN expr
     { AST::Node* n = current->getVarFromTable($2);
       if ($1) n = new AST::UnaryOpNode(AST::ref, n);
@@ -168,8 +165,6 @@ line
   | d-type is-array FUN ID start-scope LPAR decl-func RPAR f-body end-scope
     { $$ = current->newFunction($4, $7, $1 + $2, $9); free($4); }
   | f-lambda            { $$ = $1; }
-  | L_CALL LPAR RPAR
-    { current->entryList[ST::SymbolType::function].erase("λ"); $$ = 0; }
   | prod-error line     { $$ = $2; }
   ;
 
@@ -178,6 +173,8 @@ basic-type
   : INT                     { $$ = new AST::IntNode($1); }
   | FLOAT                   { $$ = new AST::FloatNode($1); }
   | BOOL                    { $$ = new AST::BoolNode($1); }
+  | CHAR                    { $$ = new AST::CharNode($1); }
+  | STR                     { $$ = new AST::CharNode($1); }
   ;
 
 /* Defines the primitive types accepted by the grammar. */
@@ -185,18 +182,19 @@ d-type
   : T_INT ref-cnt   { $$ = 0 + $2; tmp_t += 0; }
   | T_FLOAT ref-cnt { $$ = 1 + $2; tmp_t += 1; }
   | T_BOOL ref-cnt  { $$ = 2 + $2; tmp_t += 2; }
+  | T_CHAR ref-cnt  { $$ = 3 + $2; tmp_t += 3; }
   ;
 
 /* Checks if the return type of a function is an array. */
 is-array
   : %empty { $$ = 0; }
-  | ARR    { $$ = 3; }
+  | ARR    { $$ = 4; }
   ;
 
 /* Counts how many pointer references are being made. */
 ref-cnt
   : %empty      { $$ = 0; }
-  | ref-cnt REF { $$ = $1 + 6; tmp_t += 6; }
+  | ref-cnt REF { $$ = $1 + 8; tmp_t += 8; }
   ;
 
 /* Defines the declaration and possible initialization
@@ -217,9 +215,9 @@ declaration
 /* Defines the declaration of one or multiple arrays of the same type. */
 decl-array
   : ID LBRAC INT RBRAC
-    { $$ = current->newVariable($1, nullptr, tmp_t + 3, $3); free($1); }
+    { $$ = current->newVariable($1, nullptr, tmp_t + 4, $3); free($1); }
   | decl-array COMMA ID LBRAC INT RBRAC
-    { $$ = current->newVariable($3, $1, tmp_t + 3, $5); free($3); }
+    { $$ = current->newVariable($3, $1, tmp_t + 4, $5); free($3); }
   ;
 
 /* Defines the possible parameters for a function. */
@@ -229,11 +227,11 @@ decl-func
   | d-type ID
     { $$ = current->newVariable($2, nullptr, $1, 0, true); free($2); }
   | d-type ID LPAR INT RPAR
-    { $$ = current->newVariable($2, nullptr, $1 + 3, $4, true); free($2); }
+    { $$ = current->newVariable($2, nullptr, $1 + 4, $4, true); free($2); }
   | decl-func COMMA d-type ID
     { $$ = current->newVariable($4, $1, $3, 0, true); free($4); }
   | decl-func COMMA d-type ID LPAR INT RPAR
-    { $$ = current->newVariable($4, $1, $3 + 3, $6, true); free($4); }
+    { $$ = current->newVariable($4, $1, $3 + 4, $6, true); free($4); }
   ;
 
 /* Defines the parameter list for an anonymous function. */
@@ -278,6 +276,8 @@ f-lambda
     { AST::BlockNode* c = new AST::BlockNode();
       c->nodeList.push_back(new AST::ReturnNode($5, $5->_type()));
       $$ = current->newFunction("lambda", $3, $3->_type(), c); }
+  | L_CALL LPAR RPAR
+    { current->entryList[ST::SymbolType::function].erase("λ"); $$ = 0; }
   ;
 
 /* Defines the arithmetic, casting and logic operations of the language. */
@@ -303,6 +303,7 @@ expr
   | C_INT expr              { $$ = new AST::UnaryOpNode(AST::cast_int, $2); }
   | C_FLOAT expr            { $$ = new AST::UnaryOpNode(AST::cast_float, $2); }
   | C_BOOL expr             { $$ = new AST::UnaryOpNode(AST::cast_bool, $2); }
+  | C_STR expr              { $$ = new AST::UnaryOpNode(AST::cast_word, $2); }
   | LEN expr                { $$ = new AST::UnaryOpNode(AST::len, $2); }
   | LPAR expr RPAR          { $$ = $2; }
   ;
@@ -344,7 +345,7 @@ f-expr
 
 /* Syntax error handler. */
 prod-error
-  : error NL  { yyerrok; }
+  : error NL  { yyerrok; tmp_t = 0; }
   ;
 
 %%

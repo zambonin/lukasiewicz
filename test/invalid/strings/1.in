@@ -1,0 +1,9 @@
+char c = 'aa'
+char d[10]
+d = "p
+d = q"
+c = '''
+d = "'"
+d = "r'
+char d = 'a"
+

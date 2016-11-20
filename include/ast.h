@@ -17,27 +17,28 @@ namespace AST {
   enum Operation {
     add, sub, mul, div, assign, index, addr, ref,
     eq, neq, gt, lt, geq, leq, _and, _or,
-    uminus, _not, cast_int, cast_float, cast_bool, len
+    uminus, _not, cast_int, cast_float, cast_bool, cast_word, len
   };
 
   /*
    * Possible types for the nodes. This enum may overflow with multiple
    * references; it can be considered that any variable that has a `type`
-   * value greater than 6 is a pointer, and `type` modulo 6 greater than
-   * three is an array.
+   * value greater than 8 is a pointer, and `type` modulo 8 greater than
+   * four is an array.
    */
   enum NodeType {
-    ND = -1, INT, FLOAT, BOOL,
-    A_INT, A_FLOAT, A_BOOL,
-    P_INT, P_FLOAT, P_BOOL,
-    PA_INT, PA_FLOAT, PA_BOOL,
+    ND = -1,
+    INT,    FLOAT,    BOOL,     CHAR,
+    A_INT,  A_FLOAT,  A_BOOL,   A_CHAR,
+    P_INT,  P_FLOAT,  P_BOOL,   P_CHAR,
+    PA_INT, PA_FLOAT, PA_BOOL,  PA_CHAR,
   };
 
   //! String representation for the operations.
   static const std::string _bin[] = {
     "+", "-", "*", "/", "=", "[index]", " [addr]", " [ref]",
     "==", "!=", ">", "<", ">=", "<=", "&", "|",
-    " -u", " !", " [int]", " [float]", " [bool]", " [len]"
+    " -u", " !", " [int]", " [float]", " [bool]", " [word]", " [len]"
   };
 
   //! Verbose representation for the operations.
@@ -49,10 +50,12 @@ namespace AST {
   };
 
   //! Verbose representation for the node types.
-  static const std::string _usr[] = { "integer", "float", "boolean" };
+  static const std::string _usr[] = {
+    "integer", "float", "boolean", "character"
+  };
 
   //! Basic representation for the node types.
-  static const std::string _var[] = { "int", "float", "bool" };
+  static const std::string _var[] = { "int", "float", "bool", "char" };
 
   class Node {
   public:
@@ -124,6 +127,27 @@ namespace AST {
      *  \param prefix  chooses between polish or infix notation.
      */
     void print(bool prefix) override;
+  };
+
+ class CharNode : public Node {
+  public:
+    //! Char pointer value of the node, displaying exactly the user input.
+    char* value;
+
+    //! Basic constructor that also sets the type of the node.
+    explicit CharNode(char* value): Node(3), value(value) {}
+
+    //! Prints the node contents to `stdout`.
+    /*!
+     *  \param prefix  chooses between polish or infix notation.
+     */
+    void print(bool prefix) override;
+
+    //! Returns a char array if the word starts with double quotes.
+    NodeType _type() override;
+
+    //! Basic destructor.
+    ~CharNode() override;
   };
 
   class BinaryOpNode : public Node {
