@@ -8,6 +8,7 @@
 
 #include <deque>
 #include <iostream>
+#include <sstream>
 #include <vector>
 
 namespace AST {
@@ -306,9 +307,6 @@ namespace AST {
     //! Body of the function.
     BlockNode* contents;
 
-    //! Defines if the function is a higher order function.
-    bool isFunctor;
-
     //! Basic constructor.
     FuncNode(std::string id, Node* params, int type, BlockNode* contents);
 
@@ -395,6 +393,8 @@ namespace AST {
     //! Basic constructor.
     MapFuncNode(VariableNode* array, Node* func);
 
+    //! Writes the verbose input analogous to this functor's behaviour.
+    void expandBody(VariableNode* array);
   };
 
   //! Pretty-prints an object with `cout`. Useful for tabulation.

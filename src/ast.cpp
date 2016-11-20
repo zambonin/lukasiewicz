@@ -1,24 +1,15 @@
 #include "ast.h"
-#include "st.h"
+
+extern void yyerror(const char* s, ...);
+extern AST::BlockNode* process_functor(const char* s);
 
 /* Macros that reduce the visual pollution when indentation is needed. */
 
-/*
- * _tab
- *
- * Takes a single line of code and indents it with two spaces.
- */
+/* Takes a single line of code and indents it with two spaces. */
 #define _tab(X)     spaces += 2; (X); spaces -= 2
 
-/*
- * _notab
- *
- * Variadic macro that prevents indentation for any number of lines.
- */
+/* Variadic macro that prevents indentation for any number of lines. */
 #define _notab(...) int tmp = spaces; spaces = 0; (__VA_ARGS__); spaces = tmp;
-
-/* Bison standard error output function. */
-extern void yyerror(const char* s, ...);
 
 /* Saves the current indentation status. */
 int spaces;
@@ -36,7 +27,7 @@ NodeType operator-(NodeType t, int v) {
 }
 
 /*
- * Equal to operator overload for ParamNode. Two ParamNodes
+ * `Equal to` operator overload for ParamNode. Two ParamNodes
  * are the same if they have the same id and type.
  */
 bool operator==(const ParamNode& n1, const ParamNode& n2) {
@@ -177,7 +168,7 @@ op(op), node(node) {
         "semantic error: address operation expects a variable or array item");
     }
   } else if (op == len && (node->_type() % 6) < 3) {
-    yyerror("semantic error: index operation expects an array");
+    yyerror("semantic error: length operation expects an array");
   }
 }
 
@@ -208,9 +199,9 @@ void BlockNode::print(bool prefix) {
 }
 
 BlockNode::~BlockNode() {
-  // for (Node* n : nodeList) {
-    // delete n;
-  // }
+  for (Node* n : nodeList) {
+    delete n;
+  }
 }
 
 void MessageNode::print(bool /*prefix*/) {
@@ -279,7 +270,6 @@ ForNode::~ForNode() {
 
 FuncNode::FuncNode(std::string id, Node* params, int type, BlockNode* contents):
 Node(type), id(id), params(params), contents(contents) {
-  this->isFunctor = false;
   // error handling
   if (this->contents != nullptr) {
     Node* ret = this->contents->nodeList.back();
@@ -411,58 +401,40 @@ FuncNode(id, params, type, nullptr) {
 MapFuncNode::MapFuncNode(VariableNode* array, Node* func):
 FuncNode("map", nullptr, array->_type(), nullptr), func(func) {
   this->id = array->id + "_" + this->id;
-  this->isFunctor = true;
   this->params = new ParamNode(array->id, nullptr, array->_type(), array->size);
 
   this->contents = new BlockNode();
   this->contents->nodeList.push_back(func);
-
-  FuncNode* f = dynamic_cast<FuncNode*>(func);
-
-  VariableNode* it = new VariableNode(array->id + "_ti", nullptr, 0, 0);
-  VariableNode* ret = new VariableNode(array->id + "_ta", nullptr,
-    array->_type(), array->size);
-
-  BinaryOpNode* _init = new BinaryOpNode(assign, it, new IntNode(0));
-  UnaryOpNode* length = new UnaryOpNode(len, array);
-  BinaryOpNode* _test = new BinaryOpNode(lt, it, length);
-  BinaryOpNode* _sum = new BinaryOpNode(add, it, new IntNode(1));
-  BinaryOpNode* iter = new BinaryOpNode(assign, it, _sum);
-
-  BinaryOpNode* arr_it = new BinaryOpNode(index, array, it);
-  BlockNode* l_param = new BlockNode();
-
-  BinaryOpNode* ret_arr_it = new BinaryOpNode(index, ret, it);
-
-  l_param->nodeList.push_back(arr_it);
-  FuncCallNode* l_call = new FuncCallNode(f, l_param);
-
-  BinaryOpNode* _attr = new BinaryOpNode(assign, ret_arr_it, l_call);
-
-  BlockNode* _body = new BlockNode();
-  _body->nodeList.push_back(_attr);
-
-  ForNode* forNode = new ForNode(_init, _test, iter, _body);
-
-  ReturnNode* retNode = new ReturnNode(ret, ret->_type());
-
-  DeclarationNode* retDecl = new DeclarationNode(array->id + "_ta", nullptr,
-    array->_type(), array->size);
-
-  this->contents->nodeList.push_back(new MessageNode(it, it->_type()));
-  this->contents->nodeList.push_back(
-    new MessageNode(retDecl, retDecl->_type()));
-  this->contents->nodeList.push_back(forNode);
-  this->contents->nodeList.push_back(retNode);
+  expandBody(array);
+  VariableNode* v = new VariableNode(
+    array->id + "_ta", nullptr, array->_type(), array->size);
+  ReturnNode* _ret = new ReturnNode(v, v->_type());
+  this->contents->nodeList.push_back(_ret);
 
   // error handling
+  FuncNode* f = dynamic_cast<FuncNode*>(func);
   if ((array->_type() % 6) < 3) {
     yyerror("semantic error: second parameter must be an array");
   }
-  if (f->_type() > 3 || (f->_type() != this->_type() % 3)) {
+  if (f->_type() != this->_type() % 3) {
     yyerror("semantic error: function %s has incoherent return type",
       f->id.c_str());
   }
+}
+
+void MapFuncNode::expandBody(VariableNode* array) {
+  std::string ti = array->id + "_ti", ta = array->id + "_ta";
+
+  std::ostringstream out;
+  out << "int " << ti << "\n"                                                 \
+    << _var[array->_type() - 3] << " " << ta << "[" << array->size << "]\n"   \
+    << "for " << ti << " = 0, " << ti << " < [len] t, "                       \
+    << ti << " = " << ti << " + 1 {\n  "                                      \
+    << ta << "[" << ti << "] = λ(" << array->id << "[" << ti << "])\n}\n";
+
+  std::vector<Node*> body = process_functor(out.str().c_str())->nodeList;
+  this->contents->nodeList.insert(
+    this->contents->nodeList.end(), body.begin(), body.end());
 }
 
 } // namespace AST

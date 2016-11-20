@@ -40,14 +40,14 @@ AST::Node* SymbolTable::newVariable(
     return old;
   }
 
-  addSymbol(SymbolType::variable, key,
-    new AST::VariableNode(key, next, type, size));
-
-  if (isParam){
-    return new AST::ParamNode(key, next, type, size);
+  AST::Node* n;
+  if (isParam) {
+    n = new AST::ParamNode(key, next, type, size);
   } else {
-    return new AST::DeclarationNode(key, next, type, size);
+    n = new AST::DeclarationNode(key, next, type, size);
   }
+  addSymbol(SymbolType::variable, key, n);
+  return n;
 }
 
 AST::FuncNode* SymbolTable::getFuncFromTable(std::string key) {

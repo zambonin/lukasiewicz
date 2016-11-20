@@ -13,7 +13,6 @@
   extern int yylex();
   extern int yylex_destroy();
   extern void yyerror(const char* s, ...);
-  extern AST::Node* isHigherOrderFunc(AST::Node* expr);
 
   /* First symbol table (global scope). */
   ST::SymbolTable* current;
@@ -23,6 +22,9 @@
 
   /* Temporary variable used to simplify the grammar on declarations. */
   int tmp_t;
+
+  /* Temporary variable used to insert the functor node inside the program. */
+  AST::Node* tmp_f;
 %}
 
 /* Bison declaration summary. */
@@ -120,14 +122,13 @@ lines
     {
       $$ = new AST::BlockNode();
       if ($1 != nullptr) {
-        $$->nodeList.push_back(isHigherOrderFunc($1));
         $$->nodeList.push_back($1);
       }
     }
   | lines line
     {
       if ($2 != nullptr) {
-        $1->nodeList.push_back(isHigherOrderFunc($2));
+        if (tmp_f) $1->nodeList.push_back(tmp_f);
         $1->nodeList.push_back($2);
       }
       $$ = $1;
@@ -144,7 +145,7 @@ lines
  *   - functions, that may be declared using the keywords `fun` or `lambda`.
  */
 line
-  : NL                  { $$ = 0; tmp_t = 0; }
+  : NL                  { $$ = 0; tmp_t = 0; tmp_f = 0; }
   | d-type declaration  { $$ = new AST::MessageNode($2, $1); }
   | d-type decl-array   { $$ = new AST::MessageNode($2, $1 + 3); }
   | ref-cnt ID ASSIGN expr
@@ -318,9 +319,10 @@ v-expr
   | F_MAP LPAR f-lambda COMMA ID RPAR
     {
       AST::VariableNode* n = current->getVarFromTable($5);
-      AST::MapFuncNode* m = new AST::MapFuncNode(n, $3);
       AST::BlockNode* p = new AST::BlockNode();
       p->nodeList.push_back(n);
+      AST::MapFuncNode* m = new AST::MapFuncNode(n, $3);
+      tmp_f = m;
       $$ = new AST::FuncCallNode(m, p);
     }
   ;
@@ -363,15 +365,4 @@ int main(int argc, char *argv[]) {
 
   return 0;
 
-}
-
-AST::Node* isHigherOrderFunc(AST::Node* expr) {
-  AST::BinaryOpNode* isBinaryOp = dynamic_cast<AST::BinaryOpNode*>(expr);
-  if (isBinaryOp != nullptr) {
-    AST::FuncCallNode* rightChild = dynamic_cast<AST::FuncCallNode*>(isBinaryOp->right);
-    if (rightChild != nullptr && rightChild->function->isFunctor) {
-      return rightChild->function;
-    }
-  }
-  return new AST::Node();
 }

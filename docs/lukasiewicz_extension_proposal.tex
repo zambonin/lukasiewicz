@@ -111,10 +111,11 @@ int array fun: t_map (params: int array t)
   int fun: lambda (params: int x)
     ret + x 2
   int var: t_ti
+  int array: t_ta (size: 10)
   for: = t_ti 0, < t_ti [len] t, = t_ti + t_ti 1
   do:
-    = [index] t t_ti lambda[1 params] [index] t t_ti
-  ret t
+    = [index] t_ta t_ti lambda[1 params] [index] t t_ti
+  ret t_ta
 = output t_map[1 params] t
 
 \end{verbatim}
@@ -152,7 +153,7 @@ Os seguintes recursos são adicionados à linguagem:
     str wd = "luka", result
     # i can add letters together
     result = wd + let
-    let = result(1)
+    let = result[1]
 \end{verbatim}
 
 \subsection{Saída esperada}

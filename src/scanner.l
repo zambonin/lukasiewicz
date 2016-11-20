@@ -6,12 +6,13 @@
  *          Marcello Klingelfus
  */
 %{
-  #include <string>
   #include <cstdarg>
   #include "ast.h"
   #include "parser.h"
 
+  extern AST::BlockNode* root;
   extern int yylineno;
+
   void yyerror(const char* s, ...);
 %}
 
@@ -96,10 +97,21 @@ error [^a-zA-Z0-9_\.\+\-\*\/\,\=\(\)\=\<\>\&\|\!\{\}\[\]\λ \t\n]+
 
 /* User code section. */
 
+/* Bison standard error output function. */
 void yyerror(const char* s, ...) {
   va_list ap;
   va_start(ap, s);
   std::fprintf(stderr, "[Line %d] ", yylineno);
   std::vfprintf(stderr, s, ap);
   std::fprintf(stderr, "\n");
+}
+
+/* Creates another buffer state and feeds the `s` arg to it. */
+AST::BlockNode* process_functor(const char* s) {
+  YY_BUFFER_STATE old = YY_CURRENT_BUFFER;
+  yy_scan_string(s);
+  yyparse();
+  yy_delete_buffer(YY_CURRENT_BUFFER);
+  yy_switch_to_buffer(old);
+  return root;
 }
