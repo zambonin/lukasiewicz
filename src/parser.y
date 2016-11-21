@@ -14,6 +14,10 @@
   extern int yylex_destroy();
   extern void yyerror(const char* s, ...);
 
+  extern AST::BlockNode* string_read(const char*);
+  extern char* rl_read();
+  extern FILE * yyin;
+
   /* First symbol table (global scope). */
   ST::SymbolTable* current;
 
@@ -65,11 +69,11 @@
 /* Definition of tokens and their types. */
 %token NL COMMA ASSIGN LPAR RPAR LCURLY RCURLY LBRAC RBRAC
 %token IF THEN ELSE FOR T_INT T_FLOAT T_BOOL FUN RET ARR
-%token RET_L F_MAP F_FOLD F_FILTER
+%token RET_L F_LAMBDA L_CALL F_MAP F_FOLD F_FILTER
 %token <integer> INT
 %token <decimal> FLOAT
 %token <boolean> BOOL
-%token <name> ID F_LAMBDA L_CALL
+%token <name> ID
 
 /* Nonterminal symbols and their types. */
 %type <block> lines else body f-body f-expr
@@ -165,7 +169,7 @@ line
     { $$ = current->newFunction($4, $7, $1 + $2, $9); free($4); }
   | f-lambda            { $$ = $1; }
   | L_CALL LPAR RPAR
-    { current->entryList[ST::SymbolType::function].erase($1); $$ = 0; }
+    { current->entryList[ST::SymbolType::function].erase("λ"); $$ = 0; }
   | prod-error line     { $$ = $2; }
   ;
 
@@ -271,9 +275,9 @@ f-body
 /* Defines syntax sugar for an anonymous function. */
 f-lambda
   : F_LAMBDA start-scope decl-lambda RET_L expr end-scope
-    { AST::LambdaNode* n = new AST::LambdaNode($1, $3, $3->_type(), $5);
-      $$ = current->newFunction($1, n->params, n->_type(), n->contents);
-      free($1); }
+    { AST::BlockNode* c = new AST::BlockNode();
+      c->nodeList.push_back(new AST::ReturnNode($5, $5->_type()));
+      $$ = current->newFunction("lambda", $3, $3->_type(), c); }
   ;
 
 /* Defines the arithmetic, casting and logic operations of the language. */
@@ -314,8 +318,8 @@ v-expr
     { AST::FuncNode* n = current->getFuncFromTable($1);
       $$ = new AST::FuncCallNode(n, $3); free($1); }
   | L_CALL LPAR f-expr RPAR
-    { AST::FuncNode* n = current->getFuncFromTable($1);
-      $$ = new AST::FuncCallNode(n, $3); free($1); }
+    { AST::FuncNode* n = current->getFuncFromTable("λ");
+      $$ = new AST::FuncCallNode(n, $3); }
   | F_MAP LPAR f-lambda COMMA ID RPAR
     {
       AST::VariableNode* n = current->getVarFromTable($5);
@@ -324,6 +328,7 @@ v-expr
       AST::MapFuncNode* m = new AST::MapFuncNode(n, $3);
       tmp_f = m;
       $$ = new AST::FuncCallNode(m, p);
+      free($5);
     }
   ;
 
@@ -348,11 +353,14 @@ prod-error
 
 int main(int argc, char *argv[]) {
 
-  if (argv[1] != nullptr) {
-    yydebug = (strcmp(argv[1], "--debug") == 0);
+  if (argc == 2 && (strcmp(argv[1], "--readline") == 0)) {
+    string_read(rl_read());
+  } else {
+    yydebug = (argv[1] && strcmp(argv[1], "--debug") == 0);
+    yyin = --argc ? fopen(argv[argc], "r") : stdin;
+    yyparse();
+    fclose(yyin);
   }
-
-  yyparse();
 
   if (root != nullptr) {
     root->print(true);

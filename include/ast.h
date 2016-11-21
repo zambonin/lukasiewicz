@@ -379,12 +379,6 @@ namespace AST {
     void print(bool prefix);
   };
 
-  class LambdaNode : public FuncNode {
-  public:
-    //! Basic constructor.
-    LambdaNode(std::string id, Node* params, int type, Node* expr);
-  };
-
   class MapFuncNode : public FuncNode {
   public:
     //! Node representing an anonymous function used as parameter.

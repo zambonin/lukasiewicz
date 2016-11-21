@@ -1,14 +1,14 @@
 CC = g++
 CFLAGS = -O2 -Wall -Wextra -Wno-sign-compare \
 		 -Wno-unused-function -Wno-unused-parameter -std=c++11 -I include
-
+LIBS = -lreadline
 OUTPUT = lukacompiler
 
 default: grammar
-	@$(CC) $(CFLAGS) $(wildcard **/*.cpp) -o $(OUTPUT)
+	@$(CC) $(LIBS) $(CFLAGS) $(wildcard **/*.cpp) -o $(OUTPUT)
 
 debug: grammar
-	@$(CC) -g $(CFLAGS) $(wildcard **/*.cpp) -o $(OUTPUT)
+	@$(CC) -g $(LIBS) $(CFLAGS) $(wildcard **/*.cpp) -o $(OUTPUT)
 
 grammar:
 	@flex -o src/scanner.cpp src/scanner.l

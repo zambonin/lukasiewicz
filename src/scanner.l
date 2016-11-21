@@ -7,6 +7,9 @@
  */
 %{
   #include <cstdarg>
+  #include <readline/readline.h>
+  #include <readline/history.h>
+
   #include "ast.h"
   #include "parser.h"
 
@@ -76,12 +79,12 @@ error [^a-zA-Z0-9_\.\+\-\*\/\,\=\(\)\=\<\>\&\|\!\{\}\[\]\λ \t\n]+
 "fun"     { return FUN; }
 "ret"     { return RET; }
 "array"   { return ARR; }
-"map"     { yylval.name = strdup(yytext); return F_MAP; }
-"fold"    { yylval.name = strdup(yytext); return F_FOLD; }
-"filter"  { yylval.name = strdup(yytext); return F_FILTER; }
-"lambda"  { yylval.name = strdup(yytext); return F_LAMBDA; }
+"map"     { return F_MAP; }
+"fold"    { return F_FOLD; }
+"filter"  { return F_FILTER; }
+"lambda"  { return F_LAMBDA; }
 "->"      { return RET_L; }
-"λ"       { yylval.name = strdup(yytext); return L_CALL; }
+"λ"       { return L_CALL; }
 {intgT}   { yylval.integer = std::atoi(yytext); return INT; }
 {deciT}   { yylval.decimal = strdup(yytext); return FLOAT; }
 {boolT}   { yylval.boolean = (strcmp(yytext, "true") == 0); return BOOL; }
@@ -107,11 +110,40 @@ void yyerror(const char* s, ...) {
 }
 
 /* Creates another buffer state and feeds the `s` arg to it. */
-AST::BlockNode* process_functor(const char* s) {
+AST::BlockNode* string_read(const char* s) {
+
   YY_BUFFER_STATE old = YY_CURRENT_BUFFER;
   yy_scan_string(s);
   yyparse();
+
   yy_delete_buffer(YY_CURRENT_BUFFER);
   yy_switch_to_buffer(old);
+
   return root;
+
+}
+
+/* Uses the readline library to parse stdin. */
+char* rl_read() {
+
+  std::string _input;
+  static char * line = nullptr;
+  bool reading = true;
+
+  while (reading) {
+    if (line != nullptr) {
+      add_history(line);
+      free(line);
+    }
+
+    line = readline("");
+    reading = (line != nullptr);
+
+    line = (line == nullptr) ? (char*) "" : line;
+    _input += (std::string(line) + "\n");
+  }
+
+  _input += "\n";
+  return strdup(_input.c_str());
+
 }

@@ -1,7 +1,7 @@
 #include "ast.h"
 
 extern void yyerror(const char* s, ...);
-extern AST::BlockNode* process_functor(const char* s);
+extern AST::BlockNode* string_read(const char* s);
 
 /* Macros that reduce the visual pollution when indentation is needed. */
 
@@ -392,12 +392,6 @@ void DeclarationNode::print(bool prefix) {
   text(id + s, 1);
 }
 
-LambdaNode::LambdaNode(std::string id, Node* params, int type, Node* expr):
-FuncNode(id, params, type, nullptr) {
-  this->contents = new BlockNode();
-  this->contents->nodeList.push_back(new ReturnNode(expr, expr->_type()));
-}
-
 MapFuncNode::MapFuncNode(VariableNode* array, Node* func):
 FuncNode("map", nullptr, array->_type(), nullptr), func(func) {
   this->id = array->id + "_" + this->id;
@@ -432,9 +426,7 @@ void MapFuncNode::expandBody(VariableNode* array) {
     << ti << " = " << ti << " + 1 {\n  "                                      \
     << ta << "[" << ti << "] = λ(" << array->id << "[" << ti << "])\n}\n";
 
-  std::vector<Node*> body = process_functor(out.str().c_str())->nodeList;
-  this->contents->nodeList.insert(
-    this->contents->nodeList.end(), body.begin(), body.end());
+  this->contents->nodeList.push_back(string_read(out.str().c_str()));
 }
 
 } // namespace AST
