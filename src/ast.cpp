@@ -74,10 +74,6 @@ void FloatNode::print(bool /*prefix*/) {
   text(value, 1);
 }
 
-FloatNode::~FloatNode() {
-  free(value);
-}
-
 void BoolNode::print(bool /*prefix*/) {
   text(value ? "true" : "false", 1);
 }
@@ -88,10 +84,6 @@ void CharNode::print(bool /*prefix*/) {
 
 NodeType CharNode::_type() {
   return (value[0] == '\"') ? this->type + 4 : this->type;
-}
-
-CharNode::~CharNode() {
-  free(value);
 }
 
 BinaryOpNode::BinaryOpNode(Operation binOp, Node* left, Node* right):
@@ -215,11 +207,19 @@ void VariableNode::print(bool /*prefix*/) {
   text(id, 1);
 }
 
+BlockNode::BlockNode(Node* n) {
+  if (n != nullptr) {
+    nodeList.push_back(n);
+  }
+}
+
 void BlockNode::print(bool prefix) {
   for (Node* n : nodeList) {
-    n->print(prefix);
-    if (dynamic_cast<FuncNode*>(n) == nullptr && n->_type() != ND) {
-      text("\n", 0);
+    if (n != nullptr) {
+      n->print(prefix);
+      if (dynamic_cast<FuncNode*>(n) == nullptr && n->_type() != ND) {
+        text("\n", 0);
+      }
     }
   }
 }
@@ -295,11 +295,12 @@ ForNode::~ForNode() {
 }
 
 FuncNode::FuncNode(std::string id, Node* params, int type, BlockNode* contents):
-Node(type), id(id), params(params), contents(contents) {
+Node(type), id(std::move(id)), params(params), contents(contents) {
   // error handling
   if (this->contents != nullptr) {
     Node* ret = this->contents->nodeList.back();
-    if (this->type != ret->_type()) {
+    bool isReturn = (dynamic_cast<ReturnNode*>(ret) != nullptr);
+    if (this->type != ret->_type() && isReturn) {
       yyerror("semantic error: function %s has incoherent return type",
         this->id.c_str());
     }
@@ -407,7 +408,7 @@ FuncCallNode::~FuncCallNode() {
   delete params;
 }
 
-void DeclarationNode::print(bool prefix) {
+void DeclarationNode::print(bool /*prefix*/) {
   if (next != nullptr) {
     next->print(false);
     text(",", 0);
@@ -419,40 +420,35 @@ void DeclarationNode::print(bool prefix) {
 }
 
 MapFuncNode::MapFuncNode(VariableNode* array, Node* func):
-FuncNode("map", nullptr, array->_type(), nullptr), func(func) {
+FuncNode("map", nullptr, array->_type(), new BlockNode(func)) {
   this->id = array->id + "_" + this->id;
   this->params = new ParamNode(array->id, nullptr, array->_type(), array->size);
-
-  this->contents = new BlockNode();
-  this->contents->nodeList.push_back(func);
   expandBody(array);
-  VariableNode* v = new VariableNode(
-    array->id + "_ta", nullptr, array->_type(), array->size);
-  ReturnNode* _ret = new ReturnNode(v, v->_type());
-  this->contents->nodeList.push_back(_ret);
 
   // error handling
   FuncNode* f = dynamic_cast<FuncNode*>(func);
   if ((array->_type() % 8) < 4) {
     yyerror("semantic error: second parameter must be an array");
   }
-  if (f->_type() != (this->_type() % 4)) {
+  if (f->_type() != (this->type % 4)) {
     yyerror("semantic error: function %s has incoherent return type",
       f->id.c_str());
   }
 }
 
 void MapFuncNode::expandBody(VariableNode* array) {
-  std::string ti = array->id + "_ti", ta = array->id + "_ta";
-
+  std::string id = array->id, ti = id + "_ti", ta = id + "_ta";
   std::ostringstream out;
-  out << "int " << ti << "\n"                                                 \
-    << _var[array->_type() - 4] << " " << ta << "[" << array->size << "]\n"   \
-    << "for " << ti << " = 0, " << ti << " < [len] t, "                       \
-    << ti << " = " << ti << " + 1 {\n  "                                      \
-    << ta << "[" << ti << "] = λ(" << array->id << "[" << ti << "])\n}\n";
+  int n = array->_type(), s = array->size;
+
+  out << "int " << ti << "\n" << _var[n - 4] << " " << ta << "[" << s       \
+    << "]\n" << "for " << ti << " = 0, " << ti << " < [len] t, " << ti      \
+    << " = " << ti << " + 1 {\n  " << ta << "[" << ti << "] = λ("           \
+    << id << "[" << ti << "])\n}\n";
 
   this->contents->nodeList.push_back(string_read(out.str().c_str()));
+  VariableNode* v = new VariableNode(ta, nullptr, n, s);
+  this->contents->nodeList.push_back(new ReturnNode(v));
 }
 
 } // namespace AST

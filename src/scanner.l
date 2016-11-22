@@ -83,9 +83,9 @@ error   [^ -~\λ\t\n]+
 "map"     { return F_MAP; }
 "fold"    { return F_FOLD; }
 "filter"  { return F_FILTER; }
-"lambda"  { return F_LAMBDA; }
 "->"      { return RET_L; }
-"λ"       { return L_CALL; }
+"lambda"  { yylval.word = strdup("lambda"); return F_LAMBDA; }
+"λ"       { yylval.word = strdup("λ"); return L_CALL; }
 {intgT}   { yylval.integer = std::atoi(yytext); return INT; }
 {boolT}   { yylval.boolean = (strcmp(yytext, "true") == 0); return BOOL; }
 {nameT}   { yylval.word = strdup(yytext); return ID; }

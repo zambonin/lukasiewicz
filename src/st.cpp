@@ -9,11 +9,17 @@ void SymbolTable::addSymbol(
   entryList[type][key] = symbol;
 }
 
-bool SymbolTable::symbolExistsHere(SymbolType type, std::string key) {
+bool SymbolTable::symbolExistsHere(SymbolType type, const std::string& key) {
   return entryList[type].count(key) == 1;
 }
 
-AST::VariableNode* SymbolTable::getVarFromTable(std::string key) {
+AST::VariableNode* SymbolTable::getVarFromTable(char* key) {
+  std::string k(key);
+  free(key);
+  return getVarFromTable(k);
+}
+
+AST::VariableNode* SymbolTable::getVarFromTable(const std::string& key) {
   if (symbolExistsHere(SymbolType::variable, key)) {
     AST::Node* n = entryList[SymbolType::variable][key];
     return new AST::VariableNode(key, nullptr, n->_type(),
@@ -27,7 +33,14 @@ AST::VariableNode* SymbolTable::getVarFromTable(std::string key) {
 }
 
 AST::Node* SymbolTable::newVariable(
-  std::string key, AST::Node* next, int type, int size, bool isParam) {
+  char* key, AST::Node* next, int type, int size, bool isParam) {
+  std::string k(key);
+  free(key);
+  return newVariable(k, next, type, size, isParam);
+}
+
+AST::Node* SymbolTable::newVariable(
+  const std::string& key, AST::Node* next, int type, int size, bool isParam) {
   if (symbolExistsHere(SymbolType::variable, key)) {
     yyerror("semantic error: re-declaration of variable %s", key.c_str());
     // new variable is not added to the symbol table and
@@ -50,7 +63,13 @@ AST::Node* SymbolTable::newVariable(
   return n;
 }
 
-AST::FuncNode* SymbolTable::getFuncFromTable(std::string key) {
+AST::FuncNode* SymbolTable::getFuncFromTable(char* key) {
+  std::string k(key);
+  free(key);
+  return getFuncFromTable(k);
+}
+
+AST::FuncNode* SymbolTable::getFuncFromTable(const std::string& key) {
   if (symbolExistsHere(SymbolType::function, key)) {
     return dynamic_cast<AST::FuncNode*>(entryList[SymbolType::function][key]);
   }
@@ -59,6 +78,13 @@ AST::FuncNode* SymbolTable::getFuncFromTable(std::string key) {
     return new AST::FuncNode(key, nullptr, -1, nullptr);
   }
   return external->getFuncFromTable(key);
+}
+
+AST::Node* SymbolTable::newFunction(
+  char* key, AST::Node* params, int type, AST::BlockNode* contents) {
+  std::string k(key);
+  free(key);
+  return newFunction(k, params, type, contents);
 }
 
 AST::Node* SymbolTable::newFunction(

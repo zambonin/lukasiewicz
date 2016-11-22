@@ -67,10 +67,10 @@
 /* Definition of tokens and their types. */
 %token NL COMMA ASSIGN LPAR RPAR LCURLY RCURLY LBRAC RBRAC
 %token IF THEN ELSE FOR T_INT T_FLOAT T_BOOL T_CHAR FUN RET ARR
-%token RET_L F_LAMBDA L_CALL F_MAP F_FOLD F_FILTER
+%token RET_L F_MAP F_FOLD F_FILTER
 %token <integer> INT
 %token <boolean> BOOL
-%token <word> ID FLOAT CHAR STR
+%token <word> ID FLOAT CHAR STR F_LAMBDA L_CALL
 
 /* Nonterminal symbols and their types. */
 %type <block> lines else body f-body f-expr
@@ -119,21 +119,11 @@ end-scope
 
 /* Stores every derived line on the abstract syntax tree. */
 lines
-  : line
-    {
-      $$ = new AST::BlockNode();
-      if ($1 != nullptr) {
-        $$->nodeList.push_back($1);
-      }
-    }
+  : line          { $$ = new AST::BlockNode($1); }
   | lines line
-    {
-      if ($2 != nullptr) {
-        if (tmp_f) $1->nodeList.push_back(tmp_f);
-        $1->nodeList.push_back($2);
-      }
-      $$ = $1;
-    }
+    { $1->nodeList.push_back(tmp_f);
+      $1->nodeList.push_back($2);
+      $$ = $1; }
   ;
 
 /*
@@ -146,35 +136,40 @@ lines
  *   - functions, that may be declared using the keywords `fun` or `lambda`.
  */
 line
-  : NL                  { $$ = 0; tmp_t = 0; tmp_f = 0; }
-  | d-type declaration  { $$ = new AST::MessageNode($2, $1); }
-  | d-type decl-array   { $$ = new AST::MessageNode($2, $1 + 4); }
+  : NL
+    { $$ = 0; tmp_t = 0; tmp_f = 0; }
+  | d-type declaration
+    { $$ = new AST::MessageNode($2, $1); }
+  | d-type decl-array
+    { $$ = new AST::MessageNode($2, $1 + 4); }
   | ref-cnt ID ASSIGN expr
     { AST::Node* n = current->getVarFromTable($2);
       if ($1) n = new AST::UnaryOpNode(AST::ref, n);
-      $$ = new AST::BinaryOpNode(AST::assign, n, $4); free($2); }
+      $$ = new AST::BinaryOpNode(AST::assign, n, $4); }
   | ref-cnt ID LBRAC expr RBRAC ASSIGN expr
     { AST::Node* n = current->getVarFromTable($2);
       if ($1) n = new AST::UnaryOpNode(AST::ref, n);
       AST::Node* left = new AST::BinaryOpNode(AST::index, n, $4);
-      $$ = new AST::BinaryOpNode(AST::assign, left, $7); free($2); }
+      $$ = new AST::BinaryOpNode(AST::assign, left, $7); }
   | IF expr NL THEN LCURLY NL body else
     { $$ = new AST::IfNode($2, $7, $8); }
   | FOR iteration COMMA expr COMMA iteration LCURLY NL body
     { $$ = new AST::ForNode($2, $4, $6, $9); }
   | d-type is-array FUN ID start-scope LPAR decl-func RPAR f-body end-scope
-    { $$ = current->newFunction($4, $7, $1 + $2, $9); free($4); }
-  | f-lambda            { $$ = $1; }
-  | prod-error line     { $$ = $2; }
+    { $$ = current->newFunction($4, $7, $1 + $2, $9); }
+  | f-lambda
+    { $$ = $1; }
+  | prod-error line
+    { $$ = $2; }
   ;
 
 /* Defines the primitive types accepted by the language. */
 basic-type
-  : INT                     { $$ = new AST::IntNode($1); }
-  | FLOAT                   { $$ = new AST::FloatNode($1); }
-  | BOOL                    { $$ = new AST::BoolNode($1); }
-  | CHAR                    { $$ = new AST::CharNode($1); }
-  | STR                     { $$ = new AST::CharNode($1); }
+  : INT   { $$ = new AST::IntNode($1); }
+  | FLOAT { $$ = new AST::FloatNode($1); free($1); }
+  | BOOL  { $$ = new AST::BoolNode($1); }
+  | CHAR  { $$ = new AST::CharNode($1); free($1); }
+  | STR   { $$ = new AST::CharNode($1); free($1); }
   ;
 
 /* Defines the primitive types accepted by the grammar. */
@@ -201,23 +196,23 @@ ref-cnt
    of one or multiple variables of the same type. */
 declaration
   : ID
-    { $$ = current->newVariable($1, nullptr, tmp_t, 0); free($1); }
+    { $$ = current->newVariable($1, nullptr, tmp_t, 0); }
   | ID ASSIGN basic-type
     { AST::Node* n = current->newVariable($1, nullptr, tmp_t, 0);
-      $$ = new AST::BinaryOpNode(AST::assign, n, $3); free($1); }
+      $$ = new AST::BinaryOpNode(AST::assign, n, $3); }
   | declaration COMMA ID
-    { $$ = current->newVariable($3, $1, tmp_t, 0); free($3); }
+    { $$ = current->newVariable($3, $1, tmp_t, 0); }
   | declaration COMMA ID ASSIGN basic-type
     { AST::Node* n = current->newVariable($3, $1, tmp_t, 0);
-      if (n != $1) $$ = new AST::BinaryOpNode(AST::assign, n, $5); free($3); }
+      if (n != $1) $$ = new AST::BinaryOpNode(AST::assign, n, $5); }
   ;
 
 /* Defines the declaration of one or multiple arrays of the same type. */
 decl-array
   : ID LBRAC INT RBRAC
-    { $$ = current->newVariable($1, nullptr, tmp_t + 4, $3); free($1); }
+    { $$ = current->newVariable($1, nullptr, tmp_t + 4, $3); }
   | decl-array COMMA ID LBRAC INT RBRAC
-    { $$ = current->newVariable($3, $1, tmp_t + 4, $5); free($3); }
+    { $$ = current->newVariable($3, $1, tmp_t + 4, $5); }
   ;
 
 /* Defines the possible parameters for a function. */
@@ -225,21 +220,21 @@ decl-func
   : %empty
     { $$ = nullptr; }
   | d-type ID
-    { $$ = current->newVariable($2, nullptr, $1, 0, true); free($2); }
+    { $$ = current->newVariable($2, nullptr, $1, 0, true); }
   | d-type ID LPAR INT RPAR
-    { $$ = current->newVariable($2, nullptr, $1 + 4, $4, true); free($2); }
+    { $$ = current->newVariable($2, nullptr, $1 + 4, $4, true); }
   | decl-func COMMA d-type ID
-    { $$ = current->newVariable($4, $1, $3, 0, true); free($4); }
+    { $$ = current->newVariable($4, $1, $3, 0, true); }
   | decl-func COMMA d-type ID LPAR INT RPAR
-    { $$ = current->newVariable($4, $1, $3 + 4, $6, true); free($4); }
+    { $$ = current->newVariable($4, $1, $3 + 4, $6, true); }
   ;
 
 /* Defines the parameter list for an anonymous function. */
 decl-lambda
   : d-type ID
-    { $$ = current->newVariable($2, nullptr, $1, 0, true); free($2); }
+    { $$ = current->newVariable($2, nullptr, $1, 0, true); }
   | decl-lambda COMMA ID
-    { $$ = current->newVariable($3, $1, $1->_type(), 0, true); free($3); }
+    { $$ = current->newVariable($3, $1, $1->_type(), 0, true); }
   ;
 
 /* Represents the lines inside `if` or `for` operations. */
@@ -256,10 +251,11 @@ else
 
 /* Defines the initialization of a variable on a `for` operation. */
 iteration
-  : %empty          { $$ = new AST::Node(); }
-  | ID ASSIGN expr  { AST::Node* n = current->getVarFromTable($1);
-                      $$ = new AST::BinaryOpNode(AST::assign, n, $3);
-                      free($1); }
+  : %empty
+    { $$ = new AST::Node(); }
+  | ID ASSIGN expr
+    { AST::Node* n = current->getVarFromTable($1);
+      $$ = new AST::BinaryOpNode(AST::assign, n, $3); }
   ;
 
 /* Represents the lines inside a function. */
@@ -267,17 +263,16 @@ f-body
   : %empty
     { $$ = nullptr; }
   | LCURLY lines RET expr NL RCURLY
-    { $2->nodeList.push_back(new AST::ReturnNode($4, $4->_type())); $$ = $2; }
+    { $2->nodeList.push_back(new AST::ReturnNode($4)); $$ = $2; }
   ;
 
 /* Defines syntax sugar for an anonymous function. */
 f-lambda
   : F_LAMBDA start-scope decl-lambda RET_L expr end-scope
-    { AST::BlockNode* c = new AST::BlockNode();
-      c->nodeList.push_back(new AST::ReturnNode($5, $5->_type()));
-      $$ = current->newFunction("lambda", $3, $3->_type(), c); }
+    { AST::BlockNode* c = new AST::BlockNode(new AST::ReturnNode($5));
+      $$ = current->newFunction($1, $3, $3->_type(), c); }
   | L_CALL LPAR RPAR
-    { current->entryList[ST::SymbolType::function].erase("λ"); $$ = 0; }
+    { current->entryList[ST::SymbolType::function].erase($1); $$ = 0; }
   ;
 
 /* Defines the arithmetic, casting and logic operations of the language. */
@@ -311,36 +306,30 @@ expr
 /* Defines the use of variables and functions. */
 v-expr
   : ID
-    { $$ = current->getVarFromTable($1); free($1); }
+    { $$ = current->getVarFromTable($1); }
   | ID LBRAC expr RBRAC
     { AST::Node* n = current->getVarFromTable($1);
-      $$ = new AST::BinaryOpNode(AST::index, n, $3); free($1); }
+      $$ = new AST::BinaryOpNode(AST::index, n, $3); }
   | ID LPAR f-expr RPAR
     { AST::FuncNode* n = current->getFuncFromTable($1);
-      $$ = new AST::FuncCallNode(n, $3); free($1); }
+      $$ = new AST::FuncCallNode(n, $3); }
   | L_CALL LPAR f-expr RPAR
-    { AST::FuncNode* n = current->getFuncFromTable("λ");
+    { AST::FuncNode* n = current->getFuncFromTable($1);
       $$ = new AST::FuncCallNode(n, $3); }
   | F_MAP LPAR f-lambda COMMA ID RPAR
     {
       AST::VariableNode* n = current->getVarFromTable($5);
-      AST::BlockNode* p = new AST::BlockNode();
-      p->nodeList.push_back(n);
       AST::MapFuncNode* m = new AST::MapFuncNode(n, $3);
+      $$ = new AST::FuncCallNode(m, new AST::BlockNode(n));
       tmp_f = m;
-      $$ = new AST::FuncCallNode(m, p);
-      free($5);
     }
   ;
 
 /* Defines the valid expressions for a parameter list on a function call. */
 f-expr
-  : %empty
-    { $$ = new AST::BlockNode(); }
-  | expr
-    { $$ = new AST::BlockNode(); $$->nodeList.push_back($1); }
-  | f-expr COMMA expr
-    { $1->nodeList.push_back($3); $$ = $1; }
+  : %empty            { $$ = new AST::BlockNode(); }
+  | expr              { $$ = new AST::BlockNode($1); }
+  | f-expr COMMA expr { $1->nodeList.push_back($3); $$ = $1; }
   ;
 
 /* Syntax error handler. */

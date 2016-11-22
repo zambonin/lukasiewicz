@@ -98,20 +98,17 @@ namespace AST {
 
   class FloatNode : public Node {
   public:
-    //! Char pointer value of the node, displaying exactly the user input.
-    char* value;
+    //! String value of the node, displaying exactly the user input.
+    std::string value;
 
     //! Basic constructor that also sets the type of the node.
-    explicit FloatNode(char* value): Node(1), value(value) {}
+    explicit FloatNode(std::string value): Node(1), value(value) {}
 
     //! Prints the node contents to `stdout`.
     /*!
      *  \param prefix  chooses between polish or infix notation.
      */
     void print(bool prefix) override;
-
-    //! Basic destructor.
-    ~FloatNode() override;
   };
 
   class BoolNode : public Node {
@@ -131,11 +128,11 @@ namespace AST {
 
  class CharNode : public Node {
   public:
-    //! Char pointer value of the node, displaying exactly the user input.
-    char* value;
+    //! String value of the node, displaying exactly the user input.
+    std::string value;
 
     //! Basic constructor that also sets the type of the node.
-    explicit CharNode(char* value): Node(3), value(value) {}
+    explicit CharNode(std::string value): Node(3), value(value) {}
 
     //! Prints the node contents to `stdout`.
     /*!
@@ -145,9 +142,6 @@ namespace AST {
 
     //! Returns a char array if the word starts with double quotes.
     NodeType _type() override;
-
-    //! Basic destructor.
-    ~CharNode() override;
   };
 
   class BinaryOpNode : public Node {
@@ -239,6 +233,12 @@ namespace AST {
   public:
     //! List of nodes that can be seen as lines of the program.
     std::vector<Node*> nodeList;
+
+    //! Default constructor.
+    BlockNode() {}
+
+    //! Basic constructor that pushes `n` to `nodeList`.
+    BlockNode(Node* n);
 
     //! Prints the node contents to `stdout`.
     /*!
@@ -366,7 +366,7 @@ namespace AST {
   class ReturnNode : public LinkedNode {
   public:
     //! Basic constructor.
-    using LinkedNode::LinkedNode;
+    ReturnNode(Node* next): LinkedNode(next, next->_type()) {}
 
     //! Prints the node contents to `stdout`.
     /*!
@@ -405,9 +405,6 @@ namespace AST {
 
   class MapFuncNode : public FuncNode {
   public:
-    //! Node representing an anonymous function used as parameter.
-    Node* func;
-
     //! Basic constructor.
     MapFuncNode(VariableNode* array, Node* func);
 

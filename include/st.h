@@ -45,43 +45,49 @@ namespace ST {
      *  \param type     discerns between variable and function.
      *  \param key      string identifier of the symbol.
      */
-    bool symbolExistsHere(SymbolType type, std::string key);
+    bool symbolExistsHere(SymbolType type, const std::string& key);
 
     //! Returns a variable node inside of a certain symbol.
     /*!
-     *  \param key      string identifier of the symbol.
+     *  \param key      identifier of the symbol.
      */
-    AST::VariableNode* getVarFromTable(std::string key);
+    AST::VariableNode* getVarFromTable(char* key);
+    AST::VariableNode* getVarFromTable(const std::string& key);
 
     //! Creates a new node with informations from the table and tokens
     //! from the grammar.
     /*!
-     *  \param key      string identifier of the symbol.
+     *  \param key      identifier of the symbol.
      *  \param next     pointer to the next node in the case of multiple
      *                  assignments.
      *  \param type     type of the variable.
      *  \param size     size of the array if applicable.
      *  \param isParam  returns a `ParamNode` if applicable.
      */
-    AST::Node* newVariable(
-      std::string key, AST::Node* next, int type, int size, bool isParam=false);
+    AST::Node* newVariable(char* key, AST::Node* next, int type,
+                           int size, bool isParam=false);
+    AST::Node* newVariable(const std::string& key, AST::Node* next, int type,
+                           int size, bool isParam=false);
 
     //! Returns a function node inside of a certain symbol.
     /*!
-     *  \param key      string identifier of the symbol.
+     *  \param key      identifier of the symbol.
      */
-    AST::FuncNode* getFuncFromTable(std::string key);
+    AST::FuncNode* getFuncFromTable(char* key);
+    AST::FuncNode* getFuncFromTable(const std::string& key);
 
     //! Creates a new node representing a function, with informations
     //! from the grammar.
     /*!
-     *  \param key      string identifier of the symbol.
+     *  \param key      identifier of the symbol.
      *  \param params   head node for a linked list of parameters.
      *  \param type     return type of the function.
      *  \param contents body of the function.
      */
-    AST::Node* newFunction(
-      std::string key, AST::Node* params, int type, AST::BlockNode* contents);
+    AST::Node* newFunction(char* key, AST::Node* params, int type,
+                           AST::BlockNode* contents);
+    AST::Node* newFunction(std::string key, AST::Node* params, int type,
+                           AST::BlockNode* contents);
   };
 
 } // namespace ST
