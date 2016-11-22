@@ -9,8 +9,6 @@
 #include <map>
 #include "ast.h"
 
-extern void yyerror(const char* s, ...);
-
 namespace ST {
 
   //! Type of symbol stored in the symbol table,
@@ -29,8 +27,7 @@ namespace ST {
     SymbolTable* external;
 
     //! Basic constructor.
-    explicit SymbolTable(SymbolTable* external):
-    external(external) {}
+    explicit SymbolTable(SymbolTable* external): external(external) {}
 
     //! Inserts a symbol on this table.
     /*!

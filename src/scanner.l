@@ -80,12 +80,12 @@ error   [^ -~\λ\t\n]+
 "fun"     { return FUN; }
 "ret"     { return RET; }
 "array"   { return ARR; }
-"map"     { return F_MAP; }
-"fold"    { return F_FOLD; }
-"filter"  { return F_FILTER; }
 "->"      { return RET_L; }
-"lambda"  { yylval.word = strdup("lambda"); return F_LAMBDA; }
-"λ"       { yylval.word = strdup("λ"); return L_CALL; }
+"map"     { yylval.word = strdup(yytext); return F_MAP; }
+"fold"    { yylval.word = strdup(yytext); return F_FOLD; }
+"filter"  { yylval.word = strdup(yytext); return F_FILTER; }
+"lambda"  { yylval.word = strdup(yytext); return F_LAMBDA; }
+"λ"       { yylval.word = strdup(yytext); return L_CALL; }
 {intgT}   { yylval.integer = std::atoi(yytext); return INT; }
 {boolT}   { yylval.boolean = (strcmp(yytext, "true") == 0); return BOOL; }
 {nameT}   { yylval.word = strdup(yytext); return ID; }
@@ -97,7 +97,7 @@ error   [^ -~\λ\t\n]+
 "[bool]"  { return C_BOOL; }
 "[word]"  { return C_STR; }
 "[len]"   { return LEN; }
-{error}   { yyerror("lexical error: unknown symbol %s", yytext); }
+{error}   { yyerror("lexical error: unknown symbol %s\n", yytext); }
 "#".*     { /* single-line comments */ }
 .         ;
 
@@ -107,11 +107,23 @@ error   [^ -~\λ\t\n]+
 
 /* Bison standard error output function. */
 void yyerror(const char* s, ...) {
+
   va_list ap;
   va_start(ap, s);
   std::fprintf(stderr, "[Line %d] ", yylineno);
   std::vfprintf(stderr, s, ap);
+
+}
+
+/* Semantic error function. */
+void yyserror(const char* s, ...) {
+
+  va_list ap;
+  va_start(ap, s);
+  yyerror("semantic error: ");
+  std::vfprintf(stderr, s, ap);
   std::fprintf(stderr, "\n");
+
 }
 
 /* Creates another buffer state and feeds the `s` arg to it. */
@@ -159,7 +171,7 @@ char* reduce_char(char* s) {
   if (strlen(s) > 3) {
     char _new[3] = {'\'', s[1], '\''};
     char* p = strdup(_new);
-    yyerror("warning: multicharacter value truncated to %s", p);
+    yyerror("warning: multicharacter value truncated to %s\n", p);
     free(s);
     return p;
   } else {

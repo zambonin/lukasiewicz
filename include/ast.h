@@ -223,10 +223,6 @@ namespace AST {
      *  \param prefix  chooses between polish or infix notation.
      */
     void print(bool prefix) override;
-
-    //! Produces a double ended queue with all the nodes on the
-    //! linked list of parameters.
-    std::deque<VariableNode*> createDeque();
   };
 
   class BlockNode : public Node {
@@ -347,6 +343,10 @@ namespace AST {
      */
     bool verifyParams(Node* n);
 
+    //! Produces a double ended queue with all the nodes on the
+    //! linked list of parameters.
+    std::deque<VariableNode*> createDeque();
+
     //! Basic destructor.
     ~FuncNode() override;
   };
@@ -392,24 +392,63 @@ namespace AST {
      */
     void print(bool prefix) override;
 
+    //! Returns the type of the original function.
+    NodeType _type() override;
+
     //! Basic destructor.
     ~FuncCallNode() override;
   };
 
   class DeclarationNode : public VariableNode {
   public:
+    //! Basic constructor.
     using VariableNode::VariableNode;
 
+    //! Prints the node contents to `stdout`.
+    /*!
+     *  \param prefix  chooses between polish or infix notation.
+     */
     void print(bool prefix);
   };
 
-  class MapFuncNode : public FuncNode {
+  class HiOrdFuncNode : public FuncNode {
   public:
     //! Basic constructor.
-    MapFuncNode(VariableNode* array, Node* func);
+    HiOrdFuncNode(std::string id, Node* func, VariableNode* array);
 
     //! Writes the verbose input analogous to this functor's behaviour.
-    void expandBody(VariableNode* array);
+    virtual void expandBody(VariableNode* /*array*/) {}
+
+    //! Returns the appropriate subclass given the id.
+    static HiOrdFuncNode* chooseFunc(
+      std::string id, Node* func, VariableNode* array);
+  };
+
+  class MapFuncNode : public HiOrdFuncNode {
+  public:
+    //! Basic constructor.
+    MapFuncNode(std::string id, Node* func, VariableNode* array);
+
+    //! Writes the verbose input analogous to this functor's behaviour.
+    void expandBody(VariableNode* array) override;
+  };
+
+  class FoldFuncNode : public HiOrdFuncNode {
+  public:
+    //! Basic constructor.
+    FoldFuncNode(std::string id, Node* func, VariableNode* array);
+
+    //! Writes the verbose input analogous to this functor's behaviour.
+    void expandBody(VariableNode* array) override;
+  };
+
+  class FilterFuncNode : public HiOrdFuncNode {
+  public:
+    //! Basic constructor.
+    FilterFuncNode(std::string id, Node* func, VariableNode* array);
+
+    //! Writes the verbose input analogous to this functor's behaviour.
+    void expandBody(VariableNode* array) override;
   };
 
   //! Pretty-prints an object with `cout`. Useful for tabulation.

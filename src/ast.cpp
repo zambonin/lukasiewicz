@@ -1,6 +1,6 @@
 #include "ast.h"
 
-extern void yyerror(const char* s, ...);
+extern void yyserror(const char* s, ...);
 extern AST::BlockNode* string_read(const char* s);
 
 /* Macros that reduce the visual pollution when indentation is needed. */
@@ -24,6 +24,11 @@ NodeType operator+(NodeType t, int v) {
 /* Subtraction operator overload for NodeType enum. */
 NodeType operator-(NodeType t, int v) {
   return static_cast<NodeType>(static_cast<int>(t) - v);
+}
+
+/* Modulo operator overload for NodeType enum. */
+NodeType operator%(NodeType t, int v) {
+  return static_cast<NodeType>(static_cast<int>(t) % v);
 }
 
 /*
@@ -111,15 +116,14 @@ binOp(binOp), left(left), right(right) {
 
   if (binOp == index) {
     if ((this->left->_type() % 8) < 4) {
-      yyerror("semantic error: variable %s is not an array",
+      yyserror("variable %s is not an array",
         dynamic_cast<VariableNode*>(this->left)->id.c_str());
     } else if (this->right->_type() != INT) {
-      yyerror(
-        "semantic error: index operation expected integer but received %s",
+      yyserror("index operation expected integer but received %s",
         verboseType(this->right, false).c_str());
     }
   } else if (differentTypes && bothValid) {
-    yyerror("semantic error: %s operation expected %s but received %s",
+    yyserror("%s operation expected %s but received %s",
       _opt[binOp].c_str(), verboseType(this->left, false).c_str(),
       verboseType(this->right, false).c_str());
   }
@@ -176,16 +180,16 @@ op(op), node(node) {
 
   // error handling
   if (op == ref && this->type < 0) {
-    yyerror("semantic error: reference operation expects a pointer");
+    yyserror("reference operation expects a pointer");
   } else if (op == len && (node->_type() % 6) < 3) {
-    yyerror("semantic error: length operation expects an array");
+    yyserror("length operation expects an array");
   } else if (op == addr) {
     bool isNotVar = (dynamic_cast<VariableNode*>(node) == nullptr);
     AST::BinaryOpNode* indexNode = dynamic_cast<BinaryOpNode*>(node);
     bool isNotIndex = (indexNode != nullptr && indexNode->binOp != index);
     if ((indexNode == nullptr && isNotVar) || isNotIndex) {
-       yyerror(
-         "semantic error: address operation expects a variable or array item");
+       yyserror(
+         "address operation expects a variable or array item");
      }
   }
 }
@@ -240,8 +244,7 @@ IfNode::IfNode(Node* condition, BlockNode* _then, BlockNode* _else):
 condition(condition), _then(_then), _else(_else) {
   // error handling
   if (condition->_type() != BOOL) {
-    yyerror(
-      "semantic error: test operation expected boolean but received %s",
+    yyserror("test operation expected boolean but received %s",
       verboseType(condition, false).c_str());
   }
 }
@@ -268,8 +271,7 @@ ForNode::ForNode(Node* assign, Node* test, Node* iteration, BlockNode* body):
 assign(assign), test(test), iteration(iteration), body(body) {
   // error handling
   if (test->_type() != BOOL) {
-    yyerror(
-      "semantic error: test operation expected boolean but received %s",
+    yyserror("test operation expected boolean but received %s",
       verboseType(test, false).c_str());
   }
 }
@@ -301,8 +303,7 @@ Node(type), id(std::move(id)), params(params), contents(contents) {
     Node* ret = this->contents->nodeList.back();
     bool isReturn = (dynamic_cast<ReturnNode*>(ret) != nullptr);
     if (this->type != ret->_type() && isReturn) {
-      yyerror("semantic error: function %s has incoherent return type",
-        this->id.c_str());
+      yyserror("function %s has incoherent return type", this->id.c_str());
     }
   }
 }
@@ -316,8 +317,7 @@ void FuncNode::print(bool /*prefix*/) {
     text(")\n", 0);
     _tab(contents->print(true));
   } else {
-    yyerror("semantic error: function %s is declared but never defined",
-      this->id.c_str());
+    yyserror("function %s is declared but never defined", this->id.c_str());
   }
 }
 
@@ -340,9 +340,9 @@ FuncNode::~FuncNode() {
   delete contents;
 }
 
-std::deque<VariableNode*> VariableNode::createDeque() {
+std::deque<VariableNode*> FuncNode::createDeque() {
   std::deque<VariableNode*> v = {};
-  VariableNode* l = this;
+  VariableNode* l = dynamic_cast<VariableNode*>(this->params);
   while (l != nullptr) {
     v.push_front(l);
     l = dynamic_cast<VariableNode*>(l->next);
@@ -367,27 +367,20 @@ void ReturnNode::print(bool /*prefix*/) {
 
 FuncCallNode::FuncCallNode(FuncNode* function, BlockNode* params):
 function(function), params(params) {
-  this->type = function->type;
-
   // error handling
   std::vector<Node*> callParam = params->nodeList;
   int callSize = callParam.size();
 
-  VariableNode* l = dynamic_cast<VariableNode*>(function->params);
-  std::deque<VariableNode*> origParam = {};
-  if (l != nullptr) {
-    origParam = l->createDeque();
-  }
+  std::deque<VariableNode*> origParam = function->createDeque();
   int origSize = origParam.size();
 
   if (origSize != callSize) {
-    yyerror(
-      "semantic error: function %s expects %d parameters but received %d",
+    yyserror("function %s expects %d parameters but received %d",
       function->id.c_str(), origSize, callSize);
   } else {
     for (int i = 0; i < origSize; ++i) {
       if (origParam[i]->_type() != callParam[i]->_type()) {
-        yyerror("semantic error: parameter %s expected %s but received %s",
+        yyserror("parameter %s expected %s but received %s",
           origParam[i]->id.c_str(),
           verboseType(origParam[i], false).c_str(),
           verboseType(callParam[i], false).c_str());
@@ -402,6 +395,10 @@ void FuncCallNode::print(bool /*prefix*/) {
   for (Node* n : params->nodeList) {
     n->print(true);
   }
+}
+
+NodeType FuncCallNode::_type() {
+  return this->function->_type();
 }
 
 FuncCallNode::~FuncCallNode() {
@@ -419,20 +416,37 @@ void DeclarationNode::print(bool /*prefix*/) {
   text(id + s, 1);
 }
 
-MapFuncNode::MapFuncNode(VariableNode* array, Node* func):
-FuncNode("map", nullptr, array->_type(), new BlockNode(func)) {
-  this->id = array->id + "_" + this->id;
-  this->params = new ParamNode(array->id, nullptr, array->_type(), array->size);
-  expandBody(array);
+HiOrdFuncNode::HiOrdFuncNode(std::string id, Node* func, VariableNode* array):
+FuncNode(array->id + "_" + id, new ParamNode(array->id, nullptr,
+  array->_type(), array->size), array->_type(), new BlockNode(func)) {
+  // error handling
+  if ((array->_type() % 8) < 4) {
+    yyserror("second parameter must be an array");
+  }
+}
 
+HiOrdFuncNode* HiOrdFuncNode::chooseFunc(
+  std::string id, Node* func, VariableNode* array) {
+  if (id == "map") {
+    return new MapFuncNode(id, func, array);
+  } else if (id == "fold") {
+    return new FoldFuncNode(id, func, array);
+  } else if (id == "filter") {
+    return new FilterFuncNode(id, func, array);
+  }
+  return nullptr;
+}
+
+MapFuncNode::MapFuncNode(std::string id, Node* func, VariableNode* array):
+HiOrdFuncNode(id, func, array) {
+  expandBody(array);
   // error handling
   FuncNode* f = dynamic_cast<FuncNode*>(func);
-  if ((array->_type() % 8) < 4) {
-    yyerror("semantic error: second parameter must be an array");
-  }
   if (f->_type() != (this->type % 4)) {
-    yyerror("semantic error: function %s has incoherent return type",
-      f->id.c_str());
+    yyserror("function lambda has incoherent return type");
+  }
+  if (f->createDeque().size() != 1) {
+    yyserror("function lambda has an incompatible number of parameters");
   }
 }
 
@@ -442,13 +456,58 @@ void MapFuncNode::expandBody(VariableNode* array) {
   int n = array->_type(), s = array->size;
 
   out << "int " << ti << "\n" << _var[n - 4] << " " << ta << "[" << s       \
-    << "]\n" << "for " << ti << " = 0, " << ti << " < [len] t, " << ti      \
-    << " = " << ti << " + 1 {\n  " << ta << "[" << ti << "] = λ("           \
-    << id << "[" << ti << "])\n}\n";
+    << "]\n" << "for " << ti << " = 0, " << ti << " < [len] " << id         \
+    << ", " << ti << " = " << ti << " + 1 {\n  " << ta << "[" << ti         \
+    << "] = λ(" << id << "[" << ti << "])\n}\n";
 
   this->contents->nodeList.push_back(string_read(out.str().c_str()));
   VariableNode* v = new VariableNode(ta, nullptr, n, s);
   this->contents->nodeList.push_back(new ReturnNode(v));
 }
+
+FoldFuncNode::FoldFuncNode(std::string id, Node* func, VariableNode* array):
+HiOrdFuncNode(id, func, array) {
+  this->type = this->type % 4;
+  expandBody(array);
+  // error handling
+  FuncNode* f = dynamic_cast<FuncNode*>(func);
+  if (f->_type() != this->type) {
+    yyserror("function lambda has incoherent return type");
+  }
+  if (f->createDeque().size() != 2) {
+    yyserror("function lambda has an incompatible number of parameters");
+  }
+}
+
+void FoldFuncNode::expandBody(VariableNode* array) {
+  std::string id = array->id, ti = id + "_ti", tv = id + "_tv";
+  std::ostringstream out;
+  int n = array->_type();
+
+  out << _var[n % 4] << " " << tv << "\n" << tv << " = " << id << "[0]\n"   \
+    << "int " << ti << "\n" << "for " << ti << " = 1, " << ti               \
+    << " < [len] " << id << ", " << ti << " = " << ti << " + 1 {\n  "       \
+    << tv << " = " << tv << " + λ(" << tv << ", " << array->id << "["       \
+    << ti << "])\n}\n";
+
+  this->contents->nodeList.push_back(string_read(out.str().c_str()));
+  VariableNode* v = new VariableNode(tv, nullptr, n % 4, 0);
+  this->contents->nodeList.push_back(new ReturnNode(v));
+}
+
+FilterFuncNode::FilterFuncNode(std::string id, Node* func,
+  VariableNode* array): HiOrdFuncNode(id, func, array) {
+  expandBody(array);
+  // error handling
+  FuncNode* f = dynamic_cast<FuncNode*>(func);
+  if (f->_type() != BOOL) {
+    yyserror("function lambda has incoherent return type");
+  }
+  if (f->createDeque().size() != 1) {
+    yyserror("function lambda has an incompatible number of parameters");
+  }
+}
+
+void FilterFuncNode::expandBody(VariableNode* array) {}
 
 } // namespace AST

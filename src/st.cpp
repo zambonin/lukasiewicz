@@ -1,8 +1,9 @@
 #include "st.h"
 
-namespace ST {
+extern void yyserror(const char* s, ...);
+extern ST::SymbolTable* current;
 
-extern SymbolTable* current;
+namespace ST {
 
 void SymbolTable::addSymbol(
   SymbolType type, const std::string& key, AST::Node* symbol) {
@@ -26,7 +27,7 @@ AST::VariableNode* SymbolTable::getVarFromTable(const std::string& key) {
       dynamic_cast<AST::VariableNode*>(n)->size);
   }
   if (external == nullptr) {
-    yyerror("semantic error: undeclared variable %s", key.c_str());
+    yyserror("undeclared variable %s", key.c_str());
     return new AST::VariableNode(key, nullptr, -1, 0);
   }
   return external->getVarFromTable(key);
@@ -42,7 +43,7 @@ AST::Node* SymbolTable::newVariable(
 AST::Node* SymbolTable::newVariable(
   const std::string& key, AST::Node* next, int type, int size, bool isParam) {
   if (symbolExistsHere(SymbolType::variable, key)) {
-    yyerror("semantic error: re-declaration of variable %s", key.c_str());
+    yyserror("re-declaration of variable %s", key.c_str());
     // new variable is not added to the symbol table and
     // is skipped by returning `next` or the old node
     AST::Node* old = getVarFromTable(key);
@@ -74,7 +75,7 @@ AST::FuncNode* SymbolTable::getFuncFromTable(const std::string& key) {
     return dynamic_cast<AST::FuncNode*>(entryList[SymbolType::function][key]);
   }
   if (external == nullptr) {
-    yyerror("semantic error: undeclared function %s", key.c_str());
+    yyserror("undeclared function %s", key.c_str());
     return new AST::FuncNode(key, nullptr, -1, nullptr);
   }
   return external->getFuncFromTable(key);
@@ -95,7 +96,7 @@ AST::Node* SymbolTable::newFunction(
       n->contents = contents;
       delete params;
     } else {
-      yyerror("semantic error: re-definition of function %s", key.c_str());
+      yyserror("re-definition of function %s", key.c_str());
     }
     return nullptr;
   }

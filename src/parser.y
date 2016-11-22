@@ -16,7 +16,7 @@
 
   extern AST::BlockNode* string_read(const char*);
   extern char* rl_read();
-  extern FILE * yyin;
+  extern FILE* yyin;
 
   /* First symbol table (global scope). */
   ST::SymbolTable* current;
@@ -66,17 +66,17 @@
 
 /* Definition of tokens and their types. */
 %token NL COMMA ASSIGN LPAR RPAR LCURLY RCURLY LBRAC RBRAC
-%token IF THEN ELSE FOR T_INT T_FLOAT T_BOOL T_CHAR FUN RET ARR
-%token RET_L F_MAP F_FOLD F_FILTER
+%token IF THEN ELSE FOR T_INT T_FLOAT T_BOOL T_CHAR FUN RET ARR RET_L
 %token <integer> INT
 %token <boolean> BOOL
-%token <word> ID FLOAT CHAR STR F_LAMBDA L_CALL
+%token <word> ID FLOAT CHAR STR F_MAP F_FOLD F_FILTER F_LAMBDA L_CALL
 
 /* Nonterminal symbols and their types. */
 %type <block> lines else body f-body f-expr
 %type <node> expr v-expr line declaration basic-type iteration f-lambda
 %type <node> decl-array decl-lambda decl-func
 %type <integer> is-array d-type ref-cnt
+%type <word> f-type
 %type <null> program start-scope end-scope
 
 /* Operator precedence. */
@@ -178,6 +178,13 @@ d-type
   | T_FLOAT ref-cnt { $$ = 1 + $2; tmp_t += 1; }
   | T_BOOL ref-cnt  { $$ = 2 + $2; tmp_t += 2; }
   | T_CHAR ref-cnt  { $$ = 3 + $2; tmp_t += 3; }
+  ;
+
+/* Defines the valid higher order function types. */
+f-type
+  : F_MAP     { $$ = $1; }
+  | F_FOLD    { $$ = $1; }
+  | F_FILTER  { $$ = $1; }
   ;
 
 /* Checks if the return type of a function is an array. */
@@ -316,12 +323,12 @@ v-expr
   | L_CALL LPAR f-expr RPAR
     { AST::FuncNode* n = current->getFuncFromTable($1);
       $$ = new AST::FuncCallNode(n, $3); }
-  | F_MAP LPAR f-lambda COMMA ID RPAR
+  | f-type LPAR f-lambda COMMA ID RPAR
     {
       AST::VariableNode* n = current->getVarFromTable($5);
-      AST::MapFuncNode* m = new AST::MapFuncNode(n, $3);
+      AST::HiOrdFuncNode* m = AST::HiOrdFuncNode::chooseFunc($1, $3, n);
+      tmp_f = m; free($1);
       $$ = new AST::FuncCallNode(m, new AST::BlockNode(n));
-      tmp_f = m;
     }
   ;
 
@@ -334,7 +341,7 @@ f-expr
 
 /* Syntax error handler. */
 prod-error
-  : error NL  { yyerrok; tmp_t = 0; }
+  : error NL  { yyerrok; tmp_t = 0; std::fprintf(stderr, "\n"); }
   ;
 
 %%
