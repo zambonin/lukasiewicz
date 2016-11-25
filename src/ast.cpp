@@ -122,6 +122,17 @@ binOp(binOp), left(left), right(right) {
       yyserror("index operation expected integer but received %s",
         verboseType(this->right, false).c_str());
     }
+  } else if (binOp == append) {
+    VariableNode* v = dynamic_cast<VariableNode*>(this->left);
+    if ((v->_type() % 8) < 4) {
+      yyserror("variable %s is not an array", v->id.c_str());
+    } else if ((this->left->_type() % 4) != this->right->_type()) {
+      yyserror("append operation expected %s but received %s",
+        verboseType(new Node(this->left->_type() % 4), false).c_str(),
+        verboseType(this->right, false).c_str());
+    } else {
+      v->size++;
+    }
   } else if (differentTypes && bothValid) {
     yyserror("%s operation expected %s but received %s",
       _opt[binOp].c_str(), verboseType(this->left, false).c_str(),
@@ -131,8 +142,8 @@ binOp(binOp), left(left), right(right) {
 
 void BinaryOpNode::print(bool prefix) {
   if (prefix) {
-    // prints a space if the operation is not an assignment
-    text("", binOp != assign);
+    bool space = ((binOp != assign) && (binOp != append));
+    text("", space);
     text(_bin[binOp], spaces);
     _notab(
       left->print(prefix),
@@ -181,15 +192,14 @@ op(op), node(node) {
   // error handling
   if (op == ref && this->type < 0) {
     yyserror("reference operation expects a pointer");
-  } else if (op == len && (node->_type() % 6) < 3) {
+  } else if (op == len && (node->_type() % 8) < 4) {
     yyserror("length operation expects an array");
   } else if (op == addr) {
     bool isNotVar = (dynamic_cast<VariableNode*>(node) == nullptr);
     AST::BinaryOpNode* indexNode = dynamic_cast<BinaryOpNode*>(node);
     bool isNotIndex = (indexNode != nullptr && indexNode->binOp != index);
     if ((indexNode == nullptr && isNotVar) || isNotIndex) {
-       yyserror(
-         "address operation expects a variable or array item");
+       yyserror("address operation expects a variable or array item");
      }
   }
 }
@@ -410,9 +420,10 @@ void DeclarationNode::print(bool /*prefix*/) {
     next->print(false);
     text(",", 0);
   }
-  std::string s;
-  // prints the size of the array if the `size` attribute is not zero
-  s = (this->size != 0) ? " (size: " + std::to_string(this->size) + ")" : "";
+  std::string s = "";
+  if ((this->_type() % 8) > 3) {
+    s = " (size: " + std::to_string(this->size) + ")";
+  }
   text(id + s, 1);
 }
 
@@ -421,7 +432,7 @@ FuncNode(array->id + "_" + id, new ParamNode(array->id, nullptr,
   array->_type(), array->size), array->_type(), new BlockNode(func)) {
   // error handling
   if ((array->_type() % 8) < 4) {
-    yyserror("second parameter must be an array");
+    yyserror("second parameter must be of array type");
   }
 }
 
@@ -445,8 +456,9 @@ HiOrdFuncNode(id, func, array) {
   if (f->_type() != (this->type % 4)) {
     yyserror("function lambda has incoherent return type");
   }
-  if (f->createDeque().size() != 1) {
-    yyserror("function lambda has an incompatible number of parameters");
+  int n = f->createDeque().size();
+  if (n != 1) {
+    yyserror("function lambda expects 1 parameters but received %d", n);
   }
 }
 
@@ -454,11 +466,12 @@ void MapFuncNode::expandBody(VariableNode* array) {
   std::string id = array->id, ti = id + "_ti", ta = id + "_ta";
   std::ostringstream out;
   int n = array->_type(), s = array->size;
+  std::string t = (n < 3) ? "int" : _var[n - 4];
 
-  out << "int " << ti << "\n" << _var[n - 4] << " " << ta << "[" << s       \
-    << "]\n" << "for " << ti << " = 0, " << ti << " < [len] " << id         \
-    << ", " << ti << " = " << ti << " + 1 {\n  " << ta << "[" << ti         \
-    << "] = λ(" << id << "[" << ti << "])\n}\n";
+  out << "int " << ti << "\n" << t << " " << ta << "[" << s
+    << "]\nfor " << ti << " = 0, " << ti << " < [len] " << id << ", "
+    << ti << " = " << ti << " + 1 {\n  " << ta << "[" << ti << "] = λ("
+    << id << "[" << ti << "])\n}\n";
 
   this->contents->nodeList.push_back(string_read(out.str().c_str()));
   VariableNode* v = new VariableNode(ta, nullptr, n, s);
@@ -474,24 +487,24 @@ HiOrdFuncNode(id, func, array) {
   if (f->_type() != this->type) {
     yyserror("function lambda has incoherent return type");
   }
-  if (f->createDeque().size() != 2) {
-    yyserror("function lambda has an incompatible number of parameters");
+  int n = f->createDeque().size();
+  if (n != 2) {
+    yyserror("function lambda expects 2 parameters but received %d", n);
   }
 }
 
 void FoldFuncNode::expandBody(VariableNode* array) {
   std::string id = array->id, ti = id + "_ti", tv = id + "_tv";
   std::ostringstream out;
-  int n = array->_type();
+  int n = array->_type() % 4;
 
-  out << _var[n % 4] << " " << tv << "\n" << tv << " = " << id << "[0]\n"   \
-    << "int " << ti << "\n" << "for " << ti << " = 1, " << ti               \
-    << " < [len] " << id << ", " << ti << " = " << ti << " + 1 {\n  "       \
-    << tv << " = " << tv << " + λ(" << tv << ", " << array->id << "["       \
-    << ti << "])\n}\n";
+  out << _var[n] << " " << tv << "\n" << tv << " = " << id << "[0]\nint "
+    << ti << "\nfor " << ti << " = 1, " << ti << " < [len] " << id << ", "
+    << ti << " = " << ti << " + 1 {\n  " << tv << " = " << tv << " + λ("
+    << tv << ", " << array->id << "[" << ti << "])\n}\n";
 
   this->contents->nodeList.push_back(string_read(out.str().c_str()));
-  VariableNode* v = new VariableNode(tv, nullptr, n % 4, 0);
+  VariableNode* v = new VariableNode(tv, nullptr, n, 0);
   this->contents->nodeList.push_back(new ReturnNode(v));
 }
 
@@ -503,11 +516,26 @@ FilterFuncNode::FilterFuncNode(std::string id, Node* func,
   if (f->_type() != BOOL) {
     yyserror("function lambda has incoherent return type");
   }
-  if (f->createDeque().size() != 1) {
-    yyserror("function lambda has an incompatible number of parameters");
+  int n = f->createDeque().size();
+  if (n != 1) {
+    yyserror("function lambda expects 1 parameters but received %d", n);
   }
 }
 
-void FilterFuncNode::expandBody(VariableNode* array) {}
+void FilterFuncNode::expandBody(VariableNode* array) {
+  std::string id = array->id, ti = id + "_ti", ta = id + "_ta";
+  std::ostringstream out;
+  int n = array->_type();
+  std::string t = (n < 3) ? "int" : _var[n - 4];
+
+  out << "int " << ti << "\n" << t << " " << ta << "[0]\nfor " << ti
+    << " = 0, " << ti << " < [len] " << id << ", " << ti << " = " << ti
+    << " + 1 {\n  if λ(" << id << "[" << ti << "])\n  then {\n    "
+    << ta << " <- " << id << "[" << ti << "]\n  }\n}\n";
+
+  this->contents->nodeList.push_back(string_read(out.str().c_str()));
+  VariableNode* v = new VariableNode(ta, nullptr, n, 1);
+  this->contents->nodeList.push_back(new ReturnNode(v));
+}
 
 } // namespace AST

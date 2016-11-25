@@ -81,6 +81,7 @@ error   [^ -~\λ\t\n]+
 "ret"     { return RET; }
 "array"   { return ARR; }
 "->"      { return RET_L; }
+"<-"      { return APPEND; }
 "map"     { yylval.word = strdup(yytext); return F_MAP; }
 "fold"    { yylval.word = strdup(yytext); return F_FOLD; }
 "filter"  { yylval.word = strdup(yytext); return F_FILTER; }
@@ -97,7 +98,7 @@ error   [^ -~\λ\t\n]+
 "[bool]"  { return C_BOOL; }
 "[word]"  { return C_STR; }
 "[len]"   { return LEN; }
-{error}   { yyerror("lexical error: unknown symbol %s\n", yytext); }
+{error}   { yyerror("lexical error: unknown symbol %s", yytext); }
 "#".*     { /* single-line comments */ }
 .         ;
 
@@ -112,6 +113,7 @@ void yyerror(const char* s, ...) {
   va_start(ap, s);
   std::fprintf(stderr, "[Line %d] ", yylineno);
   std::vfprintf(stderr, s, ap);
+  std::fprintf(stderr, "\n");
 
 }
 
@@ -120,7 +122,7 @@ void yyserror(const char* s, ...) {
 
   va_list ap;
   va_start(ap, s);
-  yyerror("semantic error: ");
+  std::fprintf(stderr, "[Line %d] semantic error: ", yylineno);
   std::vfprintf(stderr, s, ap);
   std::fprintf(stderr, "\n");
 
@@ -171,7 +173,7 @@ char* reduce_char(char* s) {
   if (strlen(s) > 3) {
     char _new[3] = {'\'', s[1], '\''};
     char* p = strdup(_new);
-    yyerror("warning: multicharacter value truncated to %s\n", p);
+    yyerror("warning: multicharacter value truncated to %s", p);
     free(s);
     return p;
   } else {

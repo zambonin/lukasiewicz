@@ -17,7 +17,8 @@ namespace AST {
   enum Operation {
     add, sub, mul, div, assign, index, addr, ref,
     eq, neq, gt, lt, geq, leq, _and, _or,
-    uminus, _not, cast_int, cast_float, cast_bool, cast_word, len
+    uminus, _not, cast_int, cast_float,
+    cast_bool, cast_word, len, append
   };
 
   /*
@@ -38,7 +39,8 @@ namespace AST {
   static const std::string _bin[] = {
     "+", "-", "*", "/", "=", "[index]", " [addr]", " [ref]",
     "==", "!=", ">", "<", ">=", "<=", "&", "|",
-    " -u", " !", " [int]", " [float]", " [bool]", " [word]", " [len]"
+    " -u", " !", " [int]", " [float]", " [bool]", " [word]",
+    " [len]", "[append]"
   };
 
   //! Verbose representation for the operations.
@@ -46,7 +48,7 @@ namespace AST {
     "addition", "subtraction", "multiplication", "division", "attribution",
     "index", "address", "reference", "equal", "different", "greater than",
     "less than", "greater or equal than", "less or equal than", "and", "or",
-    "unary minus", "negation", "length"
+    "unary minus", "negation", "length", "append"
   };
 
   //! Verbose representation for the node types.

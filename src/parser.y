@@ -65,7 +65,7 @@
 %destructor { delete $$; } <block>
 
 /* Definition of tokens and their types. */
-%token NL COMMA ASSIGN LPAR RPAR LCURLY RCURLY LBRAC RBRAC
+%token NL COMMA ASSIGN APPEND LPAR RPAR LCURLY RCURLY LBRAC RBRAC
 %token IF THEN ELSE FOR T_INT T_FLOAT T_BOOL T_CHAR FUN RET ARR RET_L
 %token <integer> INT
 %token <boolean> BOOL
@@ -114,12 +114,15 @@ end-scope
         ST::SymbolTable* pt = current;
         current = current->external;
         delete pt;
+      } else {
+        delete current;
       }
     }
 
 /* Stores every derived line on the abstract syntax tree. */
 lines
-  : line          { $$ = new AST::BlockNode($1); }
+  : line
+    { $$ = new AST::BlockNode($1); }
   | lines line
     { $1->nodeList.push_back(tmp_f);
       $1->nodeList.push_back($2);
@@ -146,6 +149,10 @@ line
     { AST::Node* n = current->getVarFromTable($2);
       if ($1) n = new AST::UnaryOpNode(AST::ref, n);
       $$ = new AST::BinaryOpNode(AST::assign, n, $4); }
+  | ref-cnt ID APPEND expr
+    { AST::Node* n = current->getVarFromTable($2);
+      if ($1) n = new AST::UnaryOpNode(AST::ref, n);
+      $$ = new AST::BinaryOpNode(AST::append, n, $4);}
   | ref-cnt ID LBRAC expr RBRAC ASSIGN expr
     { AST::Node* n = current->getVarFromTable($2);
       if ($1) n = new AST::UnaryOpNode(AST::ref, n);
@@ -159,8 +166,7 @@ line
     { $$ = current->newFunction($4, $7, $1 + $2, $9); }
   | f-lambda
     { $$ = $1; }
-  | prod-error line
-    { $$ = $2; }
+  | error line { $$ = $2; yyerrok; }
   ;
 
 /* Defines the primitive types accepted by the language. */
@@ -277,7 +283,7 @@ f-body
 f-lambda
   : F_LAMBDA start-scope decl-lambda RET_L expr end-scope
     { AST::BlockNode* c = new AST::BlockNode(new AST::ReturnNode($5));
-      $$ = current->newFunction($1, $3, $3->_type(), c); }
+      $$ = current->newFunction($1, $3, $5->_type(), c); }
   | L_CALL LPAR RPAR
     { current->entryList[ST::SymbolType::function].erase($1); $$ = 0; }
   ;
@@ -324,12 +330,10 @@ v-expr
     { AST::FuncNode* n = current->getFuncFromTable($1);
       $$ = new AST::FuncCallNode(n, $3); }
   | f-type LPAR f-lambda COMMA ID RPAR
-    {
-      AST::VariableNode* n = current->getVarFromTable($5);
+    { AST::VariableNode* n = current->getVarFromTable($5);
       AST::HiOrdFuncNode* m = AST::HiOrdFuncNode::chooseFunc($1, $3, n);
-      tmp_f = m; free($1);
       $$ = new AST::FuncCallNode(m, new AST::BlockNode(n));
-    }
+      tmp_f = m; free($1); }
   ;
 
 /* Defines the valid expressions for a parameter list on a function call. */
@@ -339,32 +343,28 @@ f-expr
   | f-expr COMMA expr { $1->nodeList.push_back($3); $$ = $1; }
   ;
 
-/* Syntax error handler. */
-prod-error
-  : error NL  { yyerrok; tmp_t = 0; std::fprintf(stderr, "\n"); }
-  ;
-
 %%
 
 /* Additional C code. */
 
 int main(int argc, char *argv[]) {
 
-  if (argc == 2 && (strcmp(argv[1], "--readline") == 0)) {
+  // experimental readline mode
+  if (argv[1] && (strcmp(argv[1], "--readline") == 0)) {
     string_read(rl_read());
   } else {
     yydebug = (argv[1] && strcmp(argv[1], "--debug") == 0);
-    yyin = --argc ? fopen(argv[argc], "r") : stdin;
-    yyparse();
-    fclose(yyin);
+    do {
+      // get all parameters and parse them
+      yyin = --argc ? fopen(argv[argc], "r") : stdin;
+      yyparse();
+      if (root != nullptr) {
+        root->print(true);
+        delete root;
+      }
+      fclose(yyin);
+    } while (argc > yydebug + 1);
   }
-
-  if (root != nullptr) {
-    root->print(true);
-  }
-
-  delete root;
-  delete current;
 
   yylex_destroy();
 
