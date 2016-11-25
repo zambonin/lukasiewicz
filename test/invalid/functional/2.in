@@ -1,0 +1,4 @@
+# wrong number of parameters on lambda function
+int a = 2, b = 4, d, c = 3
+lambda int x, y -> x + y
+d = λ(a, b, c)

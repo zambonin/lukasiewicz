@@ -1,0 +1,5 @@
+char b[10]
+b = "teste"
+b = ""
+b = 'a'
+b = "um" + 'a'

@@ -3,4 +3,4 @@ float f = 3.4
 a = 2
 b = 4
 lambda int x, y -> x + y
-c = λ(a, [int]f)
+c = λ(a, [int] f)

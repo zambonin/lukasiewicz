@@ -1,0 +1,3 @@
+# wrong attribution between int array, 10 < 100
+int t[100], output[10]
+output = map(lambda int x -> x + 2, t)

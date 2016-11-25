@@ -1,0 +1,6 @@
+char let = 'a'
+char wd[4], result[10]
+wd = "luka"
+# i can add letters together
+result = wd + let
+let = result[1]

@@ -1,0 +1,4 @@
+# second argument on map receives int, expects a int array
+int t
+int output[10]
+output= map(lambda int x -> x + 2, t)

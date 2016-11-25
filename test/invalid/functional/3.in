@@ -1,0 +1,3 @@
+# too many arguments on map's lambda function
+int t[10], output[10]
+output = map(lambda int x, y -> x + 2, t)

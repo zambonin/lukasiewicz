@@ -1,0 +1,3 @@
+[Line 7] semantic error: parameter x expected integer but received float
+[Line 9] semantic error: function lambda has incoherent return type
+[Line 10] semantic error: attribution operation expected integer array but received float array

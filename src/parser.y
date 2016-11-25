@@ -166,7 +166,8 @@ line
     { $$ = current->newFunction($4, $7, $1 + $2, $9); }
   | f-lambda
     { $$ = $1; }
-  | error line { $$ = $2; yyerrok; }
+  | error line
+    { $$ = $2; yyerrok; }
   ;
 
 /* Defines the primitive types accepted by the language. */
@@ -285,7 +286,8 @@ f-lambda
     { AST::BlockNode* c = new AST::BlockNode(new AST::ReturnNode($5));
       $$ = current->newFunction($1, $3, $5->_type(), c); }
   | L_CALL LPAR RPAR
-    { current->entryList[ST::SymbolType::function].erase($1); $$ = 0; }
+    { current->entryList[ST::SymbolType::function].erase($1);
+      $$ = 0; free($1); }
   ;
 
 /* Defines the arithmetic, casting and logic operations of the language. */

@@ -1,0 +1,2 @@
+# more than one character inside simple quotes
+char a = 'as'

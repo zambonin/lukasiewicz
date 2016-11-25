@@ -1,4 +1,4 @@
-CC = g++
+CC = clang++
 CFLAGS = -O2 -Wall -Wextra -Wno-sign-compare \
 		 -Wno-unused-function -Wno-unused-parameter -std=c++11 -I include
 LIBS = -lreadline

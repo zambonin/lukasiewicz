@@ -1,5 +1,6 @@
 #include "ast.h"
 
+extern void yyerror(const char* s, ...);
 extern void yyserror(const char* s, ...);
 extern AST::BlockNode* string_read(const char* s);
 
@@ -10,6 +11,9 @@ extern AST::BlockNode* string_read(const char* s);
 
 /* Variadic macro that prevents indentation for any number of lines. */
 #define _notab(...) int tmp = spaces; spaces = 0; (__VA_ARGS__); spaces = tmp;
+
+/* Checks if a node is an array. */
+#define notArray(X) (((X)->_type() % 8) < 4)
 
 /* Saves the current indentation status. */
 int spaces;
@@ -111,27 +115,48 @@ binOp(binOp), left(left), right(right) {
   }
 
   // error handling
+  VariableNode* v1 = dynamic_cast<VariableNode*>(this->left);
+  VariableNode* v2 = dynamic_cast<VariableNode*>(this->right);
+  if (!v2) {
+    FuncCallNode* v3 = dynamic_cast<FuncCallNode*>(this->right);
+    // there's a segmentation fault hidden here somewhere
+    if (v3) v2 = dynamic_cast<VariableNode*>(
+      dynamic_cast<FuncNode*>(v3->function)->params);
+  }
+  bool bothArray = (!notArray(left) && !notArray(right));
+  bool bothVariables = ((v1 != nullptr) && (v2 != nullptr));
+  if (bothArray && bothVariables && v1->size < v2->size) {
+    yyserror("operation between mismatched array sizes");
+  }
+
+  if (left->_type() == A_CHAR && right->_type() == A_CHAR) {
+    CharNode* c = dynamic_cast<CharNode*>(right);
+    if (c != nullptr && v1 != nullptr && v1->size < c->value.size() - 2) {
+      c->value.resize(v1->size + 1);
+      c->value += "\"";
+      yyerror("warning: value truncated to %s", c->value.c_str());
+    }
+  }
+
   bool differentTypes = (this->left->_type() != this->right->_type());
   bool bothValid = (this->left->_type() >= 0 && this->right->_type() >= 0);
 
   if (binOp == index) {
-    if ((this->left->_type() % 8) < 4) {
-      yyserror("variable %s is not an array",
-        dynamic_cast<VariableNode*>(this->left)->id.c_str());
+    if (notArray(this->left)) {
+      yyserror("left hand side of index operation is not an array");
     } else if (this->right->_type() != INT) {
       yyserror("index operation expected integer but received %s",
         verboseType(this->right, false).c_str());
     }
   } else if (binOp == append) {
-    VariableNode* v = dynamic_cast<VariableNode*>(this->left);
-    if ((v->_type() % 8) < 4) {
-      yyserror("variable %s is not an array", v->id.c_str());
+    if (notArray(this->left)) {
+      yyserror("left hand side of append operation is not an array");
     } else if ((this->left->_type() % 4) != this->right->_type()) {
       yyserror("append operation expected %s but received %s",
         verboseType(new Node(this->left->_type() % 4), false).c_str(),
         verboseType(this->right, false).c_str());
     } else {
-      v->size++;
+      dynamic_cast<VariableNode*>(this->left)->size++;
     }
   } else if (differentTypes && bothValid) {
     yyserror("%s operation expected %s but received %s",
@@ -192,7 +217,7 @@ op(op), node(node) {
   // error handling
   if (op == ref && this->type < 0) {
     yyserror("reference operation expects a pointer");
-  } else if (op == len && (node->_type() % 8) < 4) {
+  } else if (op == len && notArray(node)) {
     yyserror("length operation expects an array");
   } else if (op == addr) {
     bool isNotVar = (dynamic_cast<VariableNode*>(node) == nullptr);
@@ -245,7 +270,7 @@ BlockNode::~BlockNode() {
 }
 
 void MessageNode::print(bool /*prefix*/) {
-  std::string s = ((this->_type() % 8) < 4) ? " var:" : ":";
+  std::string s = (notArray(this)) ? " var:" : ":";
   text(verboseType(this, true) + s, spaces);
   next->print(false);
 }
@@ -421,7 +446,7 @@ void DeclarationNode::print(bool /*prefix*/) {
     text(",", 0);
   }
   std::string s = "";
-  if ((this->_type() % 8) > 3) {
+  if (!notArray(this)) {
     s = " (size: " + std::to_string(this->size) + ")";
   }
   text(id + s, 1);
@@ -431,7 +456,7 @@ HiOrdFuncNode::HiOrdFuncNode(std::string id, Node* func, VariableNode* array):
 FuncNode(array->id + "_" + id, new ParamNode(array->id, nullptr,
   array->_type(), array->size), array->_type(), new BlockNode(func)) {
   // error handling
-  if ((array->_type() % 8) < 4) {
+  if (notArray(array)) {
     yyserror("second parameter must be of array type");
   }
 }
@@ -458,7 +483,7 @@ HiOrdFuncNode(id, func, array) {
   }
   int n = f->createDeque().size();
   if (n != 1) {
-    yyserror("function lambda expects 1 parameters but received %d", n);
+    yyserror("map lambda expects 1 parameters but received %d", n);
   }
 }
 
@@ -489,7 +514,7 @@ HiOrdFuncNode(id, func, array) {
   }
   int n = f->createDeque().size();
   if (n != 2) {
-    yyserror("function lambda expects 2 parameters but received %d", n);
+    yyserror("fold lambda expects 2 parameters but received %d", n);
   }
 }
 
@@ -518,7 +543,7 @@ FilterFuncNode::FilterFuncNode(std::string id, Node* func,
   }
   int n = f->createDeque().size();
   if (n != 1) {
-    yyserror("function lambda expects 1 parameters but received %d", n);
+    yyserror("filter lambda expects 1 parameters but received %d", n);
   }
 }
 
@@ -534,6 +559,7 @@ void FilterFuncNode::expandBody(VariableNode* array) {
     << ta << " <- " << id << "[" << ti << "]\n  }\n}\n";
 
   this->contents->nodeList.push_back(string_read(out.str().c_str()));
+  // find out the real size
   VariableNode* v = new VariableNode(ta, nullptr, n, 1);
   this->contents->nodeList.push_back(new ReturnNode(v));
 }

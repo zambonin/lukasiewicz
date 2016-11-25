@@ -1,0 +1,3 @@
+# improperly closing/opening simple/double quotes
+char a = 'a"
+char b = 's

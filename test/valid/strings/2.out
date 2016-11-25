@@ -1,0 +1,5 @@
+char var: let = 'a'
+char array: wd (size: 4), result (size: 10)
+= wd "luka"
+= result + wd [word] let
+= let [index] result 1

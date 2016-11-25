@@ -1,1 +1,1 @@
-[Line 5] semantic error: function lambda has incoherent return type
+[Line 5] semantic error: attribution operation expected integer but received boolean

@@ -1,0 +1,8 @@
+int a, b, c, d
+a = 2
+b = 4
+lambda int x, y -> x + y
+c = λ(a, b)
+λ()
+lambda int x, y -> x - y
+d = λ(a, b)

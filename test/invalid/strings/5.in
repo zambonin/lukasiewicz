@@ -1,0 +1,5 @@
+# improper arithmethics between character variables
+char a, b
+a = 's'
+b = 'd'
+a = a + b
