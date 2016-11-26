@@ -356,9 +356,10 @@ int main(int argc, char *argv[]) {
     string_read(rl_read());
   } else {
     yydebug = (argv[1] && strcmp(argv[1], "--debug") == 0);
+    int n = yydebug;
     do {
       // get all parameters and parse them
-      yyin = --argc ? fopen(argv[argc], "r") : stdin;
+      yyin = (--argc && fopen(argv[++n], "r")) ? fopen(argv[n], "r") : stdin;
       yyparse();
       if (root != nullptr) {
         root->print(true);

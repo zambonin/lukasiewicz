@@ -3,11 +3,28 @@ lexical scope and reserved words, where the operations are output in prefix
 notation.
 
 This compiler generates the syntax tree for given Łukasiewicz code. It
-currently supports logic and arithmetic operations with integers, floats and
-booleans, that optionally can be saved in variables, arrays and (de)referenced
-by pointers, as well as functions, if, else and for constructs.
+currently supports operations with integers, floats, booleans and characters,
+that optionally can be stored in variables, arrays and (de)referenced through
+pointers. Conditional branch, for loop statements functions (including
+anonymous and functors) are supported.
 
-The debug tracer for the parser can be enabled with the `--debug` flag.
+Its hard dependencies are `clang++`, `readline`, `flex` and `bison`, and can
+be compiled by typing `make` or `make debug`, if one wants debugging symbols.
+Tests to ascertain the intermediate representation output and lack of memory
+leaks can be run with `make test`.
+
+To run the compiler, use one of the following:
+
+    $ ./lukacompiler [args]
+    # standard stdin output, terminate with ^D; or input valid files
+
+    $ ./lukacompiler --debug [args]
+    # verbose debug tracer for the parser
+
+    $ ./lukacompiler --readline
+    # experimental readline input mode; errors are printed after it is exited
+
+Full specifications are available under the `docs/` folder, in pt_BR.
 
 Known issues:
-  * a program must not end with a syntax error
+    * a program must not end with a syntax error inside a scoped block

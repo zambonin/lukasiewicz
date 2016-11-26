@@ -117,15 +117,16 @@ binOp(binOp), left(left), right(right) {
   // error handling
   VariableNode* v1 = dynamic_cast<VariableNode*>(this->left);
   VariableNode* v2 = dynamic_cast<VariableNode*>(this->right);
-  if (!v2) {
-    FuncCallNode* v3 = dynamic_cast<FuncCallNode*>(this->right);
-    // there's a segmentation fault hidden here somewhere
-    if (v3) v2 = dynamic_cast<VariableNode*>(
-      dynamic_cast<FuncNode*>(v3->function)->params);
+  FuncCallNode* f1 = dynamic_cast<FuncCallNode*>(this->right);
+  int n = 0;
+
+  if (v2 != nullptr) {
+    n = v2->size;
+  } else if (f1 != nullptr && !notArray(f1->function)) {
+    n = dynamic_cast<VariableNode*>(dynamic_cast<ReturnNode*>(
+      f1->function->contents->nodeList.back())->next)->size;
   }
-  bool bothArray = (!notArray(left) && !notArray(right));
-  bool bothVariables = ((v1 != nullptr) && (v2 != nullptr));
-  if (bothArray && bothVariables && v1->size < v2->size) {
+  if (v1 != nullptr && (v1->size < n)) {
     yyserror("operation between mismatched array sizes");
   }
 
@@ -559,8 +560,7 @@ void FilterFuncNode::expandBody(VariableNode* array) {
     << ta << " <- " << id << "[" << ti << "]\n  }\n}\n";
 
   this->contents->nodeList.push_back(string_read(out.str().c_str()));
-  // find out the real size
-  VariableNode* v = new VariableNode(ta, nullptr, n, 1);
+  VariableNode* v = new VariableNode(ta, nullptr, n, array->size);
   this->contents->nodeList.push_back(new ReturnNode(v));
 }
 
