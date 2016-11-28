@@ -43,6 +43,13 @@ namespace AST {
     " [len]", "[append]"
   };
 
+  static const std::string _binp[] = {
+    "+", "-", "*", "/", "=", "[index]", " [addr]", " [ref]",
+    "==", "!=", ">", "<", ">=", "<=", "&", "|",
+    "-", "(not ", "int(", "float(", "bool(", "str(", "len("
+    "[append]"
+  };
+
   //! Verbose representation for the operations.
   static const std::string _opt[] = {
     "addition", "subtraction", "multiplication", "division", "attribution",
@@ -70,11 +77,9 @@ namespace AST {
     //! Basic constructor that also sets the type of the node.
     explicit Node(int type);
 
-    //! Prints the node contents to `stdout`.
-    /*!
-     *  \param prefix  chooses between polish or infix notation.
-     */
-    virtual void print(bool /*prefix*/) {}
+    virtual void printInfix() {}
+    virtual void printPrefix() { this->printInfix(); }
+    virtual void printPython() { this->printInfix(); }
 
     //! Returns the type of the node.
     virtual NodeType _type() { return this->type; }
@@ -91,11 +96,8 @@ namespace AST {
     //! Basic constructor that also sets the type of the node.
     explicit IntNode(int value): Node(0), value(value) {}
 
-    //! Prints the node contents to `stdout`.
-    /*!
-     *  \param prefix  chooses between polish or infix notation.
-     */
-    void print(bool prefix) override;
+    void printInfix() override;
+    void printPython() override;
   };
 
   class FloatNode : public Node {
@@ -106,11 +108,8 @@ namespace AST {
     //! Basic constructor that also sets the type of the node.
     explicit FloatNode(std::string value): Node(1), value(value) {}
 
-    //! Prints the node contents to `stdout`.
-    /*!
-     *  \param prefix  chooses between polish or infix notation.
-     */
-    void print(bool prefix) override;
+    void printInfix() override;
+    void printPython() override;
   };
 
   class BoolNode : public Node {
@@ -121,11 +120,8 @@ namespace AST {
     //! Basic constructor that also sets the type of the node.
     explicit BoolNode(bool value): Node(2), value(value) {}
 
-    //! Prints the node contents to `stdout`.
-    /*!
-     *  \param prefix  chooses between polish or infix notation.
-     */
-    void print(bool prefix) override;
+    void printInfix() override;
+    void printPython() override;
   };
 
  class CharNode : public Node {
@@ -136,11 +132,8 @@ namespace AST {
     //! Basic constructor that also sets the type of the node.
     explicit CharNode(std::string value): Node(3), value(value) {}
 
-    //! Prints the node contents to `stdout`.
-    /*!
-     *  \param prefix  chooses between polish or infix notation.
-     */
-    void print(bool prefix) override;
+    void printInfix() override;
+    void printPython() override;
 
     //! Returns a char array if the word starts with double quotes.
     NodeType _type() override;
@@ -160,11 +153,9 @@ namespace AST {
     //! Basic constructor. Checks for semantic errors and enforces coercion.
     BinaryOpNode(Operation binOp, Node* left, Node* right);
 
-    //! Prints the node contents to `stdout`.
-    /*!
-     *  \param prefix  chooses between polish or infix notation.
-     */
-    void print(bool prefix) override;
+    void printInfix() override;
+    void printPrefix() override;
+    void printPython() override;
 
     //! Returns the type of the left child if the operation is arithmetic
     //! or an assignment, and a boolean type otherwise.
@@ -185,11 +176,9 @@ namespace AST {
     //! Basic constructor that also sets the type of this node.
     UnaryOpNode(Operation op, Node* node);
 
-    //! Prints the node contents to `stdout`.
-    /*!
-     *  \param prefix  chooses between polish or infix notation.
-     */
-    void print(bool prefix) override;
+    void printInfix() override;
+    void printPrefix() override;
+    void printPython() override;
 
     //! Basic destructor.
     ~UnaryOpNode() override;
@@ -216,15 +205,15 @@ namespace AST {
     //! Length of the array if applicable.
     int size;
 
+    //! Checks if the variable is initialized.
+    bool init;
+
     //! Basic constructor.
     VariableNode(std::string id, Node* next, int type, int size):
     LinkedNode(next, type), id(id), size(size) {}
 
-    //! Prints the node contents to `stdout`.
-    /*!
-     *  \param prefix  chooses between polish or infix notation.
-     */
-    void print(bool prefix) override;
+    void printInfix() override;
+    void printPython() override;
   };
 
   class BlockNode : public Node {
@@ -238,11 +227,8 @@ namespace AST {
     //! Basic constructor that pushes `n` to `nodeList`.
     BlockNode(Node* n);
 
-    //! Prints the node contents to `stdout`.
-    /*!
-     *  \param prefix  chooses between polish or infix notation.
-     */
-    void print(bool prefix) override;
+    void printPrefix() override;
+    void printPython() override;
 
     //! Basic destructor.
     ~BlockNode() override;
@@ -253,11 +239,8 @@ namespace AST {
     //! Basic constructor.
     using LinkedNode::LinkedNode;
 
-    //! Prints the node contents to `stdout`.
-    /*!
-     *  \param prefix  chooses between polish or infix notation.
-     */
-    void print(bool prefix) override;
+    void printPrefix() override;
+    void printPython() override;
   };
 
   class IfNode : public Node {
@@ -277,11 +260,8 @@ namespace AST {
     //! Basic constructor.
     IfNode(Node* condition, BlockNode* _then, BlockNode* _else);
 
-    //! Prints the node contents to `stdout`.
-    /*!
-     *  \param prefix  chooses between polish or infix notation.
-     */
-    void print(bool prefix) override;
+    void printPrefix() override;
+    void printPython() override;
 
     //! Basic destructor.
     ~IfNode() override;
@@ -307,11 +287,8 @@ namespace AST {
     //! Basic constructor.
     ForNode(Node* assign, Node* test, Node* iteration, BlockNode* body);
 
-    //! Prints the node contents to `stdout`.
-    /*!
-     *  \param prefix  chooses between polish or infix notation.
-     */
-    void print(bool prefix) override;
+    void printPrefix() override;
+    void printPython() override;
 
     //! Basic destructor.
     ~ForNode() override;
@@ -332,11 +309,8 @@ namespace AST {
     //! Basic constructor.
     FuncNode(std::string id, Node* params, int type, BlockNode* contents);
 
-    //! Prints the node contents to `stdout`.
-    /*!
-     *  \param prefix  chooses between polish or infix notation.
-     */
-    void print(bool prefix) override;
+    void printPrefix() override;
+    void printPython() override;
 
     //! Compares two linked lists of parameters to check if they
     //! contain the same nodes.
@@ -358,11 +332,8 @@ namespace AST {
     //! Basic constructor.
     using VariableNode::VariableNode;
 
-    //! Prints the node contents to `stdout`.
-    /*!
-     *  \param prefix  chooses between polish or infix notation.
-     */
-    void print(bool prefix) override;
+    void printInfix() override;
+    void printPython() override;
   };
 
   class ReturnNode : public LinkedNode {
@@ -370,11 +341,8 @@ namespace AST {
     //! Basic constructor.
     ReturnNode(Node* next): LinkedNode(next, next->_type()) {}
 
-    //! Prints the node contents to `stdout`.
-    /*!
-     *  \param prefix  chooses between polish or infix notation.
-     */
-    void print(bool prefix) override;
+    void printPython() override;
+    void printPrefix() override;
   };
 
   class FuncCallNode : public Node {
@@ -388,11 +356,8 @@ namespace AST {
     //! Basic constructor.
     FuncCallNode(FuncNode* function, BlockNode* params);
 
-    //! Prints the node contents to `stdout`.
-    /*!
-     *  \param prefix  chooses between polish or infix notation.
-     */
-    void print(bool prefix) override;
+    void printPython() override;
+    void printPrefix() override;
 
     //! Returns the type of the original function.
     NodeType _type() override;
@@ -406,11 +371,8 @@ namespace AST {
     //! Basic constructor.
     using VariableNode::VariableNode;
 
-    //! Prints the node contents to `stdout`.
-    /*!
-     *  \param prefix  chooses between polish or infix notation.
-     */
-    void print(bool prefix);
+    void printInfix() override;
+    void printPython() override;
   };
 
   class HiOrdFuncNode : public FuncNode {

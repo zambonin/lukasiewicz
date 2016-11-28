@@ -7,6 +7,7 @@
  */
 %{
   #include <cstring>
+  #include <unistd.h>
   #include "ast.h"
   #include "st.h"
 
@@ -16,7 +17,6 @@
 
   extern AST::BlockNode* string_read(const char*);
   extern char* rl_read();
-  extern FILE* yyin;
 
   /* First symbol table (global scope). */
   ST::SymbolTable* current;
@@ -349,24 +349,36 @@ f-expr
 
 /* Additional C code. */
 
-int main(int argc, char *argv[]) {
+int main(int argc, char **argv) {
+
+  int pyflag = 0, rlflag = 0;
+  char c;
+
+  while ((c = getopt(argc, argv, "rdp")) != -1)
+    switch (c) {
+      case 'r':
+        rlflag = 1;
+        break;
+      case 'd':
+        yydebug = 1;
+        break;
+      case 'p':
+        pyflag = 1;
+        break;
+      default:
+        return 1;
+    }
 
   // experimental readline mode
-  if (argv[1] && (strcmp(argv[1], "--readline") == 0)) {
+  if (rlflag) {
     string_read(rl_read());
   } else {
-    yydebug = (argv[1] && strcmp(argv[1], "--debug") == 0);
-    int n = yydebug;
-    do {
-      // get all parameters and parse them
-      yyin = (--argc && fopen(argv[++n], "r")) ? fopen(argv[n], "r") : stdin;
-      yyparse();
-      if (root != nullptr) {
-        root->print(true);
-        delete root;
-      }
-      fclose(yyin);
-    } while (argc > yydebug + 1);
+    yyparse();
+  }
+
+  if (root != nullptr) {
+    (pyflag) ? root->printPython() : root->printPrefix();
+    delete root;
   }
 
   yylex_destroy();

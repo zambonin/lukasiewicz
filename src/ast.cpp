@@ -75,20 +75,36 @@ Node::Node(int type) {
   this->type = static_cast<NodeType>(type);
 }
 
-void IntNode::print(bool /*prefix*/) {
+void IntNode::printInfix() {
   text(value, 1);
 }
 
-void FloatNode::print(bool /*prefix*/) {
+void IntNode::printPython() {
+  text(value, 0);
+}
+
+void FloatNode::printInfix() {
   text(value, 1);
 }
 
-void BoolNode::print(bool /*prefix*/) {
+void FloatNode::printPython() {
+  text(value, 0);
+}
+
+void BoolNode::printInfix() {
   text(value ? "true" : "false", 1);
 }
 
-void CharNode::print(bool /*prefix*/) {
+void BoolNode::printPython() {
+  text(value ? "True" : "False", 0);
+}
+
+void CharNode::printInfix() {
   text(value, 1);
+}
+
+void CharNode::printPython() {
+  text(value, 0);
 }
 
 NodeType CharNode::_type() {
@@ -97,6 +113,11 @@ NodeType CharNode::_type() {
 
 BinaryOpNode::BinaryOpNode(Operation binOp, Node* left, Node* right):
 binOp(binOp), left(left), right(right) {
+  if (binOp == assign) {
+    VariableNode* v = dynamic_cast<VariableNode*>(left);
+    if (v) v->init = true;
+  }
+
   // coercion enforcing
   if (binOp != assign) {
     if (left->_type() == INT && right->_type() == FLOAT) {
@@ -166,26 +187,43 @@ binOp(binOp), left(left), right(right) {
   }
 }
 
-void BinaryOpNode::print(bool prefix) {
-  if (prefix) {
-    bool space = ((binOp != assign) && (binOp != append));
-    text("", space);
-    text(_bin[binOp], spaces);
-    _notab(
-      left->print(prefix),
-      right->print(prefix));
-  } else {
-    _notab(
-      left->print(!prefix),
-      text("", binOp == assign),
-      text(_bin[binOp], spaces),
-      text("", binOp != assign),
-      right->print(!prefix));
-  }
+void BinaryOpNode::printPrefix() {
+  bool space = ((binOp != assign) && (binOp != append));
+  text("", space);
+  text(_bin[binOp], spaces);
+  _notab(
+    left->printPrefix(),
+    right->printPrefix());
 }
 
+void BinaryOpNode::printInfix() {
+  bool space = ((binOp != assign) && (binOp != append));
+  _notab(
+    left->printInfix(),
+    text("", !space),
+    text(_bin[binOp], spaces),
+    right->printInfix());
+}
+
+void BinaryOpNode::printPython() {
+  if (binOp != assign && binOp != index) text("(", 0);
+  left->printPython();
+  if (binOp != index) {
+    text("", 1);
+    text(_bin[binOp], 0),
+    text("", 1);
+    right->printPython();
+  } else {
+    text("[", 0);
+    right->printPython();
+    text("]", 0);
+  }
+  if (binOp != assign && binOp != index) text(")", 0);
+}
+
+
 NodeType BinaryOpNode::_type() {
-  if (binOp == index) {
+  if (binOp == index || binOp == append) {
     // needs to return primitive type of element inside array
     return left->_type() - 4;
   }
@@ -230,9 +268,21 @@ op(op), node(node) {
   }
 }
 
-void UnaryOpNode::print(bool prefix) {
-  text(_bin[op], 0);
-  node->print(prefix);
+void UnaryOpNode::printInfix() {
+  this->printPrefix();
+}
+
+void UnaryOpNode::printPrefix() {
+  text(_bin[op], 1);
+  node->printPrefix();
+}
+
+void UnaryOpNode::printPython() {
+  text(_binp[op], 0);
+  node->printPython();
+  if (op > 16) {
+    text(")", 0);
+  }
 }
 
 UnaryOpNode::~UnaryOpNode() {
@@ -243,8 +293,12 @@ LinkedNode::~LinkedNode() {
   delete next;
 }
 
-void VariableNode::print(bool /*prefix*/) {
+void VariableNode::printInfix() {
   text(id, 1);
+}
+
+void VariableNode::printPython() {
+  text(id, 0);
 }
 
 BlockNode::BlockNode(Node* n) {
@@ -253,11 +307,23 @@ BlockNode::BlockNode(Node* n) {
   }
 }
 
-void BlockNode::print(bool prefix) {
+void BlockNode::printPrefix() {
   for (Node* n : nodeList) {
     if (n != nullptr) {
-      n->print(prefix);
+      n->printPrefix();
       if (dynamic_cast<FuncNode*>(n) == nullptr && n->_type() != ND) {
+        text("\n", 0);
+      }
+    }
+  }
+}
+
+void BlockNode::printPython() {
+  for (Node* n : nodeList) {
+    if (n != nullptr) {
+      text("", spaces);
+      n->printPython();
+      if (n->_type() != ND) {
         text("\n", 0);
       }
     }
@@ -270,10 +336,14 @@ BlockNode::~BlockNode() {
   }
 }
 
-void MessageNode::print(bool /*prefix*/) {
+void MessageNode::printPrefix() {
   std::string s = (notArray(this)) ? " var:" : ":";
   text(verboseType(this, true) + s, spaces);
-  next->print(false);
+  next->printInfix();
+}
+
+void MessageNode::printPython() {
+  next->printPython();
 }
 
 IfNode::IfNode(Node* condition, BlockNode* _then, BlockNode* _else):
@@ -285,15 +355,26 @@ condition(condition), _then(_then), _else(_else) {
   }
 }
 
-void IfNode::print(bool /*prefix*/) {
+void IfNode::printPrefix() {
   text("if:", spaces);
-  _notab(condition->print(true));
+  _notab(condition->printPrefix());
   text("\n", 0);
   text("then:\n", spaces);
-  _tab(_then->print(true));
+  _tab(_then->printPrefix());
   if (!_else->nodeList.empty()) {
     text("else:\n", spaces);
-    _tab(_else->print(true));
+    _tab(_else->printPrefix());
+  }
+}
+
+void IfNode::printPython() {
+  text("if ", 0);
+  _notab(condition->printPython());
+  text(":\n", 0);
+  _tab(_then->printPython());
+  if (!_else->nodeList.empty()) {
+    text("else:\n", spaces);
+    _tab(_else->printPython());
   }
 }
 
@@ -312,17 +393,32 @@ assign(assign), test(test), iteration(iteration), body(body) {
   }
 }
 
-void ForNode::print(bool /*prefix*/) {
+void ForNode::printPrefix() {
   text("for: ", spaces);
   _notab(
-    assign->print(true),
+    assign->printPrefix(),
     text(",", 0),
-    test->print(true),
+    test->printPrefix(),
     text(", ", 0),
-    iteration->print(true));
+    iteration->printPrefix());
   text("\n", 0);
   text("do:\n", spaces);
-  _tab(body->print(true));
+  _tab(body->printPrefix());
+}
+
+void ForNode::printPython() {
+  assign->printPython();
+  if (assign->_type() != ND) text("\n", 0);
+  text("while ", spaces);
+  _notab(
+    test->printPython(),
+    text(":\n", 0));
+  _tab(body->printPython());
+  if (iteration->_type() != ND) {
+    text("", spaces + 2);
+    iteration->printPython();
+    text("\n", 0);
+  }
 }
 
 ForNode::~ForNode() {
@@ -344,16 +440,29 @@ Node(type), id(std::move(id)), params(params), contents(contents) {
   }
 }
 
-void FuncNode::print(bool /*prefix*/) {
+void FuncNode::printPrefix() {
   if (this->contents != nullptr) {
     text(verboseType(this, true) + " fun: " + this->id + " (params: ", spaces);
     if (params != nullptr) {
-      params->print(false);
+      params->printInfix();
     }
     text(")\n", 0);
-    _tab(contents->print(true));
+    _tab(contents->printPrefix());
   } else {
     yyserror("function %s is declared but never defined", this->id.c_str());
+  }
+}
+
+void FuncNode::printPython() {
+  text("def " + this->id + "(", 0);
+  if (params != nullptr) {
+    params->printPython();
+  }
+  text("):\n", 0);
+  if (this->contents != nullptr) {
+    _tab(contents->printPython());
+  } else {
+    text("pass", spaces);
   }
 }
 
@@ -386,19 +495,34 @@ std::deque<VariableNode*> FuncNode::createDeque() {
   return v;
 }
 
-void ParamNode::print(bool /*prefix*/) {
+void ParamNode::printInfix() {
   if (this->_type() != ND) {
     if (next != nullptr) {
-      next->print(false);
+      next->printInfix();
       text(", ", 0);
     }
     text(verboseType(this, true) + " " + id, 0);
   }
 }
 
-void ReturnNode::print(bool /*prefix*/) {
+void ParamNode::printPython() {
+  if (this->_type() != ND) {
+    if (next != nullptr) {
+      next->printPython();
+      text(", ", 0);
+    }
+    text(id, 0);
+  }
+}
+
+void ReturnNode::printPrefix() {
   text("ret", spaces);
-  _notab(next->print(true));
+  _notab(next->printPrefix());
+}
+
+void ReturnNode::printPython() {
+  text("return ", 0);
+  _notab(next->printPython());
 }
 
 FuncCallNode::FuncCallNode(FuncNode* function, BlockNode* params):
@@ -425,12 +549,21 @@ function(function), params(params) {
   }
 }
 
-void FuncCallNode::print(bool /*prefix*/) {
+void FuncCallNode::printPrefix() {
   std::string psize = std::to_string(params->nodeList.size());
   text(" " + function->id + "[" + psize + " params]", spaces);
   for (Node* n : params->nodeList) {
-    n->print(true);
+    n->printPrefix();
   }
+}
+
+void FuncCallNode::printPython() {
+  text(function->id + "(", 0);
+  for (Node* n: params->nodeList) {
+    n->printPython();
+    if (n != params->nodeList.back()) text(", ", 0);
+  }
+  text(")", 0);
 }
 
 NodeType FuncCallNode::_type() {
@@ -441,9 +574,9 @@ FuncCallNode::~FuncCallNode() {
   delete params;
 }
 
-void DeclarationNode::print(bool /*prefix*/) {
+void DeclarationNode::printInfix() {
   if (next != nullptr) {
-    next->print(false);
+    next->printInfix();
     text(",", 0);
   }
   std::string s = "";
@@ -451,6 +584,16 @@ void DeclarationNode::print(bool /*prefix*/) {
     s = " (size: " + std::to_string(this->size) + ")";
   }
   text(id + s, 1);
+}
+
+void DeclarationNode::printPython() {
+  if (next != nullptr) {
+    next->printPython();
+    text("\n", 0);
+  }
+  std::string s = (this->init) ? "" : " = None";
+  s = (!notArray(this)) ? " = [None] * " + std::to_string(this->size) : s;
+  text(id + s, 0);
 }
 
 HiOrdFuncNode::HiOrdFuncNode(std::string id, Node* func, VariableNode* array):
