@@ -14,9 +14,7 @@
   extern int yylex();
   extern int yylex_destroy();
   extern void yyerror(const char* s, ...);
-
-  extern AST::BlockNode* string_read(const char*);
-  extern char* rl_read();
+  extern FILE* yyin;
 
   /* First symbol table (global scope). */
   ST::SymbolTable* current;
@@ -117,6 +115,7 @@ end-scope
       } else {
         delete current;
       }
+      tmp_t = 0;
     }
 
 /* Stores every derived line on the abstract syntax tree. */
@@ -158,6 +157,13 @@ line
       if ($1) n = new AST::UnaryOpNode(AST::ref, n);
       AST::Node* left = new AST::BinaryOpNode(AST::index, n, $4);
       $$ = new AST::BinaryOpNode(AST::assign, left, $7); }
+  | ref-cnt ID ASSIGN f-type LPAR f-lambda COMMA ID RPAR
+    { AST::VariableNode* n = current->getVarFromTable($8);
+      AST::VariableNode* p = current->getVarFromTable($2);
+      AST::HiOrdFuncNode* m = AST::HiOrdFuncNode::chooseFunc($4, $6, n);
+      AST::Node* o = new AST::FuncCallNode(m, new AST::BlockNode(n));
+      $$ = new AST::BinaryOpNode(AST::assign, p, o);
+      tmp_f = m; free($4); }
   | IF expr NL THEN LCURLY NL body else
     { $$ = new AST::IfNode($2, $7, $8); }
   | FOR iteration COMMA expr COMMA iteration LCURLY NL body
@@ -331,11 +337,6 @@ v-expr
   | L_CALL LPAR f-expr RPAR
     { AST::FuncNode* n = current->getFuncFromTable($1);
       $$ = new AST::FuncCallNode(n, $3); }
-  | f-type LPAR f-lambda COMMA ID RPAR
-    { AST::VariableNode* n = current->getVarFromTable($5);
-      AST::HiOrdFuncNode* m = AST::HiOrdFuncNode::chooseFunc($1, $3, n);
-      $$ = new AST::FuncCallNode(m, new AST::BlockNode(n));
-      tmp_f = m; free($1); }
   ;
 
 /* Defines the valid expressions for a parameter list on a function call. */
@@ -351,14 +352,11 @@ f-expr
 
 int main(int argc, char **argv) {
 
-  int pyflag = 0, rlflag = 0;
+  int pyflag = 0;
   char c;
 
-  while ((c = getopt(argc, argv, "rdp")) != -1)
+  while ((c = getopt(argc, argv, "dp")) != -1)
     switch (c) {
-      case 'r':
-        rlflag = 1;
-        break;
       case 'd':
         yydebug = 1;
         break;
@@ -369,18 +367,19 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-  // experimental readline mode
-  if (rlflag) {
-    string_read(rl_read());
-  } else {
+  int n = yydebug;
+  do {
+    // get all parameters and parse them
+    yyin = --argc ? fopen(argv[++n], "r") : stdin;
     yyparse();
-  }
+    if (root != nullptr) {
+      (pyflag) ? root->printPython() : root->printPrefix();
+    }
+    fclose(yyin);
+  } while (argc > yydebug + 1);
 
-  if (root != nullptr) {
-    (pyflag) ? root->printPython() : root->printPrefix();
-    delete root;
-  }
 
+  delete root;
   yylex_destroy();
 
   return 0;

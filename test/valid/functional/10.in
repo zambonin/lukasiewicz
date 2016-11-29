@@ -1,0 +1,2 @@
+int ref t[10], output[10]
+output = map(lambda int ref x -> x, t)

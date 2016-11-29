@@ -1,0 +1,3 @@
+int ref t[10]
+int ref output
+output = fold(lambda int ref x, y -> x + y, t)

@@ -2,4 +2,5 @@
 [Line 6] semantic error: length operation expects an array
 [Line 7] semantic error: left hand side of index operation is not an array
 [Line 7] semantic error: parameter x expected integer but received undefined
-[Line 10] semantic error: attribution operation expected integer array but received integer
+[Line 9] semantic error: function lambda has incoherent return type
+[Line 9] semantic error: attribution operation expected integer array but received integer

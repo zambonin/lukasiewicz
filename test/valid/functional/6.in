@@ -1,0 +1,2 @@
+int t[10], output[10]
+output = filter(lambda int x -> x > 10, t)

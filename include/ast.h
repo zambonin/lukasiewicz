@@ -77,6 +77,14 @@ namespace AST {
     //! Basic constructor that also sets the type of the node.
     explicit Node(int type);
 
+    //! Prints the verbose type of the node, taking in account its
+    //! status as an array and/or pointer.
+    /*!
+     *  \param node     node in question.
+     *  \param _short   prints a short version of the type used in declarations.
+     */
+    std::string _vtype(bool _short);
+
     virtual void printInfix() {}
     virtual void printPrefix() { this->printInfix(); }
     virtual void printPython() { this->printInfix(); }
@@ -422,13 +430,5 @@ namespace AST {
    */
   template<typename T>
   void text(const T& text, int n);
-
-  //! Prints the verbose type of the node, taking in account its
-  //! status as an array and/or pointer.
-  /*!
-   *  \param node     node in question.
-   *  \param _short   prints a short version of the type used in declarations.
-   */
-  std::string verboseType(Node* node, bool _short);
 
 } // namespace AST

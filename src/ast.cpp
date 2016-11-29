@@ -50,8 +50,16 @@ void text(const T& text, int n) {
   std::cout << blank << text;
 }
 
-std::string verboseType(Node* node, bool _short) {
-  int n = node->_type();
+Node::Node() {
+  this->type = ND;
+}
+
+Node::Node(int type) {
+  this->type = static_cast<NodeType>(type);
+}
+
+std::string Node::_vtype(bool _short) {
+  int n = this->_type();
   if (n < 0) {
     return "undefined";
   }
@@ -65,14 +73,6 @@ std::string verboseType(Node* node, bool _short) {
 
   t += (n >= 4) ? " array" : "";
   return t;
-}
-
-Node::Node() {
-  this->type = ND;
-}
-
-Node::Node(int type) {
-  this->type = static_cast<NodeType>(type);
 }
 
 void IntNode::printInfix() {
@@ -113,9 +113,9 @@ NodeType CharNode::_type() {
 
 BinaryOpNode::BinaryOpNode(Operation binOp, Node* left, Node* right):
 binOp(binOp), left(left), right(right) {
-  if (binOp == assign) {
-    VariableNode* v = dynamic_cast<VariableNode*>(left);
-    if (v) v->init = true;
+  VariableNode* v = dynamic_cast<VariableNode*>(left);
+  if (binOp == assign && v != nullptr) {
+    v->init = true;
   }
 
   // coercion enforcing
@@ -168,22 +168,23 @@ binOp(binOp), left(left), right(right) {
       yyserror("left hand side of index operation is not an array");
     } else if (this->right->_type() != INT) {
       yyserror("index operation expected integer but received %s",
-        verboseType(this->right, false).c_str());
+        this->right->_vtype(false).c_str());
     }
   } else if (binOp == append) {
     if (notArray(this->left)) {
       yyserror("left hand side of append operation is not an array");
     } else if ((this->left->_type() % 4) != this->right->_type()) {
+      AST::Node* n = new Node(this->left->_type() % 4);
       yyserror("append operation expected %s but received %s",
-        verboseType(new Node(this->left->_type() % 4), false).c_str(),
-        verboseType(this->right, false).c_str());
+        n->_vtype(false).c_str(), this->right->_vtype(false).c_str());
+      delete n;
     } else {
       dynamic_cast<VariableNode*>(this->left)->size++;
     }
   } else if (differentTypes && bothValid) {
     yyserror("%s operation expected %s but received %s",
-      _opt[binOp].c_str(), verboseType(this->left, false).c_str(),
-      verboseType(this->right, false).c_str());
+      _opt[binOp].c_str(), this->left->_vtype(false).c_str(),
+      this->right->_vtype(false).c_str());
   }
 }
 
@@ -273,7 +274,7 @@ void UnaryOpNode::printInfix() {
 }
 
 void UnaryOpNode::printPrefix() {
-  text(_bin[op], 1);
+  text(_bin[op], 0);
   node->printPrefix();
 }
 
@@ -338,7 +339,7 @@ BlockNode::~BlockNode() {
 
 void MessageNode::printPrefix() {
   std::string s = (notArray(this)) ? " var:" : ":";
-  text(verboseType(this, true) + s, spaces);
+  text(this->_vtype(true) + s, spaces);
   next->printInfix();
 }
 
@@ -351,7 +352,7 @@ condition(condition), _then(_then), _else(_else) {
   // error handling
   if (condition->_type() != BOOL) {
     yyserror("test operation expected boolean but received %s",
-      verboseType(condition, false).c_str());
+      condition->_vtype(false).c_str());
   }
 }
 
@@ -389,7 +390,7 @@ assign(assign), test(test), iteration(iteration), body(body) {
   // error handling
   if (test->_type() != BOOL) {
     yyserror("test operation expected boolean but received %s",
-      verboseType(test, false).c_str());
+      test->_vtype(false).c_str());
   }
 }
 
@@ -442,7 +443,7 @@ Node(type), id(std::move(id)), params(params), contents(contents) {
 
 void FuncNode::printPrefix() {
   if (this->contents != nullptr) {
-    text(verboseType(this, true) + " fun: " + this->id + " (params: ", spaces);
+    text(this->_vtype(true) + " fun: " + this->id + " (params: ", spaces);
     if (params != nullptr) {
       params->printInfix();
     }
@@ -501,7 +502,7 @@ void ParamNode::printInfix() {
       next->printInfix();
       text(", ", 0);
     }
-    text(verboseType(this, true) + " " + id, 0);
+    text(this->_vtype(true) + " " + id, 0);
   }
 }
 
@@ -542,8 +543,8 @@ function(function), params(params) {
       if (origParam[i]->_type() != callParam[i]->_type()) {
         yyserror("parameter %s expected %s but received %s",
           origParam[i]->id.c_str(),
-          verboseType(origParam[i], false).c_str(),
-          verboseType(callParam[i], false).c_str());
+          origParam[i]->_vtype(false).c_str(),
+          callParam[i]->_vtype(false).c_str());
       }
     }
   }
@@ -622,7 +623,7 @@ HiOrdFuncNode(id, func, array) {
   expandBody(array);
   // error handling
   FuncNode* f = dynamic_cast<FuncNode*>(func);
-  if (f->_type() != (this->type % 4)) {
+  if (f->_type() != (this->type - 4)) {
     yyserror("function lambda has incoherent return type");
   }
   int n = f->createDeque().size();
@@ -635,12 +636,15 @@ void MapFuncNode::expandBody(VariableNode* array) {
   std::string id = array->id, ti = id + "_ti", ta = id + "_ta";
   std::ostringstream out;
   int n = array->_type(), s = array->size;
-  std::string t = (n < 3) ? "int" : _var[n - 4];
 
-  out << "int " << ti << "\n" << t << " " << ta << "[" << s
-    << "]\nfor " << ti << " = 0, " << ti << " < [len] " << id << ", "
-    << ti << " = " << ti << " + 1 {\n  " << ta << "[" << ti << "] = λ("
-    << id << "[" << ti << "])\n}\n";
+  AST::Node* tmp = new Node(n - 4);
+  std::string t = (n < 3) ? "int" : tmp->_vtype(true);
+  delete tmp;
+
+  out << "int " << ti << "\n" << t << " " << ta << "[" << s << "]\nfor "
+    << ti << " = 0, " << ti << " < [len] " << id << ", " << ti << " = "
+    << ti << " + 1 {\n  " << ta << "[" << ti << "] = λ(" << id << "["
+    << ti << "])\n}\n";
 
   this->contents->nodeList.push_back(string_read(out.str().c_str()));
   VariableNode* v = new VariableNode(ta, nullptr, n, s);
@@ -649,7 +653,7 @@ void MapFuncNode::expandBody(VariableNode* array) {
 
 FoldFuncNode::FoldFuncNode(std::string id, Node* func, VariableNode* array):
 HiOrdFuncNode(id, func, array) {
-  this->type = this->type % 4;
+  this->type = this->type - 4;
   expandBody(array);
   // error handling
   FuncNode* f = dynamic_cast<FuncNode*>(func);
@@ -665,15 +669,16 @@ HiOrdFuncNode(id, func, array) {
 void FoldFuncNode::expandBody(VariableNode* array) {
   std::string id = array->id, ti = id + "_ti", tv = id + "_tv";
   std::ostringstream out;
-  int n = array->_type() % 4;
 
-  out << _var[n] << " " << tv << "\n" << tv << " = " << id << "[0]\nint "
-    << ti << "\nfor " << ti << " = 1, " << ti << " < [len] " << id << ", "
-    << ti << " = " << ti << " + 1 {\n  " << tv << " = " << tv << " + λ("
-    << tv << ", " << array->id << "[" << ti << "])\n}\n";
+  AST::Node* tmp = new Node(array->_type() - 4);
+  out << tmp->_vtype(true) << " " << tv << "\n" << tv << " = " << id
+    << "[0]\nint " << ti << "\nfor " << ti << " = 1, " << ti << " < [len] "
+    << id << ", " << ti << " = " << ti << " + 1 {\n  " << tv << " = " << tv
+    << " + λ(" << tv << ", " << array->id << "[" << ti << "])\n}\n";
+  delete tmp;
 
   this->contents->nodeList.push_back(string_read(out.str().c_str()));
-  VariableNode* v = new VariableNode(tv, nullptr, n, 0);
+  VariableNode* v = new VariableNode(tv, nullptr, array->_type() % 4, 0);
   this->contents->nodeList.push_back(new ReturnNode(v));
 }
 
@@ -695,7 +700,10 @@ void FilterFuncNode::expandBody(VariableNode* array) {
   std::string id = array->id, ti = id + "_ti", ta = id + "_ta";
   std::ostringstream out;
   int n = array->_type();
-  std::string t = (n < 3) ? "int" : _var[n - 4];
+
+  AST::Node* tmp = new Node(n - 4);
+  std::string t = (n < 3) ? "int" : tmp->_vtype(true);
+  delete tmp;
 
   out << "int " << ti << "\n" << t << " " << ta << "[0]\nfor " << ti
     << " = 0, " << ti << " < [len] " << id << ", " << ti << " = " << ti

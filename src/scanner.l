@@ -7,8 +7,6 @@
  */
 %{
   #include <cstdarg>
-  #include <readline/readline.h>
-  #include <readline/history.h>
 
   #include "ast.h"
   #include "parser.h"
@@ -139,31 +137,6 @@ AST::BlockNode* string_read(const char* s) {
   yy_switch_to_buffer(old);
 
   return root;
-
-}
-
-/* Uses the readline library to parse stdin. */
-char* rl_read() {
-
-  std::string _input;
-  static char * line = nullptr;
-  bool reading = true;
-
-  while (reading) {
-    if (line != nullptr) {
-      add_history(line);
-      free(line);
-    }
-
-    line = readline("");
-    reading = (line != nullptr);
-
-    line = (line == nullptr) ? (char*) "" : line;
-    _input += (std::string(line) + "\n");
-  }
-
-  _input += "\n";
-  return strdup(_input.c_str());
 
 }
 

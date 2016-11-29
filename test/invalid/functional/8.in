@@ -1,0 +1,3 @@
+int a[10], b[10]
+int c
+lambda int x,y -> fold(lambda int x, y -> x+y, b) + x + y 
