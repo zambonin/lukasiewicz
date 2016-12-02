@@ -44,10 +44,10 @@ namespace AST {
   };
 
   static const std::string _binp[] = {
-    "+", "-", "*", "/", "=", "[index]", " [addr]", " [ref]",
-    "==", "!=", ">", "<", ">=", "<=", "&", "|",
+    " + ", " - ", " * ", " / ", " = ", "[index]", "", "",
+    " == ", " != ", " > ", " < ", " >= ", " <= ", " & ", " | ",
     "-", "(not ", "int(", "float(", "bool(", "str(", "len("
-    "[append]"
+    "", " + ["
   };
 
   //! Verbose representation for the operations.

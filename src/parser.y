@@ -14,7 +14,6 @@
   extern int yylex();
   extern int yylex_destroy();
   extern void yyerror(const char* s, ...);
-  extern FILE* yyin;
 
   /* First symbol table (global scope). */
   ST::SymbolTable* current;
@@ -367,17 +366,15 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-  int n = yydebug;
-  do {
-    // get all parameters and parse them
-    yyin = --argc ? fopen(argv[++n], "r") : stdin;
-    yyparse();
-    if (root != nullptr) {
-      (pyflag) ? root->printPython() : root->printPrefix();
+  yyparse();
+  if (root != nullptr) {
+    if (pyflag) {
+      printf("exec(open('src/scope_manager.py', 'r').read())\n");
+      root->printPython();
+    } else {
+      root->printPrefix();
     }
-    fclose(yyin);
-  } while (argc > yydebug + 1);
-
+  }
 
   delete root;
   yylex_destroy();

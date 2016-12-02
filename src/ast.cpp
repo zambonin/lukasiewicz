@@ -207,19 +207,19 @@ void BinaryOpNode::printInfix() {
 }
 
 void BinaryOpNode::printPython() {
-  if (binOp != assign && binOp != index) text("(", 0);
+  bool specialOp = (binOp == assign || binOp == index || binOp == append);
+  if (!specialOp) text("(", 0);
   left->printPython();
   if (binOp != index) {
-    text("", 1);
-    text(_bin[binOp], 0),
-    text("", 1);
+    text(_binp[binOp], 0),
     right->printPython();
   } else {
     text("[", 0);
     right->printPython();
     text("]", 0);
   }
-  if (binOp != assign && binOp != index) text(")", 0);
+  if (!specialOp) text(")", 0);
+  if (binOp == append) text("]", 0);
 }
 
 
@@ -369,7 +369,8 @@ void IfNode::printPrefix() {
 }
 
 void IfNode::printPython() {
-  text("if ", 0);
+  text("s_context()\n", 0);
+  text("if ", spaces);
   _notab(condition->printPython());
   text(":\n", 0);
   _tab(_then->printPython());
@@ -377,6 +378,7 @@ void IfNode::printPython() {
     text("else:\n", spaces);
     _tab(_else->printPython());
   }
+  text("r_context()\n", spaces);
 }
 
 IfNode::~IfNode() {
@@ -408,8 +410,12 @@ void ForNode::printPrefix() {
 }
 
 void ForNode::printPython() {
-  assign->printPython();
-  if (assign->_type() != ND) text("\n", 0);
+  text("s_context()\n", 0);
+  if (assign->_type() != ND) {
+    text("", spaces);
+    assign->printPython();
+    text("\n", 0);
+  }
   text("while ", spaces);
   _notab(
     test->printPython(),
@@ -420,6 +426,7 @@ void ForNode::printPython() {
     iteration->printPython();
     text("\n", 0);
   }
+  text("r_context()\n", spaces);
 }
 
 ForNode::~ForNode() {
@@ -455,7 +462,7 @@ void FuncNode::printPrefix() {
 }
 
 void FuncNode::printPython() {
-  text("def " + this->id + "(", 0);
+  text("def " + ((this->id == "lambda") ? "λ" : this->id) + "(", 0);
   if (params != nullptr) {
     params->printPython();
   }
@@ -559,8 +566,8 @@ void FuncCallNode::printPrefix() {
 }
 
 void FuncCallNode::printPython() {
-  text(function->id + "(", 0);
-  for (Node* n: params->nodeList) {
+  text(((function->id == "lambda") ? "λ" : function->id) + "(", 0);
+  for (Node* n : params->nodeList) {
     n->printPython();
     if (n != params->nodeList.back()) text(", ", 0);
   }
@@ -592,9 +599,11 @@ void DeclarationNode::printPython() {
     next->printPython();
     text("\n", 0);
   }
-  std::string s = (this->init) ? "" : " = None";
-  s = (!notArray(this)) ? " = [None] * " + std::to_string(this->size) : s;
-  text(id + s, 0);
+  if (this->init) {
+    text(id, 0);
+  } else if (!notArray(this)) {
+    text(id + " = [0] * " + std::to_string(this->size), 0);
+  }
 }
 
 HiOrdFuncNode::HiOrdFuncNode(std::string id, Node* func, VariableNode* array):

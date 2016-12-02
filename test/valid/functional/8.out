@@ -1,0 +1,2 @@
+int fun: lambda (params: int ref x)
+  ret + [ref] x 1

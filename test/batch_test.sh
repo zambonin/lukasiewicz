@@ -18,3 +18,9 @@ done
 for f in invalid/*/*.in ; do
     "$1" < "$f" 1>/dev/null 2> "${f/.in/.out}"
 done
+
+for f in valid/*/*.py ; do
+    cd "$(dirname "$f")"
+    python "$(basename "$f")"
+    cd - >/dev/null
+done

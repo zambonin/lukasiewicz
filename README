@@ -5,24 +5,26 @@ notation.
 This compiler generates the syntax tree for given Łukasiewicz code. It
 currently supports operations with integers, floats, booleans and characters,
 that optionally can be stored in variables, arrays and (de)referenced through
-pointers. Conditional branch, for loop statements functions (including
+pointers. Conditional branches, for loops and functions (including
 anonymous and functors) are supported.
 
-Its hard dependencies are `clang++`, `readline`, `flex` and `bison`, and can
+Its hard dependencies are `clang++` or `g++`, `flex` and `bison`, and it can
 be compiled by typing `make` or `make debug`, if one wants debugging symbols.
 Tests to ascertain the intermediate representation output and lack of memory
 leaks can be run with `make test`.
 
 To run the compiler, use one of the following:
 
-    $ ./lukacompiler [args]
-    # standard stdin output, terminate with ^D; or input valid files
+    $ ./lukacompiler < $FILE
+    # EOF-terminated `stdin` or redirection
 
-    $ ./lukacompiler --debug [args]
+    $ ./lukacompiler -d < $FILE
     # verbose debug tracer for the parser
 
-    $ ./lukacompiler --readline
-    # experimental readline input mode; errors are printed after it is exited
+    $ ./lukacompiler -p < $FILE
+    # primitive Python transpiler
+
+Both flags can be used together.
 
 Full specifications are available under the `docs/` folder, in pt_BR.
 

@@ -1,0 +1,13 @@
+int array: t (size: 10), output (size: 10)
+int array fun: t_filter (params: int array t)
+  bool fun: lambda (params: int x)
+    ret > x 10
+  int var: t_ti
+  int array: t_ta (size: 0)
+  for: = t_ti 0, < t_ti [len] t, = t_ti + t_ti 1
+  do:
+    if: lambda[1 params] [index] t t_ti
+    then:
+      [append] t_ta [index] t t_ti
+  ret t_ta
+= output t_filter[1 params] t

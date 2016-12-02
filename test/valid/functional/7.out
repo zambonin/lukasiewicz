@@ -1,0 +1,13 @@
+int ref array: t (size: 10)
+int ref var: output
+int ref fun: t_fold (params: int ref array t)
+  int ref fun: lambda (params: int ref x, int ref y)
+    ret + x y
+  int ref var: t_tv
+  = t_tv [index] t 0
+  int var: t_ti
+  for: = t_ti 1, < t_ti [len] t, = t_ti + t_ti 1
+  do:
+    = t_tv + t_tv lambda[2 params] t_tv [index] t t_ti
+  ret t_tv
+= output t_fold[1 params] t
