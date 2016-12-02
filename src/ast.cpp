@@ -1,23 +1,5 @@
 #include "ast.h"
 
-extern void yyerror(const char* s, ...);
-extern void yyserror(const char* s, ...);
-extern AST::BlockNode* string_read(const char* s);
-
-/* Macros that reduce the visual pollution when indentation is needed. */
-
-/* Takes a single line of code and indents it with two spaces. */
-#define _tab(X)     spaces += 2; (X); spaces -= 2
-
-/* Variadic macro that prevents indentation for any number of lines. */
-#define _notab(...) int tmp = spaces; spaces = 0; (__VA_ARGS__); spaces = tmp;
-
-/* Checks if a node is an array. */
-#define notArray(X) (((X)->_type() % 8) < 4)
-
-/* Saves the current indentation status. */
-int spaces;
-
 namespace AST {
 
 /* Addition operator overload for NodeType enum. */
@@ -44,12 +26,6 @@ bool operator==(const ParamNode& n1, const ParamNode& n2) {
   return s1 == s2 && n1.type == n2.type;
 }
 
-template<typename T>
-void text(const T& text, int n) {
-  std::string blank(n, ' ');
-  std::cout << blank << text;
-}
-
 Node::Node() {
   this->type = ND;
 }
@@ -73,38 +49,6 @@ std::string Node::_vtype(bool _short) {
 
   t += (n >= 4) ? " array" : "";
   return t;
-}
-
-void IntNode::printInfix() {
-  text(value, 1);
-}
-
-void IntNode::printPython() {
-  text(value, 0);
-}
-
-void FloatNode::printInfix() {
-  text(value, 1);
-}
-
-void FloatNode::printPython() {
-  text(value, 0);
-}
-
-void BoolNode::printInfix() {
-  text(value ? "true" : "false", 1);
-}
-
-void BoolNode::printPython() {
-  text(value ? "True" : "False", 0);
-}
-
-void CharNode::printInfix() {
-  text(value, 1);
-}
-
-void CharNode::printPython() {
-  text(value, 0);
 }
 
 NodeType CharNode::_type() {
@@ -135,93 +79,8 @@ binOp(binOp), left(left), right(right) {
     this->right = new UnaryOpNode(cast_word, right);
   }
 
-  // error handling
-  VariableNode* v1 = dynamic_cast<VariableNode*>(this->left);
-  VariableNode* v2 = dynamic_cast<VariableNode*>(this->right);
-  FuncCallNode* f1 = dynamic_cast<FuncCallNode*>(this->right);
-  int n = 0;
-
-  if (v2 != nullptr) {
-    n = v2->size;
-  } else if (f1 != nullptr && !notArray(f1->function)) {
-    n = dynamic_cast<VariableNode*>(dynamic_cast<ReturnNode*>(
-      f1->function->contents->nodeList.back())->next)->size;
-  }
-  if (v1 != nullptr && (v1->size < n)) {
-    yyserror("operation between mismatched array sizes");
-  }
-
-  if (left->_type() == A_CHAR && right->_type() == A_CHAR) {
-    CharNode* c = dynamic_cast<CharNode*>(right);
-    if (c != nullptr && v1 != nullptr && v1->size < c->value.size() - 2) {
-      c->value.resize(v1->size + 1);
-      c->value += "\"";
-      yyerror("warning: value truncated to %s", c->value.c_str());
-    }
-  }
-
-  bool differentTypes = (this->left->_type() != this->right->_type());
-  bool bothValid = (this->left->_type() >= 0 && this->right->_type() >= 0);
-
-  if (binOp == index) {
-    if (notArray(this->left)) {
-      yyserror("left hand side of index operation is not an array");
-    } else if (this->right->_type() != INT) {
-      yyserror("index operation expected integer but received %s",
-        this->right->_vtype(false).c_str());
-    }
-  } else if (binOp == append) {
-    if (notArray(this->left)) {
-      yyserror("left hand side of append operation is not an array");
-    } else if ((this->left->_type() % 4) != this->right->_type()) {
-      AST::Node* n = new Node(this->left->_type() % 4);
-      yyserror("append operation expected %s but received %s",
-        n->_vtype(false).c_str(), this->right->_vtype(false).c_str());
-      delete n;
-    } else {
-      dynamic_cast<VariableNode*>(this->left)->size++;
-    }
-  } else if (differentTypes && bothValid) {
-    yyserror("%s operation expected %s but received %s",
-      _opt[binOp].c_str(), this->left->_vtype(false).c_str(),
-      this->right->_vtype(false).c_str());
-  }
+  this->error_handler();
 }
-
-void BinaryOpNode::printPrefix() {
-  bool space = ((binOp != assign) && (binOp != append));
-  text("", space);
-  text(_bin[binOp], spaces);
-  _notab(
-    left->printPrefix(),
-    right->printPrefix());
-}
-
-void BinaryOpNode::printInfix() {
-  bool space = ((binOp != assign) && (binOp != append));
-  _notab(
-    left->printInfix(),
-    text("", !space),
-    text(_bin[binOp], spaces),
-    right->printInfix());
-}
-
-void BinaryOpNode::printPython() {
-  bool specialOp = (binOp == assign || binOp == index || binOp == append);
-  if (!specialOp) text("(", 0);
-  left->printPython();
-  if (binOp != index) {
-    text(_binp[binOp], 0),
-    right->printPython();
-  } else {
-    text("[", 0);
-    right->printPython();
-    text("]", 0);
-  }
-  if (!specialOp) text(")", 0);
-  if (binOp == append) text("]", 0);
-}
-
 
 NodeType BinaryOpNode::_type() {
   if (binOp == index || binOp == append) {
@@ -253,37 +112,8 @@ op(op), node(node) {
   } else if (op == addr) {
     this->type = node->_type() + 8;
   }
+this->error_handler();
 
-  // error handling
-  if (op == ref && this->type < 0) {
-    yyserror("reference operation expects a pointer");
-  } else if (op == len && notArray(node)) {
-    yyserror("length operation expects an array");
-  } else if (op == addr) {
-    bool isNotVar = (dynamic_cast<VariableNode*>(node) == nullptr);
-    AST::BinaryOpNode* indexNode = dynamic_cast<BinaryOpNode*>(node);
-    bool isNotIndex = (indexNode != nullptr && indexNode->binOp != index);
-    if ((indexNode == nullptr && isNotVar) || isNotIndex) {
-       yyserror("address operation expects a variable or array item");
-     }
-  }
-}
-
-void UnaryOpNode::printInfix() {
-  this->printPrefix();
-}
-
-void UnaryOpNode::printPrefix() {
-  text(_bin[op], 0);
-  node->printPrefix();
-}
-
-void UnaryOpNode::printPython() {
-  text(_binp[op], 0);
-  node->printPython();
-  if (op > 16) {
-    text(")", 0);
-  }
 }
 
 UnaryOpNode::~UnaryOpNode() {
@@ -294,40 +124,9 @@ LinkedNode::~LinkedNode() {
   delete next;
 }
 
-void VariableNode::printInfix() {
-  text(id, 1);
-}
-
-void VariableNode::printPython() {
-  text(id, 0);
-}
-
 BlockNode::BlockNode(Node* n) {
   if (n != nullptr) {
     nodeList.push_back(n);
-  }
-}
-
-void BlockNode::printPrefix() {
-  for (Node* n : nodeList) {
-    if (n != nullptr) {
-      n->printPrefix();
-      if (dynamic_cast<FuncNode*>(n) == nullptr && n->_type() != ND) {
-        text("\n", 0);
-      }
-    }
-  }
-}
-
-void BlockNode::printPython() {
-  for (Node* n : nodeList) {
-    if (n != nullptr) {
-      text("", spaces);
-      n->printPython();
-      if (n->_type() != ND) {
-        text("\n", 0);
-      }
-    }
   }
 }
 
@@ -337,48 +136,9 @@ BlockNode::~BlockNode() {
   }
 }
 
-void MessageNode::printPrefix() {
-  std::string s = (notArray(this)) ? " var:" : ":";
-  text(this->_vtype(true) + s, spaces);
-  next->printInfix();
-}
-
-void MessageNode::printPython() {
-  next->printPython();
-}
-
 IfNode::IfNode(Node* condition, BlockNode* _then, BlockNode* _else):
 condition(condition), _then(_then), _else(_else) {
-  // error handling
-  if (condition->_type() != BOOL) {
-    yyserror("test operation expected boolean but received %s",
-      condition->_vtype(false).c_str());
-  }
-}
-
-void IfNode::printPrefix() {
-  text("if:", spaces);
-  _notab(condition->printPrefix());
-  text("\n", 0);
-  text("then:\n", spaces);
-  _tab(_then->printPrefix());
-  if (!_else->nodeList.empty()) {
-    text("else:\n", spaces);
-    _tab(_else->printPrefix());
-  }
-}
-
-void IfNode::printPython() {
-  text("s_context()\n", 0);
-  text("if ", spaces);
-  _notab(condition->printPython());
-  text(":\n", 0);
-  _tab(_then->printPython());
-  if (!_else->nodeList.empty()) {
-    text("else:\n", spaces);
-    _tab(_else->printPython());
-  }
-  text("r_context()\n", spaces);
+  this->error_handler();
 }
 
 IfNode::~IfNode() {
@@ -389,44 +149,7 @@ IfNode::~IfNode() {
 
 ForNode::ForNode(Node* assign, Node* test, Node* iteration, BlockNode* body):
 assign(assign), test(test), iteration(iteration), body(body) {
-  // error handling
-  if (test->_type() != BOOL) {
-    yyserror("test operation expected boolean but received %s",
-      test->_vtype(false).c_str());
-  }
-}
-
-void ForNode::printPrefix() {
-  text("for: ", spaces);
-  _notab(
-    assign->printPrefix(),
-    text(",", 0),
-    test->printPrefix(),
-    text(", ", 0),
-    iteration->printPrefix());
-  text("\n", 0);
-  text("do:\n", spaces);
-  _tab(body->printPrefix());
-}
-
-void ForNode::printPython() {
-  text("s_context()\n", 0);
-  if (assign->_type() != ND) {
-    text("", spaces);
-    assign->printPython();
-    text("\n", 0);
-  }
-  text("while ", spaces);
-  _notab(
-    test->printPython(),
-    text(":\n", 0));
-  _tab(body->printPython());
-  if (iteration->_type() != ND) {
-    text("", spaces + 2);
-    iteration->printPython();
-    text("\n", 0);
-  }
-  text("r_context()\n", spaces);
+  this->error_handler();
 }
 
 ForNode::~ForNode() {
@@ -438,40 +161,7 @@ ForNode::~ForNode() {
 
 FuncNode::FuncNode(std::string id, Node* params, int type, BlockNode* contents):
 Node(type), id(std::move(id)), params(params), contents(contents) {
-  // error handling
-  if (this->contents != nullptr) {
-    Node* ret = this->contents->nodeList.back();
-    bool isReturn = (dynamic_cast<ReturnNode*>(ret) != nullptr);
-    if (this->type != ret->_type() && isReturn) {
-      yyserror("function %s has incoherent return type", this->id.c_str());
-    }
-  }
-}
-
-void FuncNode::printPrefix() {
-  if (this->contents != nullptr) {
-    text(this->_vtype(true) + " fun: " + this->id + " (params: ", spaces);
-    if (params != nullptr) {
-      params->printInfix();
-    }
-    text(")\n", 0);
-    _tab(contents->printPrefix());
-  } else {
-    yyserror("function %s is declared but never defined", this->id.c_str());
-  }
-}
-
-void FuncNode::printPython() {
-  text("def " + ((this->id == "lambda") ? "λ" : this->id) + "(", 0);
-  if (params != nullptr) {
-    params->printPython();
-  }
-  text("):\n", 0);
-  if (this->contents != nullptr) {
-    _tab(contents->printPython());
-  } else {
-    text("pass", spaces);
-  }
+  this->error_handler();
 }
 
 bool FuncNode::verifyParams(Node* n) {
@@ -503,76 +193,11 @@ std::deque<VariableNode*> FuncNode::createDeque() {
   return v;
 }
 
-void ParamNode::printInfix() {
-  if (this->_type() != ND) {
-    if (next != nullptr) {
-      next->printInfix();
-      text(", ", 0);
-    }
-    text(this->_vtype(true) + " " + id, 0);
-  }
-}
-
-void ParamNode::printPython() {
-  if (this->_type() != ND) {
-    if (next != nullptr) {
-      next->printPython();
-      text(", ", 0);
-    }
-    text(id, 0);
-  }
-}
-
-void ReturnNode::printPrefix() {
-  text("ret", spaces);
-  _notab(next->printPrefix());
-}
-
-void ReturnNode::printPython() {
-  text("return ", 0);
-  _notab(next->printPython());
-}
-
 FuncCallNode::FuncCallNode(FuncNode* function, BlockNode* params):
 function(function), params(params) {
-  // error handling
-  std::vector<Node*> callParam = params->nodeList;
-  int callSize = callParam.size();
-
-  std::deque<VariableNode*> origParam = function->createDeque();
-  int origSize = origParam.size();
-
-  if (origSize != callSize) {
-    yyserror("function %s expects %d parameters but received %d",
-      function->id.c_str(), origSize, callSize);
-  } else {
-    for (int i = 0; i < origSize; ++i) {
-      if (origParam[i]->_type() != callParam[i]->_type()) {
-        yyserror("parameter %s expected %s but received %s",
-          origParam[i]->id.c_str(),
-          origParam[i]->_vtype(false).c_str(),
-          callParam[i]->_vtype(false).c_str());
-      }
-    }
-  }
+  this->error_handler();
 }
 
-void FuncCallNode::printPrefix() {
-  std::string psize = std::to_string(params->nodeList.size());
-  text(" " + function->id + "[" + psize + " params]", spaces);
-  for (Node* n : params->nodeList) {
-    n->printPrefix();
-  }
-}
-
-void FuncCallNode::printPython() {
-  text(((function->id == "lambda") ? "λ" : function->id) + "(", 0);
-  for (Node* n : params->nodeList) {
-    n->printPython();
-    if (n != params->nodeList.back()) text(", ", 0);
-  }
-  text(")", 0);
-}
 
 NodeType FuncCallNode::_type() {
   return this->function->_type();
@@ -582,37 +207,10 @@ FuncCallNode::~FuncCallNode() {
   delete params;
 }
 
-void DeclarationNode::printInfix() {
-  if (next != nullptr) {
-    next->printInfix();
-    text(",", 0);
-  }
-  std::string s = "";
-  if (!notArray(this)) {
-    s = " (size: " + std::to_string(this->size) + ")";
-  }
-  text(id + s, 1);
-}
-
-void DeclarationNode::printPython() {
-  if (next != nullptr) {
-    next->printPython();
-    text("\n", 0);
-  }
-  if (this->init) {
-    text(id, 0);
-  } else if (!notArray(this)) {
-    text(id + " = [0] * " + std::to_string(this->size), 0);
-  }
-}
-
 HiOrdFuncNode::HiOrdFuncNode(std::string id, Node* func, VariableNode* array):
 FuncNode(array->id + "_" + id, new ParamNode(array->id, nullptr,
   array->_type(), array->size), array->_type(), new BlockNode(func)) {
-  // error handling
-  if (notArray(array)) {
-    yyserror("second parameter must be of array type");
-  }
+  this->hi_error_handler(array);
 }
 
 HiOrdFuncNode* HiOrdFuncNode::chooseFunc(
@@ -627,21 +225,8 @@ HiOrdFuncNode* HiOrdFuncNode::chooseFunc(
   return nullptr;
 }
 
-MapFuncNode::MapFuncNode(std::string id, Node* func, VariableNode* array):
-HiOrdFuncNode(id, func, array) {
-  expandBody(array);
-  // error handling
-  FuncNode* f = dynamic_cast<FuncNode*>(func);
-  if (f->_type() != (this->type - 4)) {
-    yyserror("function lambda has incoherent return type");
-  }
-  int n = f->createDeque().size();
-  if (n != 1) {
-    yyserror("map lambda expects 1 parameters but received %d", n);
-  }
-}
-
-void MapFuncNode::expandBody(VariableNode* array) {
+MapFuncNode::MapFuncNode(std::string fid, Node* func, VariableNode* array):
+HiOrdFuncNode(fid, func, array) {
   std::string id = array->id, ti = id + "_ti", ta = id + "_ta";
   std::ostringstream out;
   int n = array->_type(), s = array->size;
@@ -658,24 +243,12 @@ void MapFuncNode::expandBody(VariableNode* array) {
   this->contents->nodeList.push_back(string_read(out.str().c_str()));
   VariableNode* v = new VariableNode(ta, nullptr, n, s);
   this->contents->nodeList.push_back(new ReturnNode(v));
+  this->hi_error_handler(func);
 }
 
-FoldFuncNode::FoldFuncNode(std::string id, Node* func, VariableNode* array):
-HiOrdFuncNode(id, func, array) {
+FoldFuncNode::FoldFuncNode(std::string fid, Node* func, VariableNode* array):
+HiOrdFuncNode(fid, func, array) {
   this->type = this->type - 4;
-  expandBody(array);
-  // error handling
-  FuncNode* f = dynamic_cast<FuncNode*>(func);
-  if (f->_type() != this->type) {
-    yyserror("function lambda has incoherent return type");
-  }
-  int n = f->createDeque().size();
-  if (n != 2) {
-    yyserror("fold lambda expects 2 parameters but received %d", n);
-  }
-}
-
-void FoldFuncNode::expandBody(VariableNode* array) {
   std::string id = array->id, ti = id + "_ti", tv = id + "_tv";
   std::ostringstream out;
 
@@ -689,23 +262,11 @@ void FoldFuncNode::expandBody(VariableNode* array) {
   this->contents->nodeList.push_back(string_read(out.str().c_str()));
   VariableNode* v = new VariableNode(tv, nullptr, array->_type() % 4, 0);
   this->contents->nodeList.push_back(new ReturnNode(v));
+  this->hi_error_handler(func);
 }
 
-FilterFuncNode::FilterFuncNode(std::string id, Node* func,
-  VariableNode* array): HiOrdFuncNode(id, func, array) {
-  expandBody(array);
-  // error handling
-  FuncNode* f = dynamic_cast<FuncNode*>(func);
-  if (f->_type() != BOOL) {
-    yyserror("function lambda has incoherent return type");
-  }
-  int n = f->createDeque().size();
-  if (n != 1) {
-    yyserror("filter lambda expects 1 parameters but received %d", n);
-  }
-}
-
-void FilterFuncNode::expandBody(VariableNode* array) {
+FilterFuncNode::FilterFuncNode(std::string fid, Node* func,
+  VariableNode* array): HiOrdFuncNode(fid, func, array) {
   std::string id = array->id, ti = id + "_ti", ta = id + "_ta";
   std::ostringstream out;
   int n = array->_type();
@@ -722,6 +283,7 @@ void FilterFuncNode::expandBody(VariableNode* array) {
   this->contents->nodeList.push_back(string_read(out.str().c_str()));
   VariableNode* v = new VariableNode(ta, nullptr, n, array->size);
   this->contents->nodeList.push_back(new ReturnNode(v));
+  this->hi_error_handler(func);
 }
 
 } // namespace AST

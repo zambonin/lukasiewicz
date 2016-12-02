@@ -13,6 +13,20 @@
 
 namespace AST {
 
+  /* Macros that reduce the visual pollution when indentation is needed. */
+
+  /* Takes a single line of code and indents it with two spaces. */
+  #define _tab(X)     spaces += 2; (X); spaces -= 2
+
+  /* Variadic macro that prevents indentation for any number of lines. */
+  #define _notab(...) int tmp = spaces; spaces = 0; (__VA_ARGS__); spaces = tmp;
+
+  /* Checks if a node is an array. */
+  #define notArray(X) (((X)->_type() % 8) < 4)
+
+  /* Saves the current indentation status. */
+  static int spaces;
+
   //! Operations accepted by the language.
   enum Operation {
     add, sub, mul, div, assign, index, addr, ref,
@@ -33,21 +47,6 @@ namespace AST {
     A_INT,  A_FLOAT,  A_BOOL,   A_CHAR,
     P_INT,  P_FLOAT,  P_BOOL,   P_CHAR,
     PA_INT, PA_FLOAT, PA_BOOL,  PA_CHAR,
-  };
-
-  //! String representation for the operations.
-  static const std::string _bin[] = {
-    "+", "-", "*", "/", "=", "[index]", " [addr]", " [ref]",
-    "==", "!=", ">", "<", ">=", "<=", "&", "|",
-    " -u", " !", " [int]", " [float]", " [bool]", " [word]",
-    " [len]", "[append]"
-  };
-
-  static const std::string _binp[] = {
-    " + ", " - ", " * ", " / ", " = ", "[index]", "", "",
-    " == ", " != ", " > ", " < ", " >= ", " <= ", " & ", " | ",
-    "-", "(not ", "int(", "float(", "bool(", "str(", "len("
-    "", " + ["
   };
 
   //! Verbose representation for the operations.
@@ -85,9 +84,12 @@ namespace AST {
      */
     std::string _vtype(bool _short);
 
+    // todo doc
     virtual void printInfix() {}
     virtual void printPrefix() { this->printInfix(); }
-    virtual void printPython() { this->printInfix(); }
+    virtual void printPython() {}
+
+    virtual void error_handler() {}
 
     //! Returns the type of the node.
     virtual NodeType _type() { return this->type; }
@@ -165,6 +167,8 @@ namespace AST {
     void printPrefix() override;
     void printPython() override;
 
+    void error_handler() override;
+
     //! Returns the type of the left child if the operation is arithmetic
     //! or an assignment, and a boolean type otherwise.
     NodeType _type() override;
@@ -187,6 +191,8 @@ namespace AST {
     void printInfix() override;
     void printPrefix() override;
     void printPython() override;
+
+    void error_handler() override;
 
     //! Basic destructor.
     ~UnaryOpNode() override;
@@ -271,6 +277,8 @@ namespace AST {
     void printPrefix() override;
     void printPython() override;
 
+    void error_handler() override;
+
     //! Basic destructor.
     ~IfNode() override;
   };
@@ -297,6 +305,8 @@ namespace AST {
 
     void printPrefix() override;
     void printPython() override;
+
+    void error_handler() override;
 
     //! Basic destructor.
     ~ForNode() override;
@@ -330,6 +340,8 @@ namespace AST {
     //! Produces a double ended queue with all the nodes on the
     //! linked list of parameters.
     std::deque<VariableNode*> createDeque();
+
+    void error_handler() override;
 
     //! Basic destructor.
     ~FuncNode() override;
@@ -367,6 +379,8 @@ namespace AST {
     void printPython() override;
     void printPrefix() override;
 
+    void error_handler() override;
+
     //! Returns the type of the original function.
     NodeType _type() override;
 
@@ -388,8 +402,7 @@ namespace AST {
     //! Basic constructor.
     HiOrdFuncNode(std::string id, Node* func, VariableNode* array);
 
-    //! Writes the verbose input analogous to this functor's behaviour.
-    virtual void expandBody(VariableNode* /*array*/) {}
+    virtual void hi_error_handler(Node*);
 
     //! Returns the appropriate subclass given the id.
     static HiOrdFuncNode* chooseFunc(
@@ -401,8 +414,7 @@ namespace AST {
     //! Basic constructor.
     MapFuncNode(std::string id, Node* func, VariableNode* array);
 
-    //! Writes the verbose input analogous to this functor's behaviour.
-    void expandBody(VariableNode* array) override;
+    void hi_error_handler(Node*) override;
   };
 
   class FoldFuncNode : public HiOrdFuncNode {
@@ -410,8 +422,7 @@ namespace AST {
     //! Basic constructor.
     FoldFuncNode(std::string id, Node* func, VariableNode* array);
 
-    //! Writes the verbose input analogous to this functor's behaviour.
-    void expandBody(VariableNode* array) override;
+    void hi_error_handler(Node*) override;
   };
 
   class FilterFuncNode : public HiOrdFuncNode {
@@ -419,8 +430,7 @@ namespace AST {
     //! Basic constructor.
     FilterFuncNode(std::string id, Node* func, VariableNode* array);
 
-    //! Writes the verbose input analogous to this functor's behaviour.
-    void expandBody(VariableNode* array) override;
+    void hi_error_handler(Node*) override;
   };
 
   //! Pretty-prints an object with `cout`. Useful for tabulation.
@@ -429,6 +439,13 @@ namespace AST {
    *  \param n        spaces to be added before the text.
    */
   template<typename T>
-  void text(const T& text, int n);
+  void text(const T& text, int n) {
+    std::string blank(n, ' ');
+    std::cout << blank << text;
+  }
 
 } // namespace AST
+
+extern AST::BlockNode* string_read(const char* s);
+extern void yyerror(const char* s, ...);
+extern void yyserror(const char* s, ...);
