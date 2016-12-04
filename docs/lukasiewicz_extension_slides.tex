@@ -36,9 +36,8 @@
     \frametitle{Primeira extensão: o paradigma funcional}
 
     \begin{itemize}
-        \item Decomposição de um problema como um conjunto de funções
         \item Função anônima simples -- 
-            {\footnotesize \texttt{lambda type arg:\;expr}}
+            {\footnotesize \texttt{lambda type args -> expr}}
         \item Função de alta ordem de mapeamento --
             {\footnotesize \texttt{map(function, list)}}
         \begin{itemize}
@@ -47,7 +46,7 @@
         \item Função de alta ordem de redução --
             {\footnotesize \texttt{fold(function, list)}}
         \begin{itemize}
-            \item reduz elementos de um iterável recursivamente para um
+            \item reduz elementos de um iterável para um
                 tipo primitivo de acordo com uma função
         \end{itemize}
         \item Função de alta ordem de seleção --
@@ -56,56 +55,81 @@
             \item remove elementos de um iterável que não respeitam uma
                 função booleana
         \end{itemize}
+        \item Operadores de tamanho e inserção em arranjos
+        \item Extensão da cobertura de erros semânticos
+        \item Exemplos em \texttt{test/valid/functional/*.in}
     \end{itemize}
 
 \end{frame}
 
 \begin{frame}[fragile]
-    \frametitle{Segunda extensão: os tipos \texttt{char} e \texttt{str}}
+    \frametitle{Utilização de funções de alta ordem: \texttt{fold}}
 
-    \begin{itemize}
-        \item \texttt{char} tem aspas simples, \texttt{str} tem aspas duplas
-        \item operador de concatenação \texttt{+}
-        \begin{itemize}
-            \item \texttt{char + str}, \texttt{char + char} produz coerção 
-        \end{itemize}
-        \item \texttt{str} é similar a \texttt{char array},
-            então suporta operação de índice
-        \item adiciona também fácil suporte a comentários de uma linha com \#
-    \end{itemize}
+\begin{verbatim}
+int ref t[10], output[10]
+output = map(lambda int ref x -> x, t)
 
-    \begin{verbatim}
-        char letter = 'a'
-        str word = "luka", sum
-        # this is a comment discarded by the parser
-        sum = letter + word(1)
+int ref array: t (size: 10)
+int ref var: output
+int ref fun: t_fold (params: int ref array t)
+  int ref fun: lambda (params: int ref x, int ref y)
+    ret + x y
+  int ref var: t_tv
+  = t_tv [index] t 0
+  int var: t_ti
+  for: = t_ti 1, < t_ti [len] t, = t_ti + t_ti 1
+  do:
+    = t_tv + t_tv lambda[2 params] t_tv [index] t t_ti
+  ret t_tv
+= output t_fold[1 params] t
+\end{verbatim}
 
-        char var: letter = 'a'
-        str var: word = "luka", sum
-        = sum + [str] letter [index] word 1
-    \end{verbatim}
 \end{frame}
 
 \begin{frame}[fragile]
-    \frametitle{Integração com LLVM}
+    \frametitle{Utilização de funções de alta ordem: \texttt{filter}}
+
+\begin{verbatim}
+int t[10], output[10]
+output = filter(lambda int x -> x > 10, t)
+
+int array: t (size: 10), output (size: 10)
+int array fun: t_filter (params: int array t)
+  bool fun: lambda (params: int x)
+    ret > x 10
+  int var: t_ti
+  int array: t_ta (size: 0)
+  for: = t_ti 0, < t_ti [len] t, = t_ti + t_ti 1
+  do:
+    if: lambda[1 params] [index] t t_ti
+    then:
+      [append] t_ta [index] t t_ti
+  ret t_ta
+= output t_filter[1 params] t
+\end{verbatim}
+
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{Segunda extensão: os tipos \texttt{char} e \texttt{char[]}}
 
     \begin{itemize}
-        \item Exemplo de geração de código intermediário:
-
-        \begin{verbatim}
-  int fun math() {        | define i64 @math() {
-    int z = 0, y = 2      | entry:
-    int x = z             |   %z = alloca i64
-    x = y * 10 + x - 15   |   store i64 0, i64* %z
-    z = x                 |   %x = load i64, i64* %z
-    ret x                 |   %tmp2 = sub i64 %x, 15
-  }                       |   %tmp = add i64 20, %tmp2
-                          |   %x1 = add i64 %tmp, %x
-                          |   store i64 %x1, i64* %z
-                          |   ret i64 %x1
-                          | }
-        \end{verbatim}
+        \item \texttt{char} tem aspas simples, \texttt{char[]} tem aspas duplas
+        \item \texttt{char + char}, \texttt{char + char[]} produz coerção 
+        \item Truncamento de palavras maiores que o tamanho do arranjo declarado
+        \item Adiciona também fácil suporte a comentários de uma linha com \#
+        \item Exemplos em \texttt{test/valid/strings/*.in}
     \end{itemize}
+
+\begin{verbatim}
+char let = 'a'          | char var: let = 'a'
+char wd[4], result[10]  | char array: wd (size: 4), ...
+wd = "luka"             | = wd "luka"
+result = wd + let       | = result + wd [word] let
+let = result[1]         | = let [index] result 1
+# end of input          |
+\end{verbatim}
+
 \end{frame}
 
 \begin{frame}[fragile]
@@ -114,16 +138,19 @@
     \begin{itemize}
         \item Exemplo de tradução entre linguagens:
 
-        \begin{verbatim}
-  int fun math() {        | def math():
-    int z = 0, y = 2      |     z = 0, y = 2
-    int x = z             |     x = z
-    x = y * 10 + x - 15   |     x = y * 10 + x - 15
-    z = x                 |     z = x
-    ret x                 |     return x
-  }                       |
-        \end{verbatim}
+\begin{verbatim}
+int fun math() {        |   def math():
+  int z = 0, y = 2      |     z = 0
+  x = y * 10 + x - 15   |     y = 2
+  z = x                 |     x = (((y * 10) + x) - 15)
+  ret x                 |     z = x
+}                       |     return x
+                        |
+\end{verbatim}
+    
+        \item Outros exemplos em \texttt{test/valid/**/*.py}
     \end{itemize}
+
 \end{frame}
 
 \end{document}

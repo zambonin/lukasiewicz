@@ -1,0 +1,1252 @@
+\documentclass{article}
+
+\usepackage[brazil]{babel}
+\usepackage[T1]{fontenc}
+\usepackage[a4paper, margin=1.5cm]{geometry}
+\usepackage[colorlinks, urlcolor=blue, citecolor=red, linkcolor=black]{hyperref}
+\usepackage[utf8]{inputenc}
+\usepackage[normalem]{ulem}
+\usepackage{enumitem}
+
+\newenvironment{smallenum}{
+    \vspace{-1mm}
+    \begin{enumerate}[label=\roman*.]
+    \setlength{\parskip}{0pt}
+    \setlength{\itemsep}{2pt}
+}{
+    \vspace{-2mm}
+    \end{enumerate}
+}
+
+\title{\textbf{Especificações da linguagem Łukasiewicz estendida}}
+\author{
+    Laércio Lima Pilla \\
+    {\small criador da linguagem} \vspace{3mm} \\
+    Douglas Martins \\
+    {\small arquiteto de sistema} \\
+    \and Gustavo Zambonin \\
+    {\small gerente de projeto, projetista de linguagem} \vspace{3mm} \\
+    Marcello Klingelfus \\
+    {\small testador} \\
+    \and {\small Construção de Compiladores (UFSC -- INE5426)}\footnote{
+        \texttt{laercio.pilla@ufsc.br, 
+        \{marcelino.douglas,gustavo.zambonin,marcello.klingelfus\}@grad.ufsc.br
+        \hfill \href{https://github.com/zambonin/ufsc-ine5426}{src/}
+    }}
+}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+
+\newpage
+
+\section{Linguagem introdutória}
+
+A versão introdutória da linguagem tem as seguintes características:
+
+\begin{smallenum}
+
+\item Um tipo inteiro \texttt{int} com valores representados por números
+    naturais compostos por dígitos decimais.
+
+\item Quatro operadores binários: soma \texttt{+}, subtração \texttt{-},
+    multiplicação \texttt{*} e divisão \texttt{/}.
+
+\item Um operador menos unário \texttt{-}.
+
+\item Parênteses \texttt{()}.
+
+\item Variáveis com nomes começados por uma letra maiúscula ou minúscula,
+    podendo ser seguidos por outros caracteres, dígitos decimais e ‘\_’.
+
+\item Atribuições \texttt{=}.
+
+\end{smallenum}
+
+As diferentes instruções da linguagem são separadas apenas pela marcação de
+fim de linha. Múltiplas variáveis de mesmo tipo podem ser declaradas em uma
+mesma linha, necessitando-se apenas da separação entre seus nomes com uma
+vírgula \texttt{,}. Cada variável pode receber uma atribuição de valor inicial
+de valores constantes. A precedência entre os operadores é a mesma da
+matemática padrão. Não é possível fazer múltiplas atribuições em uma mesma
+linha.
+
+\subsection{Exemplo de código}
+
+\begin{verbatim}
+int a_
+int    BB, c
+int d=0,        e1=1
+a_ = d+2*3
+BB = (-a_)/  12-1
+c = e1*e1/a_
+\end{verbatim} 
+
+\subsection{Saída do compilador}
+
+\begin{verbatim}
+int var: a_
+int var: BB, c
+int var: d = 0, e1 = 1
+= a_ + d * 2 3
+= BB - / -u a_ 12 1
+= c * e1 / e1 a_
+\end{verbatim}
+
+\subsection{Saída do \emph{transpiler}}
+
+\begin{verbatim}
+d = 0
+e1 = 1
+a_ = (d + (2 * 3))
+BB = (-a_ / 12) - 1)
+c = (e1 * e1) / a_)
+\end{verbatim}
+
+\subsection{Tratamento de erros}
+
+\begin{smallenum}
+
+\item No caso de erros léxicos (símbolos e palavras desconhecidas), o
+    compilador deve apenas emitir uma mensagem de erro informando sobre o
+    caractere ou palavra desconhecida, não passando nenhum token para a
+    análise sintática.
+
+\begin{verbatim}
+int a&
+[Line 1] lexical error: unknown symbol &
+int #####a
+[Line 2] lexical error: unknown symbol #####
+\end{verbatim}
+
+\item No caso de um erro sintático, o compilador deve ignorar todo o bloco
+    de código comprometido (declaração de variáveis, atribuições etc.). A
+    mensagem deve seguir similar a original. \uline{O compilador
+    poderá emitir erros sintáticos verbosos, apresentando maneiras para
+    programar o bloco de código corretamente.}
+    
+\begin{verbatim}
+int 10b
+[Line 1] syntax error, unexpected INT, expected FUN
+\end{verbatim}
+
+\item No caso de uso de uma variável ainda não declarada, uma mensagem de
+    erro semântico deve ser impressa.
+
+\begin{verbatim}
+A = 2
+[Line 1] semantic error: undeclared variable A
+\end{verbatim}
+
+\item No caso de uma variável ser declarada novamente, a declaração
+    original deve ser mantida e a nova declaração deve ser ignorada.
+    Uma mensagem de erro deve ser emitida.
+
+\begin{verbatim}
+int a, a
+[Line 1] semantic error: re-declaration of variable a
+\end{verbatim}
+
+\end{smallenum}
+
+\subsection{Saída padrão}
+
+\begin{verbatim}
+nameT: [a-zA-Z][a-zA-Z0-9_]*
+intT: [0-9]+
+typeT: int
+typeT var: nameT {= intT}?{, nameT {= intT}?}*
+\end{verbatim}
+
+\subsection{Saída de erros padrão}
+
+Note que \texttt{<>} pode representar qualquer \emph{token} interno da
+ferramenta \texttt{bison}.
+
+\begin{verbatim}
+[Line N] lexical error: unknown symbol X
+[Line N] syntax error, unexpected <>, expecting <>{ or <>}*
+[Line N] semantic error: undeclared variable X
+[Line N] semantic error: re-declaration of variable X
+\end{verbatim}
+
+\section{Ponto flutuante e valores booleanos}
+
+Esta versão adiciona as seguintes características à linguagem:
+
+\begin{smallenum}
+
+\item Tipo ponto flutuante \texttt{float} com valores representados por
+    números reais compostos por dígitos decimais e uma vírgula.
+
+\item Tipo booleano \texttt{bool} com valores \texttt{true} e
+    \texttt{false}.
+
+\item Operações unárias e binárias sobre valores de ponto flutuante.
+
+\item Operadores relacionais para comparação entre inteiros ou valores de
+    ponto flutuante igual \texttt{==}, diferente \texttt{!=},
+    maior \texttt{>}, menor \texttt{<}, maior ou igual \texttt{>=} e
+    menor ou igual \texttt{<=}.
+
+\item Operadores binários booleanos e \texttt{\&} e ou \texttt{|}.
+
+\item Operador unário booleano de negação \texttt{!}.
+
+\end{smallenum}
+
+Esta versão não possibilita a conversão entre tipos. Operações relacionais
+geram valores booleanos. A precedência dos operadores para valores inteiros e
+de ponto flutuante é a padrão. A precedência para expressões booleanas é de
+operador unário > operadores relacionais > operadores binários.
+
+\subsection{Exemplo de código}
+
+\begin{verbatim}
+float f=1.0, g=0., h= .10, i
+bool b = true
+i = -f*g-h/2.1
+b = ! (i > 0.0) | (i < -2.3)
+\end{verbatim}
+
+\subsection{Saída do compilador}
+
+\begin{verbatim}
+float var: f = 1.0, g = 0., h = .10, i
+bool var: b = true
+= i - * -u f g / h 2.1
+= b | ! > i 0.0 < i –u 2.3
+\end{verbatim}
+
+\subsection{Saída do \emph{transpiler}}
+
+\begin{verbatim}
+f = 1.0
+g = 0.
+h = .10
+b = True
+i = (-f * g) - (h / 2.1))
+b = (not (i > 0.0)) | (i < -2.3))
+\end{verbatim}
+
+\subsection{Tratamento de erros}
+
+\begin{smallenum}
+
+\item No caso de tipos incompatíveis usados para uma operação, uma
+    mensagem de erro semântico deve ser emitida. No caso de operações
+    aritméticas ou atribuições, o tipo esperado é o tipo do operando à
+    esquerda. Para reduzir o encadeamento de erros, o tipo retornado por
+    essas operações deve ser o tipo do operando à esquerda. Operações
+    relacionais e booleanas retornam sempre booleanos. Em caso de erro, o
+    menos unário retorna o tipo inteiro.
+
+\begin{verbatim}
+int a = 1.0
+[Line 1] semantic error: attribution operation expected integer but received float
+a = a + true
+[Line 2] semantic error: addition operation expected integer but received boolean
+\end{verbatim}
+
+\end{smallenum}
+
+\subsection{Saída padrão}
+
+\begin{verbatim}
+typeT: int | float | bool
+boolT: true | false
+\end{verbatim}
+
+\subsection{Saída de erros padrão}
+
+\begin{verbatim}
+op: addition | subtraction | multiplication | division | attribution |
+    unary minus | equal | different | greater than | less then |
+    greater or equal than | less or equal than | and | or | negation
+type: integer | float | boolean
+[Line N] semantic error: op operation expected type but received type
+\end{verbatim}
+
+\section{Conversão de tipos}
+
+Esta versão adiciona as seguintes características à linguagem:
+
+\begin{smallenum}
+
+\item Coerção de valores \texttt{int} para valores \texttt{float} em
+    operações binárias com outros valores \texttt{float}.
+
+\item \emph{Casting} entre quaisquer tipos básicos através das operações
+    unárias \texttt{[int]}, \texttt{[float]} e \texttt{[bool]}.
+
+\end{smallenum}
+
+As operações de \emph{casting} têm a menor precedência possível.
+
+\subsection{Exemplo de código}
+
+\begin{verbatim}
+int i = 0, j
+float f = 1.1
+bool b = true
+j = [int] [int] i + f
+i = [int] j
+b = b & [bool] f
+f = ([float] b) + 0.0
+\end{verbatim}
+
+\subsection{Saída do compilador}
+
+\begin{verbatim}
+int var: i = 0, j
+float var: f = 1.1
+bool var: b = true
+= j [int] [int] + [float] i f
+= i [int] j
+= b & b [bool] f
+= f + [float] b 0.0
+\end{verbatim}
+
+\subsection{Saída do \emph{transpiler}}
+
+\begin{verbatim}
+i = 0
+f = 1.1
+b = True
+j = int(int(float(i) + f)))
+i = int(j)
+b = (b & bool(f))
+f = (float(b) + 0.0)
+\end{verbatim}
+
+\subsection{Saída padrão}
+
+\begin{verbatim}
+[typeT]
+\end{verbatim}
+
+\section{Expressões condicionais}
+
+Esta versão inclui estruturas de execução condicional \texttt{if-then} e
+\texttt{if-then-else}. O teste da expressão condicional recebe um valor ou
+variável booleana. Chaves \texttt{\{\}} são usadas para marcar o início da
+região \texttt{then}. No caso da presença da cláusula \texttt{else}, ela deve
+vir na mesma linha que o fechamento de chaves do \texttt{then}. Nada mais deve
+constar nessas linhas. Na saída padrão, o corpo de cada cláusula altera a
+tabulação em dois espaços em branco cumulativos. Os corpos das expressões
+condicionais podem ser vazios e podem incluir a declaração de novas variáveis.
+
+\subsection{Exemplo de código}
+
+\begin{verbatim}
+int a = 0, b = 1, c, d
+  bool teste_falso = false
+if a > b
+then {
+if (a > 0)
+then {
+c = 10
+}
+
+}
+
+if teste_falso
+then {
+d = 0
+
+} else {
+d = 20
+}
+\end{verbatim}
+
+\subsection{Saída do compilador}
+
+\begin{verbatim}
+int var: a = 0, b = 1, c, d
+bool var: teste_falso = false
+if: > a b
+then:
+  if: > a 0
+  then:
+    = c 10
+if: teste_falso
+then:
+  = d 0
+else:
+  = d 20
+\end{verbatim}
+
+\subsection{Saída do \emph{transpiler}}
+
+\begin{verbatim}
+a = 0
+b = 1
+teste_falso = False
+if (a > b):
+  if (a > 0):
+    c = 10
+if teste_falso:
+  d = 0
+else:
+  d = 20
+\end{verbatim}
+
+\subsection{Tratamento de erros}
+
+\begin{smallenum}
+
+\item Testes devem ser valores booleanos. No caso de um tipo diferente no
+    resultado do teste, um erro semântico deve ser gerado.
+    
+\begin{verbatim}
+int a = 0
+if a
+[Line 2] semantic error: test operation expected boolean but received integer
+\end{verbatim}
+
+\end{smallenum}
+
+\subsection{Saída padrão}
+
+\begin{verbatim}
+if:
+then:
+  ...
+{else:
+  ...
+}?
+\end{verbatim}
+
+\subsection{Saída de erros padrão}
+
+\begin{verbatim}
+op: op | test
+\end{verbatim}
+
+\section{Laços}
+
+Esta versão inclui laços for em um estilo similar à linguagem C. Os laços
+seguem a estrutura for inicialização, teste, iteração. O trecho de teste é
+obrigatório, enquanto os outros trechos são opcionais. A inicialização e a
+iteração podem conter apenas uma atribuição. O teste pode conter
+\uline{qualquer expressão, desde que booleana}. O corpo do laço é definido por
+chaves, pode ser vazio e pode conter a declaração de novas variáveis. 
+Na saída padrão, o corpo de cada laço altera a tabulação em dois espaços
+em branco cumulativos.
+
+\subsection{Exemplo de código}
+
+\begin{verbatim}
+int i, j = 0 
+for , j < 10 , j = j + 2 {
+}
+for i = 0, i < 10   , i = i + 1 {
+int temp
+temp = j + i
+j = temp
+}
+j = j + 0
+\end{verbatim}
+
+\subsection{Saída do compilador}
+
+\begin{verbatim}
+int var: i, j = 0
+for: , < j 10, = j + j 2
+do:
+for: = i 0, < i 10, = i + i 1
+do:
+  int var: temp
+  = temp + j i
+  = j temp
+= j + j 0
+\end{verbatim}
+
+\subsection{Saída do \emph{transpiler}}
+
+\begin{verbatim}
+j = 0
+while (j < 10):
+  j = (j + 2)
+i = 0
+while (i < 10):
+  temp = (j + i)
+  j = temp
+  i = (i + 1)
+j = (j + 0)
+\end{verbatim}
+
+\subsection{Tratamento de erros}
+
+Os testes dos laços devem respeitar às mesmas regras que os testes de
+expressões condicionais e devem gerar os mesmos erros.
+
+\subsection{Saída padrão}
+
+\begin{verbatim}
+for: , ,
+do:
+    ...
+\end{verbatim}
+
+\section{Múltiplos escopos}
+
+Esta versão adiciona a diferenciação entre escopos. A linguagem trabalha com
+um escopo global e um novo escopo interno para cada corpo de \texttt{then},
+\texttt{else} e \texttt{for}. Dentro de novos escopos, novas variáveis com o
+mesmo nome de variáveis de escopos externos podem ser declaradas. O tempo de
+vida das variáveis fica também atrelado à duração do escopo onde elas são
+declaradas.
+
+\subsection{Exemplo de código}
+
+\begin{verbatim}
+int i
+if true {
+  float i = 0.0
+}
+for i = 0, i < 2, i = i + 2 {
+  int a
+}
+bool a = true
+\end{verbatim}
+
+\subsection{Saída do compilador}
+
+\begin{verbatim}
+int var: i
+if: true
+then:
+  float var: i = 0.0
+for: = i 0, < i 2, = i + i 2
+do:
+  int var: a
+bool var: a = true
+\end{verbatim}
+
+\subsection{Saída do \emph{transpiler}}
+
+\begin{verbatim}
+exec(open('../../../src/scope_manager.py', 'r').read())
+s_context()
+if True:
+  i = 0.0
+r_context()
+s_context()
+i = 0
+while (i < 2):
+  i = (i + 2)
+r_context()
+a = True
+\end{verbatim}
+
+\subsection{Tratamento de erros}
+
+\begin{smallenum}
+
+\item Variáveis somente são visíveis dentro de seus escopos e seus escopos
+    filhos, levando a erros semânticos como listados no item 1.3.3 no caso
+    de tentativas indevidas de uso de variáveis.
+
+\end{smallenum}
+
+\section{Funções}
+
+Esta versão adiciona as seguintes características relacionadas a funções:
+
+\begin{smallenum}
+
+\item Funções podem ser declaradas para uso posterior no código.
+
+\item Funções podem ser definidas, o que envolve a declaração da assinatura da
+    função e de seu corpo.
+
+\item Funções podem ser usadas em testes e atribuições.
+
+\item Funções podem ser declaradas e definidas nos mesmos lugares onde
+    variáveis podem.
+
+\item Funções têm zero ou mais parâmetros.
+
+\item Ao fim do código, todas as funções declaradas precisam ter sido
+    definidas.
+
+\item Todas as funções terminam com uma chamada de retorno com a palavra
+    reservada \texttt{ret}.
+
+\item Os nomes de funções seguem as mesmas regras que os nomes de variáveis.
+
+\item Os corpos de funções possuem os próprios escopos.
+
+\item Os parâmetros da função funcionam de forma similar a variáveis
+    declaradas no corpo da função.
+
+\item Declarações de funções não geram mensagens de saída.
+
+\item Na saída padrão, o corpo de cada função altera a tabulação em dois
+    espaços em branco cumulativos.
+
+\end{smallenum}
+
+\subsection{Exemplo de código}
+
+\begin{verbatim}
+bool fun f ()
+bool fun f () {
+ret false
+}
+if f() {
+  int a = 0
+  int fun f2 ( int x ) {
+          int a
+         a = x + 1
+         ret a
+  }
+  a = f2 ( a)
+}
+\end{verbatim}
+
+\subsection{Saída do compilador}
+
+\begin{verbatim}
+int fun: f (params: )
+  ret false
+if: f[0 params]
+then:
+  int var: a = 0
+  int fun: f2 (params: int x)
+    int var: a
+    = a + x 1
+    ret a
+  = a f2[1 params] a
+\end{verbatim}
+
+\subsection{Saída do \emph{transpiler}}
+
+\begin{verbatim}
+exec(open('../../../src/scope_manager.py', 'r').read())
+def f():
+  return False
+
+s_context()
+if f():
+  a = 0
+  def f2(x):
+    a = (x + 1)
+    return a
+
+  a = f2(a)
+r_context()
+\end{verbatim}
+
+\subsection{Tratamento de erros}
+
+\begin{smallenum}
+    
+\item Uma função deve ter apenas um retorno, o qual deve ser feito na
+    última linha de seu corpo. A ausência de um retorno ou a presença de
+    outras linhas de código deve gerar um erro de sintaxe.
+
+\item \uline{Uma função com tipo de retorno diferente do tipo de sua
+    declaração deve gerar um erro semântico.}
+
+\begin{verbatim}
+int fun f() {
+  ret false 
+}
+[Line 3] semantic error: function f has incoherent return type
+\end{verbatim}
+
+\item Uma função declarada mas nunca definida até o fim de seu escopo deve
+    gerar uma mensagem de erro semântico.
+    
+\begin{verbatim}
+fool fun myfun()
+^D
+[Line 2] semantic error: function myfun is declared but never defined
+\end{verbatim}
+
+\item No caso de redeclaração ou redefinição de uma função em seu mesmo
+    escopo original, um erro semântico deve ser gerado no mesmo estilo do
+    item 1.3.4.
+
+\begin{verbatim}
+int fun f()
+int fun f()
+[Line 3] semantic error: re-definition of function f
+\end{verbatim}
+
+\item No caso de um parâmetro de tipo incompatível, um erro semântico deve
+    ser emitido.
+
+\begin{verbatim}
+int a
+int fun f (int x, int y)
+a = f (0.0, 0)
+[Line 3] semantic error: parameter x expected integer but received float
+\end{verbatim}
+
+\item No caso de parâmetros faltantes ou excesso de parâmetros em uma
+    chamada de função, erros semânticos devem ser gerados.
+
+\begin{verbatim}
+bool b
+bool fun x (int a__)
+b = x()
+[Line 3] semantic error: function x expects 1 parameters but received 0
+b = x(1, 2, 3)
+[Line 3] semantic error: function x expects 1 parameters but received 3
+\end{verbatim}
+
+\item No caso de discordância sobre o número de parâmetros entre a declaração
+    e a definição da função, um erro de redefinição deve ser gerado como no
+    item 7.3.3. O mesmo deve ser feito para o caso de discordância entre os
+    nomes do parâmetros.
+
+\end{smallenum}
+
+\subsection{Saída padrão}
+
+\begin{verbatim}
+typeT fun: nameT (params: {typeT nameT{, typeT nameT}*}?)
+ret
+nameT[N params]
+\end{verbatim}
+
+\subsection{Saída de erros padrão}
+
+\begin{verbatim}
+[Line N] semantic error: function nameT has incoherent return type
+[Line N] semantic error: function nameT is declared but never defined
+[Line N] semantic error: parameter nameT expected typeT but received typeT
+[Line N] semantic error: function nameT expects N parameters but received N
+\end{verbatim}
+
+\section{Arranjos}
+
+Esta versão adiciona as seguintes características relacionadas a arranjos:
+
+\begin{smallenum}
+
+\item Arranjos de tipos básicos podem ser declarados \uline{com qualquer
+    tamanho não-negativo.}
+
+\item Índices de arranjos são sempre valores inteiros.
+
+\item \uline{Declarações de arranjos e acesso a seus elementos são feitos
+    utilizando colchetes.}
+
+\item \uline{O operador unário de tamanho \texttt{[len]} é suportado, com
+    precedência igual aos operadores de coerção.}
+
+\item \uline{O operador de inserção \texttt{<-} é suportado, aumentando
+    o tamanho do arranjo em $1$ na sua utilização.}
+
+\end{smallenum}
+
+\subsection{Exemplo de código}
+
+\begin{verbatim}
+int a[10]
+bool parity[10]
+int i
+for i = 0, i < 10, i = i + 1 {
+a[i] = i
+if a[i] / 2  == 0 {
+    parity[i] = true
+} else {
+    parity[i] = false
+}
+}
+\end{verbatim}
+
+\subsection{Saída do compilador}
+
+\begin{verbatim}
+int array: a (size: 10)
+bool array: parity (size: 10)
+for: = i 0, < i 10, = i + i 1
+do:
+  = [index] a i i
+ if: == / [index] a i 2 0
+  then:
+    = [index] parity i true
+  else:
+    = [index] parity i false
+\end{verbatim}
+
+\subsection{Saída do \emph{transpiler}}
+
+\begin{verbatim}
+exec(open('../../../src/scope_manager.py', 'r').read())
+a = [0] * 10
+parity = [0] * 10
+s_context()
+i = 0
+while (i < 10):
+  a[i] = i
+  s_context()
+  if ((a[i] / 2) == 0):
+    parity[i] = True
+  else:
+    parity[i] = False
+  r_context()
+  i = (i + 1)
+r_context()
+\end{verbatim}
+
+\subsection{Tratamento de erros}
+
+\begin{smallenum}
+
+\item No caso de um índice de um tipo outro que inteiro, um erro semântico
+    deve ser gerado.
+
+\begin{verbatim}
+int a[10]
+a[false] = 1
+[Line 2] semantic error: index operation expects integer but received boolean
+\end{verbatim}
+
+\item \uline{O operador de inserção espera um tipo compatível com o tipo do
+    arranjo. Caso contrário, um erro semântico deve ser gerado.}
+
+\begin{verbatim}
+bool b[10]
+b <- 1.2
+[Line 3] semantic error: append operation expected boolean but received float
+\end{verbatim}
+
+\item No caso da declaração de um arranjo com um tamanho que não seja um
+    valor inteiro, um erro de sintaxe deve ser gerado.
+
+\item \uline{Operações onde o tamanho do arranjo à direita é maior do que
+    o tamanho do arranjo à esquerda devem gerar um erro semântico.}
+
+\begin{verbatim}
+int a[9], b[10]
+bool c
+c = a != b
+[Line 4] semantic error: operation between mismatched array sizes
+\end{verbatim}
+
+\item \uline{Os operadores de índice e inserção esperam um arranjo no lado
+    esquerdo da operação.}
+
+\begin{verbatim}
+int a, b
+b = a[1]
+[Line 2] semantic error: left hand side of index operation is not an array
+\end{verbatim}
+
+\item \uline{O operador unário de tamanho do arranjo espera um arranjo.}
+
+\begin{verbatim}
+int a, b
+b = [len] a
+[Line 4] semantic error: length operation expects an array
+\end{verbatim}
+
+\end{smallenum}
+
+\subsection{Saída padrão}
+
+\begin{verbatim}
+typeT array: nameT (size: N)
+[index]
+[len]
+[append]
+\end{verbatim}
+
+\subsection{Saída de erros padrão}
+
+\begin{verbatim}
+op: op | index | length | append
+[Line N] semantic error: index operation expects integer but received { boolean | float }
+[Line N] semantic error: operation between mismatched array sizes
+[Line N] semantic error: left hand size of { index | append } operation is not an array
+[Line N] semantic error: length operation expects an array
+\end{verbatim}
+
+\section{Ponteiros}
+
+Esta versão inclui a declaração e uso de ponteiros sobre os tipos básicos,
+arranjos e ponteiros. Ponteiros são identificados pela palavra reservada
+\texttt{ref}. O \texttt{lvalue} de qualquer variável pode ser acessado pelo
+operador \texttt{addr}. Referências não são feitas para arranjos nem funções,
+sendo usadas apenas para variáveis e itens de arranjos. Ponteiros podem ser
+usados como parâmetros de funções e retorno de funções.
+
+\subsection{Exemplo de código}
+
+\begin{verbatim}
+int a[10]
+int i = 0
+int ref mypointer
+int ref pointers[2]
+mypointer = addr i
+i = ref mypointer + 1
+pointers[0] = mypointer
+pointers[1] = addr a[3]
+int ref ref doublepointer
+doublepointer = addr pointers[0]
+\end{verbatim}
+
+\subsection{Saída do compilador}
+
+\begin{verbatim}
+int array: a (size: 10)
+int var: i = 0
+int ref var: mypointer
+int ref array: pointers (size: 2)
+= mypointer [addr] i
+= i + [ref] mypointer 1
+= [index] pointers 0 mypointer
+= [index] pointers 1 [addr] [index] a 3
+int ref ref var: doublepointer
+= doublepointer [addr] [index] pointers 0
+\end{verbatim} 
+
+\subsection{Saída do \emph{transpiler}}
+
+\begin{verbatim}
+exec(open('../../../src/scope_manager.py', 'r').read())
+a = [0] * 10
+i = 0
+pointers = [0] * 2
+mypointer = i
+i = (mypointer + 1)
+pointers[0] = mypointer
+pointers[1] = a[3]
+doublepointer = pointers[0]
+\end{verbatim}
+
+\subsection{Tratamento de erros}
+
+\begin{smallenum}
+
+\item No caso de operações binárias com tipos diferentes, erros semânticos
+    devem ser emitidos.
+
+\begin{verbatim}
+int i = 0
+int ref point
+point = i
+[Line 3] semantic error: attribution operation expects integer pointer but received integer
+\end{verbatim}
+
+\item O operador unário \texttt{ref} espera um valor que seja ponteiro de
+    algo. Caso o valor não seja um ponteiro, um erro semântico deve ser
+    disparado.
+
+\begin{verbatim}
+int i
+i = ref 0
+[Line 2] semantic error: reference operation expects a pointer
+i = ref i
+[Line 3] semantic error: reference operation expects a pointer
+\end{verbatim}
+    
+\item O operador unário \texttt{addr} espera uma variável ou item de
+    arranjo. Caso contrário, um erro semântico deve ser gerado.
+
+\begin{verbatim}
+bool ref b
+b = addr true
+[Line 0] semantic error: address operation expects a variable or array item
+\end{verbatim}
+
+\end{smallenum}
+
+\subsection{Saída padrão}
+
+\begin{verbatim}
+typeT {ref}* var: nameT
+[addr]
+[ref]
+\end{verbatim}
+
+\subsection{Saída de erros padrão}
+
+\begin{verbatim}
+[Line N] semantic error: op operation expects typeT {pointer}* but received typeT {pointer}*
+[Line N] semantic error: reference operation expects a pointer
+[Line N] semantic error: address operation expects a variable or array item
+\end{verbatim}
+
+\section{Caracteres e cadeias destes}
+
+Esta versão adiciona as seguintes características à linguagem:
+
+\begin{smallenum}
+
+\item Tipo de caractere \texttt{char} com possíveis valores ASCII no intervalo
+    $32_{10}$ (espaço) e $126_{10}$ (\texttt{\~}), inclusive, exceto aspas
+    simples (\texttt{'}) e duplas (\texttt{"}).
+
+\item Um \texttt{char} pode ser declarado utilizando aspas simples, e não
+    pode ser vazio.
+
+\item Um arranjo de \texttt{char} pode ser declarado utilizando aspas duplas,
+    e pode ser a palavra vazia.
+
+\item Acontecerá coerção para arranjos de \texttt{char} com o operador
+    \texttt{[word]} na operação entre dois caracteres, ou um caractere e um
+    arranjo de caracteres.
+
+\item Palavras com valores além da capacidade de seus tipos (1 para
+    \texttt{char}, $n$ para \texttt{char array}) serão truncadas.
+
+\item Suporte a comentários de linha única, que iniciam com o símbolo
+    \texttt{\#}, em qualquer parte da linha.
+
+\item Não existem restrições quanto às operações entre caracteres e cadeias.
+
+\end{smallenum}
+
+\subsection{Exemplo de código}
+
+\begin{verbatim}
+char let = 'a'
+char wd[4], result[10]
+wd = "luka"
+# i can add letters together
+result = wd + let
+let = result[1]
+\end{verbatim}
+
+\subsection{Saída do compilador}
+
+\begin{verbatim}
+char var: let = 'a'
+char array: wd (size: 4), result (size: 10)
+= wd "luka"
+= result + wd [word] let
+= let [index] result 1
+\end{verbatim}
+
+\subsection{Saída do \emph{transpiler}}
+
+\begin{verbatim}
+exec(open('../../../src/scope_manager.py', 'r').read())
+let = 'a'
+wd = [0] * 4
+result = [0] * 10
+wd = "luka"
+result = (wd + str(let))
+let = result[1]
+\end{verbatim}
+
+\subsection{Tratamento de erros}
+
+\begin{smallenum}
+
+\item Caso um caractere seja declarado com mais de uma letra, seu valor deve
+    ser truncado para a primeira letra, e uma advertência deve ser gerada.
+
+\begin{verbatim}
+char a = 'as'
+[Line 2] warning: value truncated to 'a'
+\end{verbatim}
+
+\item Uma cadeia de caracteres inicializada com mais letras do que sua
+    declaração original deve ser truncada, e uma advertência deve ser gerada.
+
+\begin{verbatim}
+char a[5]
+a = "too big of a word"
+[Line 3] warning: value truncated to "too b"
+\end{verbatim}
+
+\end{smallenum}
+
+\subsection{Saída padrão}
+
+Note que todos os comentários serão ignorados pela ferramenta \texttt{flex}.
+
+\begin{verbatim}
+charT: [\'][ !#-&(-~]+[\']
+wordT: [\"][ !#-&(-~]*[\"]
+typeT: typeT | char
+type: type | character
+[word]
+\end{verbatim}
+
+\subsection{Saída de erros padrão}
+
+\begin{verbatim}
+[Line N] warning: value truncated to X
+\end{verbatim}
+
+\section{Funções anônimas e de alta ordem}
+
+Esta versão adiciona as seguintes características à linguagem:
+
+\begin{smallenum}
+
+\item \texttt{lambda} e a respectiva letra minúscula em grego, $\lambda$
+    (\texttt{U+03BB}), tornam-se palavras reservadas da linguagem, bem como
+    o símbolo \texttt{->}.
+
+\item Funções anônimas devem conter no mínimo um (1) argumento.
+
+\item Uma função anônima pode ser descartada com a diretiva
+    \texttt{$\lambda$()}, para que outra possa ser declarada.
+
+\item \texttt{map}, \texttt{fold} e \texttt{filter} tornam-se palavras
+    reservadas da linguagem.
+
+\item Funções de alta ordem devem ter obrigatoriamente dois argumentos,
+    nesta ordem: uma função anônima e um arranjo, chamados respectivamente
+    de \texttt{$\lambda$} e \texttt{it} neste documento para facilitar a
+    visualização das regras.
+
+\item Os tipos dos parâmetros devem ser coerentes com o tipo da função de alta
+    ordem.
+
+\item \texttt{map} sempre retornará um arranjo de tipo e tamanho 
+    igual a \texttt{it}. Sua função anônima deve ter um (1) parâmetro.
+
+\item \texttt{fold} sempre retornará um elemento de tipo igual ao tipo
+    primitivo de \texttt{it}. Sua função anônima deve ter dois (2) parâmetros.
+
+\item \texttt{filter} sempre retornará um arranjo de tipo igual a
+    \texttt{it}, mas não necessariamente com o mesmo tamanho. Ademais,
+    seu primeiro argumento deve ser sempre uma função anônima booleana
+    com um (1) parâmetro.
+
+\item Para evitar erros de redefinição, as funções de alta ordem levam como
+    prefixo o nome de seu segundo parâmetro seguido de um traço inferior.
+
+\item Podem ser utilizadas apenas em atribuições para novas variáveis.
+
+\item Como o código que simula o funcionamento das funções de alta ordem
+    é gerado automaticamente, erros em cascata são comuns caso as restrições
+    não sejam obedecidas.
+
+\end{smallenum}
+
+\subsection{Exemplo de código}
+\begin{verbatim}
+int ref t[10], output[10]
+output = map(lambda int ref x -> x, t)
+\end{verbatim}
+
+\subsection{Saída do compilador}
+
+\begin{verbatim}
+int ref array: t (size: 10), output (size: 10)
+int ref array fun: t_map (params: int ref array t)
+  int ref fun: lambda (params: int ref x)
+    ret x
+  int var: t_ti
+  int ref array: t_ta (size: 10)
+  for: = t_ti 0, < t_ti [len] t, = t_ti + t_ti 1
+  do:
+    = [index] t_ta t_ti lambda[1 params] [index] t t_ti
+  ret t_ta
+= output t_map[1 params] t
+\end{verbatim}
+
+\subsection{Saída do \emph{transpiler}}
+
+\begin{verbatim}
+exec(open('../../../src/scope_manager.py', 'r').read())
+t = [0] * 10
+output = [0] * 10
+def t_map(t):
+  def U+03BB(x):
+    return x
+
+  t_ta = [0] * 10
+  s_context()
+  t_ti = 0
+  while (t_ti < len(t)):
+    t_ta[t_ti] = U+03BB(t[t_ti])
+    t_ti = (t_ti + 1)
+  r_context()
+  return t_ta
+
+output = t_map(t)
+\end{verbatim}
+
+\subsection{Tratamento de erros}
+
+\begin{smallenum}
+
+\item Funções anônimas e de alta ordem com número de parâmetros ilegal
+    geram erros sintáticos.
+
+\item Funções de alta ordem cujos \texttt{$\lambda$} têm número de
+    parâmetros ilegal geram erros semânticos.
+
+\begin{verbatim}
+int t[10], output[10]
+output = map(lambda int x, y -> x + 2, t)
+[Line 6] semantic error: function lambda expects 2 parameters but received 1
+[Line 8] semantic error: map's lambda expects 1 parameters but received 2
+...
+\end{verbatim}
+
+\item Caso \texttt{it} não seja um arranjo, um erro semântico deve ser gerado.
+
+\begin{verbatim}
+int t
+int output[10]
+output = map(lambda int x -> x + 2, t)
+[Line 4] semantic error: high order function's second parameter must be of array type
+...
+\end{verbatim}
+
+\end{smallenum}
+
+\subsection{Saída padrão}
+
+\begin{verbatim}
+funcH: map | fold | filter
+func: funcH | lambda
+U+03BB
+\end{verbatim}
+
+\subsection{Saída de erros padrão}
+
+\begin{verbatim}
+[Line N] semantic error: high order function's second parameter must be of array type
+[Line N] semantic error: funcH's lambda expects N parameters but received N
+\end{verbatim}
+
+\section{\emph{Transpiler} para Python}
+
+Este recurso é adicionado à linguagem, com as seguintes considerações:
+
+\begin{smallenum}
+
+\item Python não necessita de tipos junto à declaração da linguagem, então
+    declarações sem inicializações não fazem sentido e podem ser descartadas.
+
+\item Todas as operações são cercadas de parênteses para que seus significados
+    sejam o mais próximo possível da linguagem aqui descrita.
+
+\item Todos os códigos gerados iniciam com um cabeçalho que importa um par
+    de funções utilizadas automaticamente para que os escopos sejam
+    corretamente simulados.
+
+\item Funções declaradas mas não definidas não existem em Python; portanto,
+    a palavra chave \texttt{pass} é utilizada para inicializar uma função
+    sem qualquer utilidade.
+
+\item Como a ideia de ponteiros não existe em Python, não existe uma possível
+	conversão válida. Portanto, todos os operadores \texttt{addr} e
+	\texttt{ref} são retirados.
+
+\item Python não contém qualquer estrutura de iteração similar a um
+    \texttt{for} estilo C, então todos os \texttt{for} são traduzidos para
+    estruturas \texttt{while}.
+
+\end{smallenum}
+
+\end{document}
