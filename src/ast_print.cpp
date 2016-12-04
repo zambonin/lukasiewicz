@@ -2,13 +2,21 @@
 
 namespace AST {
 
-//! String representation for the operations.
+/* String representation for the operations. */
 static const std::string _bin[] = {
   "+", "-", "*", "/", "=", "[index]", " [addr]", " [ref]",
   "==", "!=", ">", "<", ">=", "<=", "&", "|",
-  " -u", " !", " [int]", " [float]", " [bool]", " [word]",
-  " [len]", "[append]"
+  " -u", " !", " [int]", " [float]", " [bool]", " [word]", " [len]", "[append]"
 };
+
+//! Saves the current indentation status.
+static int spaces;
+
+//! Takes a single line of code and indents it with two spaces.
+#define _tab(X)     spaces += 2; (X); spaces -= 2
+
+//! Variadic macro that prevents indentation for any number of lines.
+#define _notab(...) int tmp = spaces; spaces = 0; (__VA_ARGS__); spaces = tmp;
 
 void IntNode::printInfix() {
   text(value, 1);
@@ -28,7 +36,7 @@ void CharNode::printInfix() {
 
 void BinaryOpNode::printPrefix() {
   bool space = ((binOp != assign) && (binOp != append));
-  text("", space);
+  text("", static_cast<int>(space));
   text(_bin[binOp], spaces);
   _notab(
     left->printPrefix(),
@@ -36,10 +44,10 @@ void BinaryOpNode::printPrefix() {
 }
 
 void BinaryOpNode::printInfix() {
-  bool space = ((binOp != assign) && (binOp != append));
+  bool space = ((binOp == assign) || (binOp == append));
   _notab(
     left->printInfix(),
-    text("", !space),
+    text("", static_cast<int>(space)),
     text(_bin[binOp], spaces),
     right->printInfix());
 }
@@ -141,7 +149,7 @@ void DeclarationNode::printInfix() {
     next->printInfix();
     text(",", 0);
   }
-  std::string s = "";
+  std::string s;
   if (!notArray(this)) {
     s = " (size: " + std::to_string(this->size) + ")";
   }

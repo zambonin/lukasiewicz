@@ -7,7 +7,6 @@
  */
 %{
   #include <cstdarg>
-
   #include "ast.h"
   #include "parser.h"
 
@@ -25,10 +24,13 @@
  * `nodefault` aborts the program if there is input that
  * does not match any rule;
  * `yylineno` generates a scanner that maintains the number
- *  of the current line being read.
+ *  of the current line being read;
+ * `noinput` prevents `yyinput` from being generated automatically.
+ * `nounput` prevents `yyunput` from being generated automatically.
  */
 
-%option noyywrap nodefault yylineno
+%option noyywrap nodefault yylineno noinput nounput
+
 
 chars   [ !#-&(-~]
 intgT   [0-9]+

@@ -1,6 +1,5 @@
-CC = clang++
-CFLAGS = -O2 -Wall -Wextra -Wno-sign-compare \
-		 -Wno-unused-function -Wno-unused-parameter -std=c++11 -I include
+CC = g++
+CFLAGS = -O2 -Wall -Wextra -Wno-sign-compare -std=c++11 -I include
 OUTPUT = lukacompiler
 
 default: grammar

@@ -2,11 +2,19 @@
 
 namespace AST {
 
+/* Verbose representation for the operations. */
+static const std::string _opt[] = {
+  "addition", "subtraction", "multiplication", "division", "attribution",
+  "index", "address", "reference", "equal", "different", "greater than",
+  "less than", "greater or equal than", "less or equal than", "and", "or",
+  "unary minus", "negation", "length", "append"
+};
+
 void BinaryOpNode::error_handler() {
   VariableNode* v1 = dynamic_cast<VariableNode*>(left);
   VariableNode* v2 = dynamic_cast<VariableNode*>(right);
   FuncCallNode* f1 = dynamic_cast<FuncCallNode*>(right);
-  int n = 0;
+  unsigned int n = 0;
 
   if (v2 != nullptr) {
     n = v2->size;
@@ -21,8 +29,8 @@ void BinaryOpNode::error_handler() {
   if (left->_type() == A_CHAR && right->_type() == A_CHAR) {
     CharNode* c = dynamic_cast<CharNode*>(right);
     if (c != nullptr && v1 != nullptr && v1->size < c->value.size() - 2) {
-      c->value.resize(v1->size + 1);
-      c->value += "\"";
+      c->value.resize(v1->size + 1UL);
+      c->value += R"(")";
       yyerror("warning: value truncated to %s", c->value.c_str());
     }
   }
@@ -41,7 +49,7 @@ void BinaryOpNode::error_handler() {
     if (notArray(left)) {
       yyserror("left hand side of append operation is not an array");
     } else if ((left->_type() % 4) != right->_type()) {
-      AST::Node* n = new Node(left->_type() % 4);
+      auto n = new Node(left->_type() % 4);
       yyserror("append operation expected %s but received %s",
         n->_vtype(false).c_str(), right->_vtype(false).c_str());
       delete n;

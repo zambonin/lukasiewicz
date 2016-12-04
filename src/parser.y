@@ -115,6 +115,7 @@ end-scope
         delete current;
       }
       tmp_t = 0;
+      tmp_f = 0;
     }
 
 /* Stores every derived line on the abstract syntax tree. */
@@ -192,13 +193,6 @@ d-type
   | T_CHAR ref-cnt  { $$ = 3 + $2; tmp_t += 3; }
   ;
 
-/* Defines the valid higher order function types. */
-f-type
-  : F_MAP     { $$ = $1; }
-  | F_FOLD    { $$ = $1; }
-  | F_FILTER  { $$ = $1; }
-  ;
-
 /* Checks if the return type of a function is an array. */
 is-array
   : %empty { $$ = 0; }
@@ -209,6 +203,13 @@ is-array
 ref-cnt
   : %empty      { $$ = 0; }
   | ref-cnt REF { $$ = $1 + 8; tmp_t += 8; }
+  ;
+
+/* Defines the valid higher order function types. */
+f-type
+  : F_MAP     { $$ = $1; }
+  | F_FOLD    { $$ = $1; }
+  | F_FILTER  { $$ = $1; }
   ;
 
 /* Defines the declaration and possible initialization

@@ -2,6 +2,16 @@
 
 namespace AST {
 
+/* Verbose representation for the node types. */
+static const std::string _usr[] = {
+  "integer", "float", "boolean", "character"
+};
+
+/* Basic representation for the node types. */
+static const std::string _var[] = {
+  "int", "float", "bool", "char"
+};
+
 /* Addition operator overload for NodeType enum. */
 NodeType operator+(NodeType t, int v) {
   return static_cast<NodeType>(static_cast<int>(t) + v);
@@ -24,10 +34,6 @@ NodeType operator%(NodeType t, int v) {
 bool operator==(const ParamNode& n1, const ParamNode& n2) {
   std::string s1(n1.id), s2(n2.id);
   return s1 == s2 && n1.type == n2.type;
-}
-
-Node::Node() {
-  this->type = ND;
 }
 
 Node::Node(int type) {
@@ -56,7 +62,8 @@ NodeType CharNode::_type() {
 }
 
 BinaryOpNode::BinaryOpNode(Operation binOp, Node* left, Node* right):
-binOp(binOp), left(left), right(right) {
+Node(), binOp(binOp), left(left), right(right) {
+  // transpiler needs to know if the variable was initialized
   VariableNode* v = dynamic_cast<VariableNode*>(left);
   if (binOp == assign && v != nullptr) {
     v->init = true;
@@ -78,7 +85,6 @@ binOp(binOp), left(left), right(right) {
   } else if (left->_type() == A_CHAR && right->_type() == CHAR) {
     this->right = new UnaryOpNode(cast_word, right);
   }
-
   this->error_handler();
 }
 
@@ -96,7 +102,7 @@ BinaryOpNode::~BinaryOpNode() {
 }
 
 UnaryOpNode::UnaryOpNode(Operation op, Node* node):
-op(op), node(node) {
+Node(), op(op), node(node) {
   if (op == cast_int || op == len) {
     this->type = INT;
   } else if (op == cast_float) {
@@ -112,8 +118,7 @@ op(op), node(node) {
   } else if (op == addr) {
     this->type = node->_type() + 8;
   }
-this->error_handler();
-
+  this->error_handler();
 }
 
 UnaryOpNode::~UnaryOpNode() {
@@ -124,7 +129,7 @@ LinkedNode::~LinkedNode() {
   delete next;
 }
 
-BlockNode::BlockNode(Node* n) {
+BlockNode::BlockNode(Node* n) : Node() {
   if (n != nullptr) {
     nodeList.push_back(n);
   }
@@ -137,7 +142,7 @@ BlockNode::~BlockNode() {
 }
 
 IfNode::IfNode(Node* condition, BlockNode* _then, BlockNode* _else):
-condition(condition), _then(_then), _else(_else) {
+Node(), condition(condition), _then(_then), _else(_else) {
   this->error_handler();
 }
 
@@ -148,7 +153,7 @@ IfNode::~IfNode() {
 }
 
 ForNode::ForNode(Node* assign, Node* test, Node* iteration, BlockNode* body):
-assign(assign), test(test), iteration(iteration), body(body) {
+Node(), assign(assign), test(test), iteration(iteration), body(body) {
   this->error_handler();
 }
 
@@ -194,7 +199,7 @@ std::deque<VariableNode*> FuncNode::createDeque() {
 }
 
 FuncCallNode::FuncCallNode(FuncNode* function, BlockNode* params):
-function(function), params(params) {
+Node(), function(function), params(params) {
   this->error_handler();
 }
 
@@ -214,12 +219,14 @@ FuncNode(array->id + "_" + id, new ParamNode(array->id, nullptr,
 }
 
 HiOrdFuncNode* HiOrdFuncNode::chooseFunc(
-  std::string id, Node* func, VariableNode* array) {
+  const std::string& id, Node* func, VariableNode* array) {
   if (id == "map") {
     return new MapFuncNode(id, func, array);
-  } else if (id == "fold") {
+  }
+  if (id == "fold") {
     return new FoldFuncNode(id, func, array);
-  } else if (id == "filter") {
+  }
+  if (id == "filter") {
     return new FilterFuncNode(id, func, array);
   }
   return nullptr;
@@ -231,7 +238,7 @@ HiOrdFuncNode(fid, func, array) {
   std::ostringstream out;
   int n = array->_type(), s = array->size;
 
-  AST::Node* tmp = new Node(n - 4);
+  auto tmp = new Node(n - 4);
   std::string t = (n < 3) ? "int" : tmp->_vtype(true);
   delete tmp;
 
@@ -252,7 +259,7 @@ HiOrdFuncNode(fid, func, array) {
   std::string id = array->id, ti = id + "_ti", tv = id + "_tv";
   std::ostringstream out;
 
-  AST::Node* tmp = new Node(array->_type() - 4);
+  auto tmp = new Node(array->_type() - 4);
   out << tmp->_vtype(true) << " " << tv << "\n" << tv << " = " << id
     << "[0]\nint " << ti << "\nfor " << ti << " = 1, " << ti << " < [len] "
     << id << ", " << ti << " = " << ti << " + 1 {\n  " << tv << " = " << tv
@@ -271,7 +278,7 @@ FilterFuncNode::FilterFuncNode(std::string fid, Node* func,
   std::ostringstream out;
   int n = array->_type();
 
-  AST::Node* tmp = new Node(n - 4);
+  auto tmp = new Node(n - 4);
   std::string t = (n < 3) ? "int" : tmp->_vtype(true);
   delete tmp;
 

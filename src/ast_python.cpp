@@ -2,12 +2,21 @@
 
 namespace AST {
 
+/* String representation for the operations. */
 static const std::string _bin[] = {
-  " + ", " - ", " * ", " / ", " = ", "[index]", "", "",
+  " + ", " - ", " * ", " / ", " = ", "", "", "",
   " == ", " != ", " > ", " < ", " >= ", " <= ", " & ", " | ",
-  "-", "(not ", "int(", "float(", "bool(", "str(", "len("
-  "", " + ["
+  "-", "(not ", "int(", "float(", "bool(", "str(", "len(", " + ["
 };
+
+//! Saves the current indentation status.
+static int spaces;
+
+//! Takes a single line of code and indents it with two spaces.
+#define _tab(X)     spaces += 2; (X); spaces -= 2
+
+//! Variadic macro that prevents indentation for any number of lines.
+#define _notab(...) int tmp = spaces; spaces = 0; (__VA_ARGS__); spaces = tmp;
 
 void IntNode::printPython() {
   text(value, 0);
@@ -27,7 +36,10 @@ void CharNode::printPython() {
 
 void BinaryOpNode::printPython() {
   bool specialOp = (binOp == assign || binOp == index || binOp == append);
-  if (!specialOp) text("(", 0);
+  // all usual binary operations have parenthesis between them
+  if (!specialOp) {
+    text("(", 0);
+  }
   left->printPython();
   if (binOp != index) {
     text(_bin[binOp], 0),
@@ -37,14 +49,19 @@ void BinaryOpNode::printPython() {
     right->printPython();
     text("]", 0);
   }
-  if (!specialOp) text(")", 0);
-  if (binOp == append) text("]", 0);
+  if (!specialOp) {
+    text(")", 0);
+  }
+  if (binOp == append) {
+    text("]", 0);
+  }
 }
 
 void UnaryOpNode::printPython() {
   text(_bin[op], 0);
   node->printPython();
   if (op > 16) {
+    // all operations after unary minus
     text(")", 0);
   }
 }
@@ -89,6 +106,7 @@ void ForNode::printPython() {
     assign->printPython();
     text("\n", 0);
   }
+  // transform for in while because there is no C-style for loop in Python
   text("while ", spaces);
   _notab(
     test->printPython(),
@@ -103,6 +121,7 @@ void ForNode::printPython() {
 }
 
 void FuncNode::printPython() {
+  // lambda is a reserved word in Python
   text("def " + ((this->id == "lambda") ? "λ" : this->id) + "(", 0);
   if (params != nullptr) {
     params->printPython();
@@ -134,7 +153,9 @@ void FuncCallNode::printPython() {
   text(((function->id == "lambda") ? "λ" : function->id) + "(", 0);
   for (Node* n : params->nodeList) {
     n->printPython();
-    if (n != params->nodeList.back()) text(", ", 0);
+    if (n != params->nodeList.back()) {
+      text(", ", 0);
+    }
   }
   text(")", 0);
 }
@@ -144,6 +165,7 @@ void DeclarationNode::printPython() {
     next->printPython();
     text("\n", 0);
   }
+  // do not print node if it is not initialized
   if (this->init) {
     text(id, 0);
   } else if (!notArray(this)) {

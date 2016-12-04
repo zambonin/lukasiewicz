@@ -13,19 +13,8 @@
 
 namespace AST {
 
-  /* Macros that reduce the visual pollution when indentation is needed. */
-
-  /* Takes a single line of code and indents it with two spaces. */
-  #define _tab(X)     spaces += 2; (X); spaces -= 2
-
-  /* Variadic macro that prevents indentation for any number of lines. */
-  #define _notab(...) int tmp = spaces; spaces = 0; (__VA_ARGS__); spaces = tmp;
-
-  /* Checks if a node is an array. */
+  //! Checks if a node is an array.
   #define notArray(X) (((X)->_type() % 8) < 4)
-
-  /* Saves the current indentation status. */
-  static int spaces;
 
   //! Operations accepted by the language.
   enum Operation {
@@ -35,67 +24,51 @@ namespace AST {
     cast_bool, cast_word, len, append
   };
 
-  /*
-   * Possible types for the nodes. This enum may overflow with multiple
-   * references; it can be considered that any variable that has a `type`
-   * value greater than 8 is a pointer, and `type` modulo 8 greater than
-   * four is an array.
-   */
+  //! Possible types for the nodes. This enum may overflow with multiple
+  //! references; it can be considered that any variable that has a `type`
+  //! value greater than 8 is a pointer, and `type` modulo 8 greater than
+  //! four is an array.
   enum NodeType {
     ND = -1,
-    INT,    FLOAT,    BOOL,     CHAR,
-    A_INT,  A_FLOAT,  A_BOOL,   A_CHAR,
-    P_INT,  P_FLOAT,  P_BOOL,   P_CHAR,
-    PA_INT, PA_FLOAT, PA_BOOL,  PA_CHAR,
+    INT,    FLOAT,    BOOL,     CHAR,   A_INT,  A_FLOAT,  A_BOOL,   A_CHAR,
+    P_INT,  P_FLOAT,  P_BOOL,   P_CHAR, PA_INT, PA_FLOAT, PA_BOOL,  PA_CHAR,
   };
-
-  //! Verbose representation for the operations.
-  static const std::string _opt[] = {
-    "addition", "subtraction", "multiplication", "division", "attribution",
-    "index", "address", "reference", "equal", "different", "greater than",
-    "less than", "greater or equal than", "less or equal than", "and", "or",
-    "unary minus", "negation", "length", "append"
-  };
-
-  //! Verbose representation for the node types.
-  static const std::string _usr[] = {
-    "integer", "float", "boolean", "character"
-  };
-
-  //! Basic representation for the node types.
-  static const std::string _var[] = { "int", "float", "bool", "char" };
 
   class Node {
   public:
     //! Type of the node.
-    NodeType type;
+    NodeType type = ND;
 
     //! Default constructor declared to prevent errors.
-    Node();
+    Node() = default;
 
     //! Basic constructor that also sets the type of the node.
-    explicit Node(int type);
+    explicit Node(int);
 
-    //! Prints the verbose type of the node, taking in account its
-    //! status as an array and/or pointer.
-    /*!
-     *  \param node     node in question.
-     *  \param _short   prints a short version of the type used in declarations.
-     */
-    std::string _vtype(bool _short);
+    //! Basic destructor.
+    virtual ~Node() = default;
 
-    // todo doc
+    //! Simplest type of printing, in usual notation.
     virtual void printInfix() {}
+
+    //! Prints a node in prefix, or Polish, notation.
     virtual void printPrefix() { this->printInfix(); }
+
+    //! Prints Python code representing the node.
     virtual void printPython() {}
 
+    //! Error handler logic. Note that this function is called in the
+    //! end of every constructor, and that is desired behaviour, since
+    //! all error handlers must be executed (including the parent classes').
     virtual void error_handler() {}
 
     //! Returns the type of the node.
     virtual NodeType _type() { return this->type; }
 
-    //! Basic destructor.
-    virtual ~Node() = default;
+    //! Prints the verbose type of the node, taking in account its
+    //! status as an array and/or pointer. A boolean parameter decides
+    //! if a shorter version of the type is returned.
+    std::string _vtype(bool);
   };
 
   class IntNode : public Node {
@@ -106,6 +79,7 @@ namespace AST {
     //! Basic constructor that also sets the type of the node.
     explicit IntNode(int value): Node(0), value(value) {}
 
+    //! Available print methods.
     void printInfix() override;
     void printPython() override;
   };
@@ -118,6 +92,7 @@ namespace AST {
     //! Basic constructor that also sets the type of the node.
     explicit FloatNode(std::string value): Node(1), value(value) {}
 
+    //! Available print methods.
     void printInfix() override;
     void printPython() override;
   };
@@ -130,11 +105,12 @@ namespace AST {
     //! Basic constructor that also sets the type of the node.
     explicit BoolNode(bool value): Node(2), value(value) {}
 
+    //! Available print methods.
     void printInfix() override;
     void printPython() override;
   };
 
- class CharNode : public Node {
+  class CharNode : public Node {
   public:
     //! String value of the node, displaying exactly the user input.
     std::string value;
@@ -142,6 +118,7 @@ namespace AST {
     //! Basic constructor that also sets the type of the node.
     explicit CharNode(std::string value): Node(3), value(value) {}
 
+    //! Available print methods.
     void printInfix() override;
     void printPython() override;
 
@@ -160,21 +137,25 @@ namespace AST {
     //! Right operand or right child of the node.
     Node* right;
 
-    //! Basic constructor. Checks for semantic errors and enforces coercion.
-    BinaryOpNode(Operation binOp, Node* left, Node* right);
+    //! Basic constructor that also enforces coercion.
+    BinaryOpNode(Operation, Node*, Node*);
 
+    //! Basic destructor.
+    ~BinaryOpNode() override;
+
+    //! Available print methods.
     void printInfix() override;
     void printPrefix() override;
     void printPython() override;
 
+    //! Error handler logic; checks for mismatched array sizes, truncates
+    //! strings that are too big and general misuse of operations between
+    //! different types.
     void error_handler() override;
 
     //! Returns the type of the left child if the operation is arithmetic
-    //! or an assignment, and a boolean type otherwise.
+    //! or an assignment/indexing, and a boolean type otherwise.
     NodeType _type() override;
-
-    //! Basic destructor.
-    ~BinaryOpNode() override;
   };
 
   class UnaryOpNode : public Node {
@@ -186,16 +167,19 @@ namespace AST {
     Node* node;
 
     //! Basic constructor that also sets the type of this node.
-    UnaryOpNode(Operation op, Node* node);
+    UnaryOpNode(Operation, Node*);
 
+    //! Basic destructor.
+    ~UnaryOpNode() override;
+
+    //! Available print methods.
     void printInfix() override;
     void printPrefix() override;
     void printPython() override;
 
+    //! Error handler logic; checks if nodes are valid children to their
+    //! operator parents.
     void error_handler() override;
-
-    //! Basic destructor.
-    ~UnaryOpNode() override;
   };
 
   class LinkedNode : public Node {
@@ -210,14 +194,13 @@ namespace AST {
     ~LinkedNode() override;
   };
 
-  //! Represents a variable that may be simple or an array/pointer.
   class VariableNode : public LinkedNode {
   public:
     //! Name of the variable.
     std::string id;
 
     //! Length of the array if applicable.
-    int size;
+    unsigned int size;
 
     //! Checks if the variable is initialized.
     bool init;
@@ -226,6 +209,7 @@ namespace AST {
     VariableNode(std::string id, Node* next, int type, int size):
     LinkedNode(next, type), id(id), size(size) {}
 
+    //! Available print methods.
     void printInfix() override;
     void printPython() override;
   };
@@ -238,14 +222,15 @@ namespace AST {
     //! Default constructor.
     BlockNode() {}
 
-    //! Basic constructor that pushes `n` to `nodeList`.
-    BlockNode(Node* n);
-
-    void printPrefix() override;
-    void printPython() override;
+    //! Basic constructor that also pushes a node to `nodeList`.
+    BlockNode(Node*);
 
     //! Basic destructor.
     ~BlockNode() override;
+
+    //! Available print methods.
+    void printPrefix() override;
+    void printPython() override;
   };
 
   class MessageNode : public LinkedNode {
@@ -253,6 +238,7 @@ namespace AST {
     //! Basic constructor.
     using LinkedNode::LinkedNode;
 
+    //! Available print methods.
     void printPrefix() override;
     void printPython() override;
   };
@@ -272,15 +258,17 @@ namespace AST {
     BlockNode* _else;
 
     //! Basic constructor.
-    IfNode(Node* condition, BlockNode* _then, BlockNode* _else);
-
-    void printPrefix() override;
-    void printPython() override;
-
-    void error_handler() override;
+    IfNode(Node*, BlockNode*, BlockNode*);
 
     //! Basic destructor.
     ~IfNode() override;
+
+    //! Available print methods.
+    void printPrefix() override;
+    void printPython() override;
+
+    //! Error handler logic; tests if the condition type is boolean.
+    void error_handler() override;
   };
 
   class ForNode : public Node {
@@ -301,15 +289,17 @@ namespace AST {
     BlockNode* body;
 
     //! Basic constructor.
-    ForNode(Node* assign, Node* test, Node* iteration, BlockNode* body);
-
-    void printPrefix() override;
-    void printPython() override;
-
-    void error_handler() override;
+    ForNode(Node*, Node*, Node*, BlockNode*);
 
     //! Basic destructor.
     ~ForNode() override;
+
+    //! Available print methods.
+    void printPrefix() override;
+    void printPython() override;
+
+    //! Error handler logic; tests if the condition type is boolean.
+    void error_handler() override;
   };
 
   class FuncNode : public Node {
@@ -325,26 +315,25 @@ namespace AST {
     BlockNode* contents;
 
     //! Basic constructor.
-    FuncNode(std::string id, Node* params, int type, BlockNode* contents);
+    FuncNode(std::string, Node*, int, BlockNode*);
 
+    //! Basic destructor.
+    ~FuncNode() override;
+
+    //! Available print methods.
     void printPrefix() override;
     void printPython() override;
 
+    //! Error handler logic; checks if the return type is correct.
+    void error_handler() override;
+
     //! Compares two linked lists of parameters to check if they
     //! contain the same nodes.
-    /*!
-     *  \param n      list to be compared against.
-     */
-    bool verifyParams(Node* n);
+    bool verifyParams(Node*);
 
     //! Produces a double ended queue with all the nodes on the
     //! linked list of parameters.
     std::deque<VariableNode*> createDeque();
-
-    void error_handler() override;
-
-    //! Basic destructor.
-    ~FuncNode() override;
   };
 
   class ParamNode : public VariableNode {
@@ -352,6 +341,7 @@ namespace AST {
     //! Basic constructor.
     using VariableNode::VariableNode;
 
+    //! Available print methods.
     void printInfix() override;
     void printPython() override;
   };
@@ -361,6 +351,7 @@ namespace AST {
     //! Basic constructor.
     ReturnNode(Node* next): LinkedNode(next, next->_type()) {}
 
+    //! Available print methods.
     void printPython() override;
     void printPrefix() override;
   };
@@ -374,18 +365,20 @@ namespace AST {
     BlockNode* params;
 
     //! Basic constructor.
-    FuncCallNode(FuncNode* function, BlockNode* params);
+    FuncCallNode(FuncNode*, BlockNode*);
 
+    //! Basic destructor.
+    ~FuncCallNode() override;
+
+    //! Available print methods.
     void printPython() override;
     void printPrefix() override;
 
+    //! Error handler logic.
     void error_handler() override;
 
     //! Returns the type of the original function.
     NodeType _type() override;
-
-    //! Basic destructor.
-    ~FuncCallNode() override;
   };
 
   class DeclarationNode : public VariableNode {
@@ -393,6 +386,7 @@ namespace AST {
     //! Basic constructor.
     using VariableNode::VariableNode;
 
+    //! Available print methods.
     void printInfix() override;
     void printPython() override;
   };
@@ -400,36 +394,39 @@ namespace AST {
   class HiOrdFuncNode : public FuncNode {
   public:
     //! Basic constructor.
-    HiOrdFuncNode(std::string id, Node* func, VariableNode* array);
+    HiOrdFuncNode(std::string, Node*, VariableNode*);
 
+    //! Special error handler that needs a certain node from the constructor.
     virtual void hi_error_handler(Node*);
 
     //! Returns the appropriate subclass given the id.
-    static HiOrdFuncNode* chooseFunc(
-      std::string id, Node* func, VariableNode* array);
+    static HiOrdFuncNode* chooseFunc(const std::string&, Node*, VariableNode*);
   };
 
   class MapFuncNode : public HiOrdFuncNode {
   public:
     //! Basic constructor.
-    MapFuncNode(std::string id, Node* func, VariableNode* array);
+    MapFuncNode(std::string, Node*, VariableNode*);
 
+    //! Error handler logic; checks number of parameters and lambda type.
     void hi_error_handler(Node*) override;
   };
 
   class FoldFuncNode : public HiOrdFuncNode {
   public:
     //! Basic constructor.
-    FoldFuncNode(std::string id, Node* func, VariableNode* array);
+    FoldFuncNode(std::string, Node*, VariableNode*);
 
+    //! Error handler logic; checks number of parameters and lambda type.
     void hi_error_handler(Node*) override;
   };
 
   class FilterFuncNode : public HiOrdFuncNode {
   public:
     //! Basic constructor.
-    FilterFuncNode(std::string id, Node* func, VariableNode* array);
+    FilterFuncNode(std::string, Node*, VariableNode*);
 
+    //! Error handler logic; checks number of parameters and lambda type.
     void hi_error_handler(Node*) override;
   };
 
