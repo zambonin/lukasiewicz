@@ -148,7 +148,7 @@ char* reduce_char(char* s) {
   if (strlen(s) > 3) {
     char _new[4] = {'\'', s[1], '\'', '\0'};
     char* p = strdup(_new);
-    yyerror("warning: multicharacter value truncated to %s", p);
+    yyerror("warning: value truncated to %s", p);
     free(s);
     return p;
   } else {

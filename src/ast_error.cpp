@@ -126,7 +126,7 @@ void FuncCallNode::error_handler() {
 
 void HiOrdFuncNode::hi_error_handler(Node* array) {
   if (notArray(array)) {
-    yyserror("second parameter must be of array type");
+    yyserror("high order function's second parameter must be of array type");
   }
 }
 
@@ -137,7 +137,7 @@ void MapFuncNode::hi_error_handler(Node* func) {
   }
   int n = f->createDeque().size();
   if (n != 1) {
-    yyserror("map lambda expects 1 parameters but received %d", n);
+    yyserror("map's lambda expects 1 parameters but received %d", n);
   }
 }
 
@@ -148,7 +148,7 @@ void FoldFuncNode::hi_error_handler(Node* func) {
   }
   int n = f->createDeque().size();
   if (n != 2) {
-    yyserror("fold lambda expects 2 parameters but received %d", n);
+    yyserror("fold's lambda expects 2 parameters but received %d", n);
   }
 }
 
@@ -159,7 +159,7 @@ void FilterFuncNode::hi_error_handler(Node* func) {
   }
   int n = f->createDeque().size();
   if (n != 1) {
-    yyserror("filter lambda expects 1 parameters but received %d", n);
+    yyserror("filter's lambda expects 1 parameters but received %d", n);
   }
 }
 

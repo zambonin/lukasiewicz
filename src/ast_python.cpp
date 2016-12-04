@@ -164,6 +164,7 @@ void DeclarationNode::printPython() {
   if (next != nullptr) {
     next->printPython();
     text("\n", 0);
+    text("", spaces);
   }
   // do not print node if it is not initialized
   if (this->init) {

@@ -1,4 +1,4 @@
-[Line 4] semantic error: second parameter must be of array type
+[Line 4] semantic error: high order function's second parameter must be of array type
 [Line 6] semantic error: length operation expects an array
 [Line 7] semantic error: left hand side of index operation is not an array
 [Line 7] semantic error: parameter x expected integer but received undefined

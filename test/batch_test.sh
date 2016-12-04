@@ -19,8 +19,11 @@ for f in invalid/*/*.in ; do
     "$1" < "$f" 1>/dev/null 2> "${f/.in/.out}"
 done
 
-for f in valid/*/*.py ; do
-    cd "$(dirname "$f")"
-    python "$(basename "$f")"
+for f in valid/*/*.in ; do
+    PYFILE="${f/.in/.py}"
+    "$1" -p < "$f" > "$PYFILE"
+    sed -i 's/src/..\/..\/..\/src/' "$PYFILE"
+    cd "$(dirname "$PYFILE")"
+    python "$(basename "$PYFILE")"
     cd - >/dev/null
 done
