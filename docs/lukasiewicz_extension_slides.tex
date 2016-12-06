@@ -66,11 +66,11 @@
     \frametitle{Utilização de funções de alta ordem: \texttt{fold}}
 
 \begin{verbatim}
-int ref t[10], output[10]
-output = map(lambda int ref x -> x, t)
+int ref t[10]
+int ref output
+output = fold(lambda int ref x, y -> x + y, t)
 
-int ref array: t (size: 10)
-int ref var: output
+...
 int ref fun: t_fold (params: int ref array t)
   int ref fun: lambda (params: int ref x, int ref y)
     ret + x y
@@ -93,7 +93,7 @@ int ref fun: t_fold (params: int ref array t)
 int t[10], output[10]
 output = filter(lambda int x -> x > 10, t)
 
-int array: t (size: 10), output (size: 10)
+...
 int array fun: t_filter (params: int array t)
   bool fun: lambda (params: int x)
     ret > x 10
@@ -140,13 +140,16 @@ let = result[1]         | = let [index] result 1
 
 \begin{verbatim}
 int fun math() {        |   def math():
-  int z = 0, y = 2      |     z = 0
+  int z = 0, y = 2, x   |     z = 0
   x = y * 10 + x - 15   |     y = 2
   z = x                 |     x = (((y * 10) + x) - 15)
   ret x                 |     z = x
 }                       |     return x
                         |
 \end{verbatim}
+
+        \item \texttt{src/scope\_manager.py} é importado nos arquivos
+            de saída para simular corretamente os escopos
     
         \item Outros exemplos em \texttt{test/valid/**/*.py}
     \end{itemize}
