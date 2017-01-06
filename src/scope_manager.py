@@ -10,8 +10,10 @@ behaviour regarding lexical scopes. Based on [1].
 
 __context__ = {}
 
+
 def s_context():
     __context__.update(modules[__name__].__dict__)
+
 
 def r_context():
     for _ in list(modules[__name__].__dict__.keys()):

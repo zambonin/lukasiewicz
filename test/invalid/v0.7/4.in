@@ -1,6 +1,6 @@
 int a, b
 bool fun f(int a, int b)
 bool fun f(int a, int b){
-ret false	
+ret false
 ret true
 }

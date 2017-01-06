@@ -2,5 +2,5 @@ int a
 float b
 bool fun f(int a, int b)
 bool fun f(){
-ret false	
+ret false
 }

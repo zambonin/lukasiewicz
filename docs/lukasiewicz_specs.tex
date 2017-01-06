@@ -29,7 +29,7 @@
     Marcello Klingelfus \\
     {\small testador} \\
     \and {\small Construção de Compiladores (UFSC -- INE5426)}\footnote{
-        \texttt{laercio.pilla@ufsc.br, 
+        \texttt{laercio.pilla@ufsc.br,
         \{marcelino.douglas,gustavo.zambonin,marcello.klingelfus\}@grad.ufsc.br
         \hfill \href{https://github.com/zambonin/ufsc-ine5426}{src/}
     }}
@@ -84,7 +84,7 @@ int d=0,        e1=1
 a_ = d+2*3
 BB = (-a_)/  12-1
 c = e1*e1/a_
-\end{verbatim} 
+\end{verbatim}
 
 \subsection{Saída do compilador}
 
@@ -128,7 +128,7 @@ int #####a
     mensagem deve seguir similar a original. \uline{O compilador
     poderá emitir erros sintáticos verbosos, apresentando maneiras para
     programar o bloco de código corretamente.}
-    
+
 \begin{verbatim}
 int 10b
 [Line 1] syntax error, unexpected INT, expected FUN
@@ -401,7 +401,7 @@ else:
 
 \item Testes devem ser valores booleanos. No caso de um tipo diferente no
     resultado do teste, um erro semântico deve ser gerado.
-    
+
 \begin{verbatim}
 int a = 0
 if a
@@ -434,14 +434,14 @@ seguem a estrutura for inicialização, teste, iteração. O trecho de teste é
 obrigatório, enquanto os outros trechos são opcionais. A inicialização e a
 iteração podem conter apenas uma atribuição. O teste pode conter
 \uline{qualquer expressão, desde que booleana}. O corpo do laço é definido por
-chaves, pode ser vazio e pode conter a declaração de novas variáveis. 
+chaves, pode ser vazio e pode conter a declaração de novas variáveis.
 Na saída padrão, o corpo de cada laço altera a tabulação em dois espaços
 em branco cumulativos.
 
 \subsection{Exemplo de código}
 
 \begin{verbatim}
-int i, j = 0 
+int i, j = 0
 for , j < 10 , j = j + 2 {
 }
 for i = 0, i < 10   , i = i + 1 {
@@ -646,7 +646,7 @@ r_context()
 \subsection{Tratamento de erros}
 
 \begin{smallenum}
-    
+
 \item Uma função deve ter apenas um retorno, o qual deve ser feito na
     última linha de seu corpo. A ausência de um retorno ou a presença de
     outras linhas de código deve gerar um erro de sintaxe.
@@ -656,14 +656,14 @@ r_context()
 
 \begin{verbatim}
 int fun f() {
-  ret false 
+  ret false
 }
 [Line 3] semantic error: function f has incoherent return type
 \end{verbatim}
 
 \item Uma função declarada mas nunca definida até o fim de seu escopo deve
     gerar uma mensagem de erro semântico.
-    
+
 \begin{verbatim}
 fool fun myfun()
 ^D
@@ -909,7 +909,7 @@ int ref array: pointers (size: 2)
 = [index] pointers 1 [addr] [index] a 3
 int ref ref var: doublepointer
 = doublepointer [addr] [index] pointers 0
-\end{verbatim} 
+\end{verbatim}
 
 \subsection{Saída do \emph{transpiler}}
 
@@ -950,7 +950,7 @@ i = ref 0
 i = ref i
 [Line 3] semantic error: reference operation expects a pointer
 \end{verbatim}
-    
+
 \item O operador unário \texttt{addr} espera uma variável ou item de
     arranjo. Caso contrário, um erro semântico deve ser gerado.
 
@@ -1108,7 +1108,7 @@ Esta versão adiciona as seguintes características à linguagem:
 \item Os tipos dos parâmetros devem ser coerentes com o tipo da função de alta
     ordem.
 
-\item \texttt{map} sempre retornará um arranjo de tipo e tamanho 
+\item \texttt{map} sempre retornará um arranjo de tipo e tamanho
     igual a \texttt{it}. Sua função anônima deve ter um (1) parâmetro.
 
 \item \texttt{fold} sempre retornará um elemento de tipo igual ao tipo

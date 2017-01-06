@@ -2,7 +2,7 @@ int a
 float b
 bool fun f(int x, int y)
 bool fun f(int x, int y){
-ret false	
+ret false
 }
 bool c
 c = f(a, b)
