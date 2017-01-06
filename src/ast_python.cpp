@@ -13,7 +13,7 @@ static const std::string _bin[] = {
 static int spaces;
 
 //! Takes a single line of code and indents it with two spaces.
-#define _tab(X)     spaces += 2; (X); spaces -= 2
+#define _tab(X)     spaces += 4; (X); spaces -= 4
 
 //! Variadic macro that prevents indentation for any number of lines.
 #define _notab(...) int tmp = spaces; spaces = 0; (__VA_ARGS__); spaces = tmp;
@@ -113,7 +113,7 @@ void ForNode::printPython() {
     text(":\n", 0));
   _tab(body->printPython());
   if (iteration->_type() != ND) {
-    text("", spaces + 2);
+    text("", spaces + 4);
     iteration->printPython();
     text("\n", 0);
   }

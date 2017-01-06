@@ -1,4 +1,3 @@
 exec(open('../../../src/scope_manager.py', 'r').read())
-def λ(x):
-    return (x + 1)
 
+x10_12Y = ((-(10 + 2) * (3 - 4)) / (-0 + 1))

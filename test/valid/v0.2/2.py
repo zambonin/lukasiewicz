@@ -1,4 +1,4 @@
 exec(open('../../../src/scope_manager.py', 'r').read())
-def λ(x):
-    return (x + 1)
 
+cd = True
+ab = ((cd | (not True)) & (2 > -2))
