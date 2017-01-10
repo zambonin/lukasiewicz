@@ -29,4 +29,10 @@ Both flags can be used together.
 Full specifications are available under the `docs/` folder, in pt_BR.
 
 Known issues:
-    * a program must not end with a syntax error inside a scoped block
+  * a program must not end with a syntax error inside a scoped block
+  * transpiled Python code may not follow PEP8 specifications, and as
+    such, will fail automated linters
+
+Original assignments:
+  * ea7787f1c8e84e042766751e2110abd0c79b722a (first part of the language)
+  * 79f153d023fff582b2a3cee0cb010c6cef60c904 (language extension)
