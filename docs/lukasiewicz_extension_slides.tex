@@ -6,14 +6,13 @@
 
 \usetheme{CambridgeUS}
 \usecolortheme{seagull}
+\setbeamertemplate{title page}[default][shadow=false]
 \setbeamertemplate{headline}{}
 \setbeamertemplate{itemize items}[triangle]
 \setbeamertemplate{footline}[frame number]{}
 \setbeamertemplate{navigation symbols}{}
 
-\title{
-    Novas funcionalidades para Łukasiewicz
-}
+\title{Novas funcionalidades para Łukasiewicz}
 \author{
     Douglas Martins\thanks{arquiteto de sistema}
     \and Gustavo Zambonin\thanks{gerente de projeto, projetista de linguagem}
@@ -22,48 +21,49 @@
 \institute{
     Universidade Federal de Santa Catarina \\
     Departamento de Informática e Estatística \\
-    INE5426 - Construção de Compiladores
+    INE5426 --- Construção de Compiladores
 }
 \date{}
 
 \begin{document}
 
-\begin{frame}
-    \titlepage
+\begin{frame}[plain,noframenumbering]
+    \titlepage{}
 \end{frame}
 
-\begin{frame}
+\begin{frame}[fragile]
     \frametitle{Primeira extensão: o paradigma funcional}
 
     \begin{itemize}
-        \item Função anônima simples --
-            {\footnotesize \texttt{lambda type args -> expr}}
-        \item Função de alta ordem de mapeamento --
-            {\footnotesize \texttt{map(function, list)}}
+        \item Função anônima simples ---
+            {\footnotesize \verb!lambda type args -> expr!}
+        \item Função de alta ordem de mapeamento ---
+            {\footnotesize \verb!map(function, list)!}
+
         \begin{itemize}
             \item aplica função em todos os elementos de um iterável
         \end{itemize}
-        \item Função de alta ordem de redução --
-            {\footnotesize \texttt{fold(function, list)}}
+        \item Função de alta ordem de redução ---
+            {\footnotesize \verb!fold(function, list)!}
         \begin{itemize}
             \item reduz elementos de um iterável para um
                 tipo primitivo de acordo com uma função
         \end{itemize}
-        \item Função de alta ordem de seleção --
-            {\footnotesize \texttt{filter(function, list)}}
+        \item Função de alta ordem de seleção ---
+            {\footnotesize \verb!filter(function, list)!}
         \begin{itemize}
             \item remove elementos de um iterável que não respeitam uma
                 função booleana
         \end{itemize}
         \item Operadores de tamanho e inserção em arranjos
         \item Extensão da cobertura de erros semânticos
-        \item Exemplos em \texttt{test/valid/functional/*.in}
+        \item Exemplos em \verb!test/valid/functional/*.in!
     \end{itemize}
 
 \end{frame}
 
 \begin{frame}[fragile]
-    \frametitle{Utilização de funções de alta ordem: \texttt{fold}}
+    \frametitle{Utilização de funções de alta ordem: \textt{fold}}
 
 \begin{verbatim}
 int ref t[10]
@@ -114,11 +114,11 @@ int array fun: t_filter (params: int array t)
     \frametitle{Segunda extensão: os tipos \texttt{char} e \texttt{char[]}}
 
     \begin{itemize}
-        \item \texttt{char} tem aspas simples, \texttt{char[]} tem aspas duplas
-        \item \texttt{char + char}, \texttt{char + char[]} produz coerção
+        \item \verb!char! tem aspas simples, \verb!char[]! tem aspas duplas
+        \item \verb!char + char!, \verb!char + char[]! produz coerção
         \item Truncamento de palavras maiores que o tamanho do arranjo declarado
         \item Adiciona também fácil suporte a comentários de uma linha com \#
-        \item Exemplos em \texttt{test/valid/strings/*.in}
+        \item Exemplos em \verb!test/valid/strings/*.in!
     \end{itemize}
 
 \begin{verbatim}
@@ -148,10 +148,10 @@ int fun math() {        |   def math():
                         |
 \end{verbatim}
 
-        \item \texttt{src/scope\_manager.py} é importado nos arquivos
+        \item \verb!src/scope_manager.py! é importado nos arquivos
             de saída para simular corretamente os escopos
 
-        \item Outros exemplos em \texttt{test/valid/**/*.py}
+        \item Outros exemplos em \verb!test/valid/**/*.py!
     \end{itemize}
 
 \end{frame}

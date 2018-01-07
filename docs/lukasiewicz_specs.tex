@@ -1,10 +1,5 @@
-\documentclass{article}
+\documentclass{sftex/sftex}
 
-\usepackage[brazil]{babel}
-\usepackage[T1]{fontenc}
-\usepackage[a4paper, margin=1.5cm]{geometry}
-\usepackage[colorlinks, urlcolor=blue, citecolor=red, linkcolor=black]{hyperref}
-\usepackage[utf8]{inputenc}
 \usepackage[normalem]{ulem}
 \usepackage{enumitem}
 
@@ -18,23 +13,22 @@
     \end{enumerate}
 }
 
-\title{\textbf{Especificações da linguagem Łukasiewicz estendida}}
+\title{Especificações da linguagem Łukasiewicz estendida}
 \author{
     Laércio Lima Pilla \\
     {\small criador da linguagem} \vspace{3mm} \\
     Douglas Martins \\
-    {\small arquiteto de sistema} \\
+    {\small arquiteto de sistema} \vspace{3mm} \\
     \and Gustavo Zambonin \\
     {\small gerente de projeto, projetista de linguagem} \vspace{3mm} \\
     Marcello Klingelfus \\
-    {\small testador} \\
-    \and {\small Construção de Compiladores (UFSC -- INE5426)}\footnote{
-        \texttt{laercio.pilla@ufsc.br,
-        \{marcelino.douglas,gustavo.zambonin,marcello.klingelfus\}@grad.ufsc.br
-        \hfill \href{https://github.com/zambonin/ufsc-ine5426}{src/}
-    }}
+    {\small testador} \vspace{3mm} \\
 }
-\date{}
+\email{laercio.pilla@ufsc.br,
+    \{marcelino.douglas,gustavo.zambonin,marcello.klingelfus\}@grad.ufsc.br}
+\src{https://github.com/zambonin/ufsc-ine5426}
+\uniclass{Construção de Compiladores}
+\classcode{UFSC-INE5426}
 
 \begin{document}
 
@@ -50,27 +44,27 @@ A versão introdutória da linguagem tem as seguintes características:
 
 \begin{smallenum}
 
-\item Um tipo inteiro \texttt{int} com valores representados por números
+\item Um tipo inteiro \verb!int! com valores representados por números
     naturais compostos por dígitos decimais.
 
-\item Quatro operadores binários: soma \texttt{+}, subtração \texttt{-},
-    multiplicação \texttt{*} e divisão \texttt{/}.
+\item Quatro operadores binários: soma \verb!+!, subtração \verb!-!,
+    multiplicação \verb!*! e divisão \verb!/!.
 
-\item Um operador menos unário \texttt{-}.
+\item Um operador menos unário \verb!-!.
 
-\item Parênteses \texttt{()}.
+\item Parênteses \verb!()!.
 
 \item Variáveis com nomes começados por uma letra maiúscula ou minúscula,
     podendo ser seguidos por outros caracteres, dígitos decimais e ‘\_’.
 
-\item Atribuições \texttt{=}.
+\item Atribuições \verb!=!.
 
 \end{smallenum}
 
 As diferentes instruções da linguagem são separadas apenas pela marcação de
 fim de linha. Múltiplas variáveis de mesmo tipo podem ser declaradas em uma
 mesma linha, necessitando-se apenas da separação entre seus nomes com uma
-vírgula \texttt{,}. Cada variável pode receber uma atribuição de valor inicial
+vírgula \verb!,!. Cada variável pode receber uma atribuição de valor inicial
 de valores constantes. A precedência entre os operadores é a mesma da
 matemática padrão. Não é possível fazer múltiplas atribuições em uma mesma
 linha.
@@ -164,8 +158,8 @@ typeT var: nameT {= intT}?{, nameT {= intT}?}*
 
 \subsection{Saída de erros padrão}
 
-Note que \texttt{<>} pode representar qualquer \emph{token} interno da
-ferramenta \texttt{bison}.
+Note que \verb!<>! pode representar qualquer \emph{token} interno da
+ferramenta \verb!bison!.
 
 \begin{verbatim}
 [Line N] lexical error: unknown symbol X
@@ -180,22 +174,22 @@ Esta versão adiciona as seguintes características à linguagem:
 
 \begin{smallenum}
 
-\item Tipo ponto flutuante \texttt{float} com valores representados por
+\item Tipo ponto flutuante \verb!float! com valores representados por
     números reais compostos por dígitos decimais e uma vírgula.
 
-\item Tipo booleano \texttt{bool} com valores \texttt{true} e
-    \texttt{false}.
+\item Tipo booleano \verb!bool! com valores \verb!true! e
+    \verb!false!.
 
 \item Operações unárias e binárias sobre valores de ponto flutuante.
 
 \item Operadores relacionais para comparação entre inteiros ou valores de
-    ponto flutuante igual \texttt{==}, diferente \texttt{!=},
-    maior \texttt{>}, menor \texttt{<}, maior ou igual \texttt{>=} e
-    menor ou igual \texttt{<=}.
+    ponto flutuante igual \verb!==!, diferente \verb!!=!,
+    maior \verb!>!, menor \verb!<!, maior ou igual \verb!>=! e
+    menor ou igual \verb!<=!.
 
-\item Operadores binários booleanos e \texttt{\&} e ou \texttt{|}.
+\item Operadores binários booleanos e \verb!&! e ou \verb!|!.
 
-\item Operador unário booleano de negação \texttt{!}.
+\item Operador unário booleano de negação \verb!!!.
 
 \end{smallenum}
 
@@ -277,11 +271,11 @@ Esta versão adiciona as seguintes características à linguagem:
 
 \begin{smallenum}
 
-\item Coerção de valores \texttt{int} para valores \texttt{float} em
-    operações binárias com outros valores \texttt{float}.
+\item Coerção de valores \verb!int! para valores \verb!float! em
+    operações binárias com outros valores \verb!float!.
 
 \item \emph{Casting} entre quaisquer tipos básicos através das operações
-    unárias \texttt{[int]}, \texttt{[float]} e \texttt{[bool]}.
+    unárias \verb![int]!, \verb![float]! e \verb![bool]!.
 
 \end{smallenum}
 
@@ -331,11 +325,11 @@ f = (float(b) + 0.0)
 
 \section{Expressões condicionais}
 
-Esta versão inclui estruturas de execução condicional \texttt{if-then} e
-\texttt{if-then-else}. O teste da expressão condicional recebe um valor ou
-variável booleana. Chaves \texttt{\{\}} são usadas para marcar o início da
-região \texttt{then}. No caso da presença da cláusula \texttt{else}, ela deve
-vir na mesma linha que o fechamento de chaves do \texttt{then}. Nada mais deve
+Esta versão inclui estruturas de execução condicional \verb!if-then! e
+\verb!if-then-else!. O teste da expressão condicional recebe um valor ou
+variável booleana. Chaves \verb!{}! são usadas para marcar o início da
+região \verb!then!. No caso da presença da cláusula \verb!else!, ela deve
+vir na mesma linha que o fechamento de chaves do \verb!then!. Nada mais deve
 constar nessas linhas. Na saída padrão, o corpo de cada cláusula altera a
 tabulação em dois espaços em branco cumulativos. Os corpos das expressões
 condicionais podem ser vazios e podem incluir a declaração de novas variáveis.
@@ -496,8 +490,8 @@ do:
 \section{Múltiplos escopos}
 
 Esta versão adiciona a diferenciação entre escopos. A linguagem trabalha com
-um escopo global e um novo escopo interno para cada corpo de \texttt{then},
-\texttt{else} e \texttt{for}. Dentro de novos escopos, novas variáveis com o
+um escopo global e um novo escopo interno para cada corpo de \verb!then!,
+\verb!else! e \verb!for!. Dentro de novos escopos, novas variáveis com o
 mesmo nome de variáveis de escopos externos podem ser declaradas. O tempo de
 vida das variáveis fica também atrelado à duração do escopo onde elas são
 declaradas.
@@ -576,7 +570,7 @@ Esta versão adiciona as seguintes características relacionadas a funções:
     definidas.
 
 \item Todas as funções terminam com uma chamada de retorno com a palavra
-    reservada \texttt{ret}.
+    reservada \verb!ret!.
 
 \item Os nomes de funções seguem as mesmas regras que os nomes de variáveis.
 
@@ -740,10 +734,10 @@ Esta versão adiciona as seguintes características relacionadas a arranjos:
 \item \uline{Declarações de arranjos e acesso a seus elementos são feitos
     utilizando colchetes.}
 
-\item \uline{O operador unário de tamanho \texttt{[len]} é suportado, com
+\item \uline{O operador unário de tamanho \verb![len]! é suportado, com
     precedência igual aos operadores de coerção.}
 
-\item \uline{O operador de inserção \texttt{<-} é suportado, aumentando
+\item \uline{O operador de inserção \verb!<-! é suportado, aumentando
     o tamanho do arranjo em $1$ na sua utilização.}
 
 \end{smallenum}
@@ -876,8 +870,8 @@ op: op | index | length | append
 
 Esta versão inclui a declaração e uso de ponteiros sobre os tipos básicos,
 arranjos e ponteiros. Ponteiros são identificados pela palavra reservada
-\texttt{ref}. O \texttt{lvalue} de qualquer variável pode ser acessado pelo
-operador \texttt{addr}. Referências não são feitas para arranjos nem funções,
+\verb!ref!. O \verb!lvalue! de qualquer variável pode ser acessado pelo
+operador \verb!addr!. Referências não são feitas para arranjos nem funções,
 sendo usadas apenas para variáveis e itens de arranjos. Ponteiros podem ser
 usados como parâmetros de funções e retorno de funções.
 
@@ -939,7 +933,7 @@ point = i
 [Line 3] semantic error: attribution operation expects integer pointer but received integer
 \end{verbatim}
 
-\item O operador unário \texttt{ref} espera um valor que seja ponteiro de
+\item O operador unário \verb!ref! espera um valor que seja ponteiro de
     algo. Caso o valor não seja um ponteiro, um erro semântico deve ser
     disparado.
 
@@ -951,7 +945,7 @@ i = ref i
 [Line 3] semantic error: reference operation expects a pointer
 \end{verbatim}
 
-\item O operador unário \texttt{addr} espera uma variável ou item de
+\item O operador unário \verb!addr! espera uma variável ou item de
     arranjo. Caso contrário, um erro semântico deve ser gerado.
 
 \begin{verbatim}
@@ -984,25 +978,25 @@ Esta versão adiciona as seguintes características à linguagem:
 
 \begin{smallenum}
 
-\item Tipo de caractere \texttt{char} com possíveis valores ASCII no intervalo
-    $32_{10}$ (espaço) e $126_{10}$ (\texttt{\~}), inclusive, exceto aspas
-    simples (\texttt{'}) e duplas (\texttt{"}).
+\item Tipo de caractere \verb!char! com possíveis valores ASCII no intervalo
+    $32_{10}$ (espaço) e $126_{10}$ (\verb!~!), inclusive, exceto aspas
+    simples (\verb!'!) e duplas (\verb!"!).
 
-\item Um \texttt{char} pode ser declarado utilizando aspas simples, e não
+\item Um \verb!char! pode ser declarado utilizando aspas simples, e não
     pode ser vazio.
 
-\item Um arranjo de \texttt{char} pode ser declarado utilizando aspas duplas,
+\item Um arranjo de \verb!char! pode ser declarado utilizando aspas duplas,
     e pode ser a palavra vazia.
 
-\item Acontecerá coerção para arranjos de \texttt{char} com o operador
-    \texttt{[word]} na operação entre dois caracteres, ou um caractere e um
+\item Acontecerá coerção para arranjos de \verb!char! com o operador
+    \verb![word]! na operação entre dois caracteres, ou um caractere e um
     arranjo de caracteres.
 
 \item Palavras com valores além da capacidade de seus tipos (1 para
-    \texttt{char}, $n$ para \texttt{char array}) serão truncadas.
+    \verb!char!, $n$ para \verb!char array!) serão truncadas.
 
 \item Suporte a comentários de linha única, que iniciam com o símbolo
-    \texttt{\#}, em qualquer parte da linha.
+    \verb!#!, em qualquer parte da linha.
 
 \item Não existem restrições quanto às operações entre caracteres e cadeias.
 
@@ -1066,7 +1060,7 @@ a = "too big of a word"
 
 \subsection{Saída padrão}
 
-Note que todos os comentários serão ignorados pela ferramenta \texttt{flex}.
+Note que todos os comentários serão ignorados pela ferramenta \verb!flex!.
 
 \begin{verbatim}
 charT: [\'][ !#-&(-~]+[\']
@@ -1088,34 +1082,34 @@ Esta versão adiciona as seguintes características à linguagem:
 
 \begin{smallenum}
 
-\item \texttt{lambda} e a respectiva letra minúscula em grego, $\lambda$
-    (\texttt{U+03BB}), tornam-se palavras reservadas da linguagem, bem como
-    o símbolo \texttt{->}.
+\item \verb!lambda! e a respectiva letra minúscula em grego, $\lambda$
+    (\verb!U+03BB!), tornam-se palavras reservadas da linguagem, bem como
+    o símbolo \verb!->!.
 
 \item Funções anônimas devem conter no mínimo um (1) argumento.
 
 \item Uma função anônima pode ser descartada com a diretiva
-    \texttt{$\lambda$()}, para que outra possa ser declarada.
+    \texttt{$\lambda()$}, para que outra possa ser declarada.
 
-\item \texttt{map}, \texttt{fold} e \texttt{filter} tornam-se palavras
+\item \verb!map!, \verb!fold! e \verb!filter! tornam-se palavras
     reservadas da linguagem.
 
 \item Funções de alta ordem devem ter obrigatoriamente dois argumentos,
     nesta ordem: uma função anônima e um arranjo, chamados respectivamente
-    de \texttt{$\lambda$} e \texttt{it} neste documento para facilitar a
+    de \texttt{$\lambda$} e \verb!it! neste documento para facilitar a
     visualização das regras.
 
 \item Os tipos dos parâmetros devem ser coerentes com o tipo da função de alta
     ordem.
 
-\item \texttt{map} sempre retornará um arranjo de tipo e tamanho
-    igual a \texttt{it}. Sua função anônima deve ter um (1) parâmetro.
+\item \verb!map! sempre retornará um arranjo de tipo e tamanho
+    igual a \verb!it!. Sua função anônima deve ter um (1) parâmetro.
 
-\item \texttt{fold} sempre retornará um elemento de tipo igual ao tipo
-    primitivo de \texttt{it}. Sua função anônima deve ter dois (2) parâmetros.
+\item \verb!fold! sempre retornará um elemento de tipo igual ao tipo
+    primitivo de \verb!it!. Sua função anônima deve ter dois (2) parâmetros.
 
-\item \texttt{filter} sempre retornará um arranjo de tipo igual a
-    \texttt{it}, mas não necessariamente com o mesmo tamanho. Ademais,
+\item \verb!filter! sempre retornará um arranjo de tipo igual a
+    \verb!it!, mas não necessariamente com o mesmo tamanho. Ademais,
     seu primeiro argumento deve ser sempre uma função anônima booleana
     com um (1) parâmetro.
 
@@ -1192,7 +1186,7 @@ output = map(lambda int x, y -> x + 2, t)
 ...
 \end{verbatim}
 
-\item Caso \texttt{it} não seja um arranjo, um erro semântico deve ser gerado.
+\item Caso \verb!it! não seja um arranjo, um erro semântico deve ser gerado.
 
 \begin{verbatim}
 int t
@@ -1236,16 +1230,16 @@ Este recurso é adicionado à linguagem, com as seguintes considerações:
     corretamente simulados.
 
 \item Funções declaradas mas não definidas não existem em Python; portanto,
-    a palavra chave \texttt{pass} é utilizada para inicializar uma função
+    a palavra chave \verb!pass! é utilizada para inicializar uma função
     sem qualquer utilidade.
 
 \item Como a ideia de ponteiros não existe em Python, não existe uma possível
-	conversão válida. Portanto, todos os operadores \texttt{addr} e
-	\texttt{ref} são retirados.
+	conversão válida. Portanto, todos os operadores \verb!addr! e
+	\verb!ref! são retirados.
 
 \item Python não contém qualquer estrutura de iteração similar a um
-    \texttt{for} estilo C, então todos os \texttt{for} são traduzidos para
-    estruturas \texttt{while}.
+    \verb!for! estilo C, então todos os \verb!for! são traduzidos para
+    estruturas \verb!while!.
 
 \end{smallenum}
 

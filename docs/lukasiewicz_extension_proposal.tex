@@ -1,10 +1,5 @@
-\documentclass{article}
+\documentclass{sftex/sftex}
 
-\usepackage[brazil]{babel}
-\usepackage[T1]{fontenc}
-\usepackage[a4paper, margin=1.5cm]{geometry}
-\usepackage[colorlinks, urlcolor=blue, citecolor=red]{hyperref}
-\usepackage[utf8]{inputenc}
 \usepackage{enumitem}
 
 \newenvironment{smallitem}{
@@ -27,21 +22,16 @@
     \end{enumerate}
 }
 
-\title{\textbf{Proposta de extensão para a linguagem Łukasiewicz}}
+\title{Proposta de extensão para a linguagem Łukasiewicz}
 \author{
-    Douglas Martins \\
-    {\small arquiteto de sistema}
-    \and Gustavo Zambonin \\
-    {\small gerente de projeto, projetista de sistema} \vspace{2mm}\\
-    {\small Construção de Compiladores (UFSC -- INE5426)}
-    \footnote{\texttt{
-        \{marcelino.douglas,gustavo.zambonin,marcello.klingelfus\}@grad.ufsc.br
-        \hfill \href{https://github.com/zambonin/ufsc-ine5426}{src/}
-    }}
-    \and Marcello Klingelfus \\
-    {\small testador}
+    Douglas Martins \\ {\small arquiteto de sistema}
+    \and Gustavo Zambonin \\ {\small gerente de projeto, projetista de sistema}
+    \and Marcello Klingelfus \\ {\small testador} \vspace{2mm} \\
 }
-\date{}
+\email{\{marcelino.douglas,gustavo.zambonin,marcello.klingelfus\}@grad.ufsc.br}
+\src{https://github.com/zambonin/ufsc-ine5426}
+\uniclass{Construção de Compiladores}
+\classcode{UFSC-INE5426}
 
 \begin{document}
 
@@ -53,46 +43,46 @@
 
 Adiciona-se à linguagem suporte a funções anônimas (não depende de um
 identificador para ser utilizada) e funções de alta ordem (toma uma ou mais
-funções como parâmetro) denominadas \texttt{map}, \texttt{fold} e
-\texttt{filter}. \medskip
+funções como parâmetro) denominadas \verb!map!, \verb!fold! e
+\verb!filter!. \medskip
 
 Funções anônimas respeitam as seguintes restrições:
 \begin{smallitem}
-    \item \texttt{lambda} e a respectiva letra minúscula em grego,
-        $\lambda$ (\texttt{U+03BB}), tornam-se palavras reservadas da linguagem;
+    \item \verb!lambda! e a respectiva letra minúscula em grego,
+        $\lambda$ (\verb!U+03BB!), tornam-se palavras reservadas da linguagem;
     \item devem conter no mínimo um (1) argumento;
     \item a função pode ser utilizada da seguinte maneira:
-        \texttt{$\lambda$($a_1$, $a_2$, $\dots$, $a_n$)}, onde $a_n$ é o
+        \texttt{$\lambda(a_1, a_2, \ldots, a_n)$}, onde $a_n$ é o
         $n$-ésimo argumento da função previamente declarada.
     \item uma função anônima pode ser descartada com a diretiva
-        \texttt{$\lambda$()}, para que outra possa ser declarada;
+        \texttt{$\lambda()$}, para que outra possa ser declarada;
     \item opera apenas sobre tipos básicos da linguagem (números inteiros
         e de ponto flutuante, booleanos e caracteres).
 \end{smallitem}
 
 Funções de alta ordem respeitam as seguintes restrições:
 \begin{smallitem}
-    \item \texttt{map}, \texttt{fold} e \texttt{filter} tornam-se palavras
+    \item \verb!map!, \verb!fold! e \verb!filter! tornam-se palavras
         reservadas da linguagem;
     \item devem ter obrigatoriamente dois argumentos, nesta ordem: uma função
-        anônima e um \texttt{array}, chamados respectivamente
-        de \texttt{$\lambda$} e \texttt{it} neste documento para facilitar a
+        anônima e um \verb!array!, chamados respectivamente
+        de \texttt{$\lambda$} e \verb!it! neste documento para facilitar a
         visualização das regras;
     \item será necessário estender a linguagem com a adição de um operador
-        unário \texttt{len}, que retorna o tamanho do \texttt{array}, para que
+        unário \verb!len!, que retorna o tamanho do \verb!array!, para que
         o código gerado nas funções de alta ordem seja semanticamente correto;
-    \item o tipo de retorno de \texttt{map} deve ser igual ao tipo de
-        \texttt{it}, que deve ter tipo primitivo igual ao tipo de retorno
+    \item o tipo de retorno de \verb!map! deve ser igual ao tipo de
+        \verb!it!, que deve ter tipo primitivo igual ao tipo de retorno
         de \texttt{$\lambda$};
-    \item o tipo de retorno de \texttt{fold} deve ser igual ao de
-        \texttt{$\lambda$} e ao tipo primitivo de \texttt{it};
-    \item o tipo de retorno de \texttt{filter} deve ser igual ao tipo de
-        \texttt{it}, e \texttt{$\lambda$} deve ser sempre uma função booleana;
+    \item o tipo de retorno de \verb!fold! deve ser igual ao de
+        \texttt{$\lambda$} e ao tipo primitivo de \verb!it!;
+    \item o tipo de retorno de \verb!filter! deve ser igual ao tipo de
+        \verb!it!, e \texttt{$\lambda$} deve ser sempre uma função booleana;
     \item para evitar erros de redefinição, as funções de alta ordem
         levam como prefixo o nome de seu segundo parâmetro seguido de
         um traço inferior;
     \item arrays, índices e variáveis temporários devem ser criados
-        adicionando os sufixos \texttt{\_ta} e \texttt{\_ti} e \texttt{\_tv}
+        adicionando os sufixos \verb!_ta! e \verb!_ti! e \verb!_tv!
         ao nome original do parâmetro, respectivamente.
 \end{smallitem}
 
@@ -128,20 +118,20 @@ Os seguintes recursos são adicionados à linguagem:
 
 \begin{smallitem}
     \item suporte a algumas operações com caracteres ASCII entre $32_{10}$
-        (espaço) e $126_{10}$ (\texttt{\~}), inclusive;
-    \item variáveis com apenas um caractere, de tipo \texttt{char}, podem ser
+        (espaço) e $126_{10}$ (\verb!~!), inclusive;
+    \item variáveis com apenas um caractere, de tipo \verb!char!, podem ser
         declaradas com aspas simples;
-    \item variáveis com múltiplos caracteres, de tipo \texttt{str} podem ser
-        declaradas com aspas duplas. Considera-se que um \texttt{str} é
-        similar a um \texttt{char array};
-    \item o operador de adição causa coerção se utilizado entre \texttt{char} e
-        \texttt{char}, ou \texttt{char} e \texttt{str} (independente da ordem);
-    \item os operadores de comparação (maior, menor...) podem ser utilizados
+    \item variáveis com múltiplos caracteres, de tipo \verb!str! podem ser
+        declaradas com aspas duplas. Considera-se que um \verb!str! é
+        similar a um \verb!char array!;
+    \item o operador de adição causa coerção se utilizado entre \verb!char! e
+        \verb!char!, ou \verb!char! e \verb!str! (independente da ordem);
+    \item os operadores de comparação (maior, menor etc.) podem ser utilizados
         entre estes dois tipos;
-    \item o operador de índice pode ser utilizado em um \texttt{str}; esta
-        variável é tratada como um \texttt{char};
+    \item o operador de índice pode ser utilizado em um \verb!str!; esta
+        variável é tratada como um \verb!char!;
     \item comentários podem ser feitos em linhas individuais começando com
-        \texttt{\#}. Os caracteres válidos são os mesmos citados acima.
+        \verb!#!. Os caracteres válidos são os mesmos citados acima.
         Serão ignorados pelo \emph{parser} e não serão mostrados na
         representação intermediária de código.
 \end{smallitem}
@@ -149,20 +139,20 @@ Os seguintes recursos são adicionados à linguagem:
 \subsection{Exemplo de código}
 
 \begin{verbatim}
-    char let = 'a'
-    str wd = "luka", result
-    # i can add letters together
-    result = wd + let
-    let = result[1]
+char let = 'a'
+str wd = "luka", result
+# i can add letters together
+result = wd + let
+let = result[1]
 \end{verbatim}
 
 \subsection{Saída esperada}
 
 \begin{verbatim}
-    char var: let = 'a'
-    str var: wd = "luka", result
-    = result + wd [str] let
-    = let [index] result 1
+char var: let = 'a'
+str var: wd = "luka", result
+= result + wd [str] let
+= let [index] result 1
 \end{verbatim}
 
 \section{Geração de código intermediário com LLVM}
@@ -198,10 +188,10 @@ conta, e assim, alguns comportamentos poderão ser simulados de modo diferente:
 \begin{smallitem}
     \item tipagem dinâmica em Python faz com que as variáveis não precisem ser
         declaradas junto a seus tipos;
-    \item as palavras reservadas \texttt{True} e \texttt{False}, em Python,
-        podem ser operadas como inteiros de valor \texttt{0} e \texttt{1};
+    \item as palavras reservadas \verb!True! e \verb!False!, em Python,
+        podem ser operadas como inteiros de valor \verb!0! e \verb!1!;
     \item funcionamento de escopo léxico deve ser retrabalhado para que
-        variáveis sejam terminadas ao fim de um bloco lógico (e.g. \texttt{if});
+        variáveis sejam terminadas ao fim de um bloco lógico (e.g. \verb!if!);
     \item outros comportamentos serão documentados se descobertos.
 \end{smallitem}
 
