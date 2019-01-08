@@ -6,26 +6,26 @@
  *          Marcello Klingelfus
  */
 %{
-  #include <cstring>
-  #include <unistd.h>
   #include "ast.h"
   #include "st.h"
+  #include <cstring>
+  #include <unistd.h>
 
   extern int yylex();
   extern int yylex_destroy();
-  extern void yyerror(const char* s, ...);
+  extern void yyerror(const char *s, ...);
 
   /* First symbol table (global scope). */
-  ST::SymbolTable* current;
+  ST::SymbolTable *current;
 
   /* Root of the abstract syntax tree. */
-  AST::BlockNode* root;
+  AST::BlockNode *root;
 
   /* Temporary variable used to simplify the grammar on declarations. */
   int tmp_t;
 
   /* Temporary variable used to insert the functor node inside the program. */
-  AST::Node* tmp_f;
+  AST::Node *tmp_f;
 %}
 
 /* Bison declaration summary. */
@@ -51,9 +51,9 @@
 %union {
   int integer;
   bool boolean;
-  char* word;
-  AST::Node* node;
-  AST::BlockNode* block;
+  char *word;
+  AST::Node *node;
+  AST::BlockNode *block;
 }
 
 /* Delete symbols automatically discarded. */
@@ -151,7 +151,7 @@ line
   | ref-cnt ID APPEND expr
     { AST::Node* n = current->getVarFromTable($2);
       if ($1) n = new AST::UnaryOpNode(AST::ref, n);
-      $$ = new AST::BinaryOpNode(AST::append, n, $4);}
+      $$ = new AST::BinaryOpNode(AST::append, n, $4); }
   | ref-cnt ID LBRAC expr RBRAC ASSIGN expr
     { AST::Node* n = current->getVarFromTable($2);
       if ($1) n = new AST::UnaryOpNode(AST::ref, n);
@@ -351,20 +351,19 @@ f-expr
 /* Additional C code. */
 
 int main(int argc, char **argv) {
-
   int pyflag = 0;
   char c;
 
   while ((c = getopt(argc, argv, "dp")) != -1)
     switch (c) {
-      case 'd':
-        yydebug = 1;
-        break;
-      case 'p':
-        pyflag = 1;
-        break;
-      default:
-        return 1;
+    case 'd':
+      yydebug = 1;
+      break;
+    case 'p':
+      pyflag = 1;
+      break;
+    default:
+      return 1;
     }
 
   yyparse();
@@ -381,5 +380,4 @@ int main(int argc, char **argv) {
   yylex_destroy();
 
   return 0;
-
 }

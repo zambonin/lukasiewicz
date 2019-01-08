@@ -4,35 +4,33 @@ namespace AST {
 
 /* String representation for the operations. */
 static const std::string _bin[] = {
-  " + ", " - ", " * ", " / ", " = ", "", "", "",
-  " == ", " != ", " > ", " < ", " >= ", " <= ", " & ", " | ",
-  "-", "(not ", "int(", "float(", "bool(", "str(", "len(", " + ["
-};
+    " + ",  " - ",   " * ",  " / ",    " = ",   "",     "",     "",
+    " == ", " != ",  " > ",  " < ",    " >= ",  " <= ", " & ",  " | ",
+    "-",    "(not ", "int(", "float(", "bool(", "str(", "len(", " + ["};
 
 //! Saves the current indentation status.
 static int spaces;
 
 //! Takes a single line of code and indents it with two spaces.
-#define _tab(X)     spaces += 4; (X); spaces -= 4
+#define _tab(X)                                                                \
+  spaces += 4;                                                                 \
+  (X);                                                                         \
+  spaces -= 4
 
 //! Variadic macro that prevents indentation for any number of lines.
-#define _notab(...) int tmp = spaces; spaces = 0; (__VA_ARGS__); spaces = tmp;
+#define _notab(...)                                                            \
+  int tmp = spaces;                                                            \
+  spaces = 0;                                                                  \
+  (__VA_ARGS__);                                                               \
+  spaces = tmp;
 
-void IntNode::printPython() {
-  text(value, 0);
-}
+void IntNode::printPython() { text(value, 0); }
 
-void FloatNode::printPython() {
-  text(value, 0);
-}
+void FloatNode::printPython() { text(value, 0); }
 
-void BoolNode::printPython() {
-  text(value ? "True" : "False", 0);
-}
+void BoolNode::printPython() { text(value ? "True" : "False", 0); }
 
-void CharNode::printPython() {
-  text(value, 0);
-}
+void CharNode::printPython() { text(value, 0); }
 
 void BinaryOpNode::printPython() {
   bool specialOp = (binOp == assign || binOp == index || binOp == append);
@@ -42,8 +40,7 @@ void BinaryOpNode::printPython() {
   }
   left->printPython();
   if (binOp != index) {
-    text(_bin[binOp], 0),
-    right->printPython();
+    text(_bin[binOp], 0), right->printPython();
   } else {
     text("[", 0);
     right->printPython();
@@ -66,12 +63,10 @@ void UnaryOpNode::printPython() {
   }
 }
 
-void VariableNode::printPython() {
-  text(id, 0);
-}
+void VariableNode::printPython() { text(id, 0); }
 
 void BlockNode::printPython() {
-  for (Node* n : nodeList) {
+  for (Node *n : nodeList) {
     if (n != nullptr) {
       text("", spaces);
       n->printPython();
@@ -82,9 +77,7 @@ void BlockNode::printPython() {
   }
 }
 
-void MessageNode::printPython() {
-  next->printPython();
-}
+void MessageNode::printPython() { next->printPython(); }
 
 void IfNode::printPython() {
   text("s_context()\n", 0);
@@ -108,9 +101,7 @@ void ForNode::printPython() {
   }
   // transform for in while because there is no C-style for loop in Python
   text("while ", spaces);
-  _notab(
-    test->printPython(),
-    text(":\n", 0));
+  _notab(test->printPython(), text(":\n", 0));
   _tab(body->printPython());
   if (iteration->_type() != ND) {
     text("", spaces + 4);
@@ -151,7 +142,7 @@ void ReturnNode::printPython() {
 
 void FuncCallNode::printPython() {
   text(((function->id == "lambda") ? "λ" : function->id) + "(", 0);
-  for (Node* n : params->nodeList) {
+  for (Node *n : params->nodeList) {
     n->printPython();
     if (n != params->nodeList.back()) {
       text(", ", 0);
@@ -174,4 +165,4 @@ void DeclarationNode::printPython() {
   }
 }
 
-} //namespace AST
+} // namespace AST

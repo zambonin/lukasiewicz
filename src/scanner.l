@@ -6,15 +6,15 @@
  *          Marcello Klingelfus
  */
 %{
-  #include <cstdarg>
   #include "ast.h"
   #include "parser.h"
+  #include <cstdarg>
 
-  extern AST::BlockNode* root;
+  extern AST::BlockNode *root;
   extern int yylineno;
 
-  void yyerror(const char* s, ...);
-  char* reduce_char(char*);
+  void yyerror(const char *s, ...);
+  char *reduce_char(char *);
 %}
 
 /*
@@ -30,7 +30,6 @@
  */
 
 %option noyywrap nodefault yylineno noinput nounput
-
 
 chars   [ !#-&(-~]
 intgT   [0-9]+
@@ -108,29 +107,24 @@ error   [^ -~\λ\t\n]+
 
 /* Bison standard error output function. */
 void yyerror(const char* s, ...) {
-
   va_list ap;
   va_start(ap, s);
   std::fprintf(stderr, "[Line %d] ", yylineno);
   std::vfprintf(stderr, s, ap);
   std::fprintf(stderr, "\n");
-
 }
 
 /* Semantic error function. */
 void yyserror(const char* s, ...) {
-
   va_list ap;
   va_start(ap, s);
   std::fprintf(stderr, "[Line %d] semantic error: ", yylineno);
   std::vfprintf(stderr, s, ap);
   std::fprintf(stderr, "\n");
-
 }
 
 /* Creates another buffer state and feeds the `s` arg to it. */
 AST::BlockNode* string_read(const char* s) {
-
   YY_BUFFER_STATE old = YY_CURRENT_BUFFER;
   yy_scan_string(s);
   yyparse();
@@ -139,20 +133,17 @@ AST::BlockNode* string_read(const char* s) {
   yy_switch_to_buffer(old);
 
   return root;
-
 }
 
 /* Truncates a single-quoted word to its first character. */
 char* reduce_char(char* s) {
-
   if (strlen(s) > 3) {
     char _new[4] = {'\'', s[1], '\'', '\0'};
-    char* p = strdup(_new);
+    char *p = strdup(_new);
     yyerror("warning: value truncated to %s", p);
     free(s);
     return p;
   } else {
     return s;
   }
-
 }
