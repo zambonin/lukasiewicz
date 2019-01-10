@@ -43,10 +43,6 @@
 /* Generate the parser implementation on that file. */
 %output "src/parser.cpp"
 
-/* Write an output file containing descriptions of the states and what is
-   done for each type of lookahead token in that state. */
-%verbose
-
 /* Possible C types for semantic values. */
 %union {
   int integer;

@@ -30,5 +30,4 @@ mtest: $(addsuffix .mtest, $(basename $(wildcard test/valid/**/*.in)))
 		--quiet ./$(OUTPUT) < $< >/dev/null 2>/dev/null
 
 clean:
-	rm -f src/parser.cpp src/parser.output \
-		include/parser.h src/scanner.cpp $(OUTPUT)
+	rm -f src/parser.cpp include/parser.h src/scanner.cpp $(OUTPUT)
