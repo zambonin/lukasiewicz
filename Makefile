@@ -1,21 +1,34 @@
-CC = g++
-CFLAGS = -O2 -Wall -Wextra -Wno-sign-compare -std=c++11 -I include
+CXXFLAGS = -O2 -Wall -Wextra -std=c++11 -I include
 OUTPUT = lukacompiler
 
-default: grammar
-	@$(CC) $(CFLAGS) $(wildcard **/*.cpp) -o $(OUTPUT)
+all:
+	flex -o src/scanner.cpp src/scanner.l
+	bison src/parser.y
+	$(CXX) $(CXXFLAGS) src/*.cpp -o $(OUTPUT)
 
-debug: grammar
-	@$(CC) -g $(CFLAGS) $(wildcard **/*.cpp) -o $(OUTPUT)
+debug: CXXFLAGS += -g
+debug: all
 
-grammar:
-	@flex -o src/scanner.cpp src/scanner.l
-	@bison src/parser.y
+test: vtest ptest itest mtest
 
-test: default
-	@cd test/ && ./batch_test.sh ../lukacompiler
-	@$(MAKE) -s clean
+vtest: $(addsuffix .vtest, $(basename $(wildcard test/valid/**/*.in)))
+%.vtest: %.in %.out /usr/bin/cmp all
+	@./$(OUTPUT) < $< | cmp -s $(word 2, $?) -
+
+ptest: $(addsuffix .ptest, $(basename $(wildcard test/valid/**/*.in)))
+%.ptest: %.in %.out /usr/bin/cmp all
+	@./$(OUTPUT) -p < $< | python
+
+itest: $(addsuffix .itest, $(basename $(wildcard test/invalid/**/*.in)))
+%.itest: %.in %.out /usr/bin/cmp all
+	@./$(OUTPUT) < $< 2>&1 >/dev/null | cmp -s $(word 2, $?) -
+
+# TODO: some invalid inputs are leaking memory on functions
+mtest: $(addsuffix .mtest, $(basename $(wildcard test/valid/**/*.in)))
+%.mtest: %.in %.out /usr/bin/valgrind all
+	@valgrind --leak-check=full --errors-for-leak-kinds=all --error-exitcode=1 \
+		--quiet ./$(OUTPUT) < $< >/dev/null 2>/dev/null
 
 clean:
-	@rm src/parser.cpp src/parser.output \
+	rm -f src/parser.cpp src/parser.output \
 		include/parser.h src/scanner.cpp $(OUTPUT)
