@@ -5,6 +5,7 @@ behaviour regarding lexical scopes. Based on [1].
 
 [1] http://stackoverflow.com/a/21795428"""
 
+from __future__ import absolute_import
 from sys import modules
 
 __context__ = {}
